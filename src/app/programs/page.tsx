@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarCheck, Target, Lightbulb } from 'lucide-react';
+import { CalendarCheck, Target, Lightbulb, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function ProgramsPage() {
   return (
@@ -28,8 +30,8 @@ export default function ProgramsPage() {
             <CalendarCheck className="h-6 w-6" />
             Upcoming Event: Startup Ideation Kickstart
             </CardTitle>
-          <CardDescription className="pt-1">
-            Our inaugural program designed to help students generate and refine startup ideas.
+          <CardDescription className="pt-1"> {/* Changed description to highlight it's the first program */}
+            Our inaugural program designed to help students generate and refine startup ideas. Registration is required.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
@@ -56,9 +58,16 @@ export default function ProgramsPage() {
            </div>
 
            {/* Add more details like venue, registration link (when available), speaker info etc. */}
-           <p className="text-sm text-muted-foreground italic">
-             More details regarding venue, specific timings, and registration will be announced soon. Stay tuned!
-           </p>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <Button asChild>
+                <Link href="/register">
+                    Register for Event <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                </Button>
+                <p className="text-sm text-muted-foreground italic flex-1">
+                 More details regarding venue and specific timings will be announced soon. Stay tuned!
+               </p>
+            </div>
 
         </CardContent>
       </Card>
