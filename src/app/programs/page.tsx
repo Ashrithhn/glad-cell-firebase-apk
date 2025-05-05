@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarCheck, Target, Lightbulb, ArrowRight } from 'lucide-react';
+import { CalendarCheck, Target, Lightbulb, ArrowRight, LogIn } from 'lucide-react'; // Added LogIn
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -20,7 +21,7 @@ export default function ProgramsPage() {
             <CalendarCheck className="h-6 w-6" />
             Upcoming Event: Startup Ideation Kickstart
             </CardTitle>
-          <CardDescription className="pt-1"> {/* Changed description to highlight it's the first program */}
+          <CardDescription className="pt-1">
             Our inaugural program designed to help students generate and refine startup ideas. Registration is required.
           </CardDescription>
         </CardHeader>
@@ -47,11 +48,11 @@ export default function ProgramsPage() {
             </p>
            </div>
 
-           {/* Add more details like venue, registration link (when available), speaker info etc. */}
+           {/* Changed Register button to point to login/register flow */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <Button asChild>
-                <Link href="/register">
-                    Register for Event <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href="/login"> {/* Point to login, which links to register */}
+                    <LogIn className="mr-2 h-4 w-4" /> Login/Register to Participate
                 </Link>
                 </Button>
                 <p className="text-sm text-muted-foreground italic flex-1">

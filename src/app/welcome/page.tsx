@@ -8,9 +8,6 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Define the key for localStorage
-const WELCOME_SEEN_KEY = 'gladcell_welcome_seen';
-
 const welcomeSteps = [
   {
     title: 'Welcome to GLAD CELL!',
@@ -26,7 +23,7 @@ const welcomeSteps = [
   },
   {
     title: "Let's Get Started!",
-    description: 'Join the GLAD CELL community and start your innovation journey today.',
+    description: 'Join the GLAD CELL community and start your innovation journey today by registering.', // Updated description
   },
 ];
 
@@ -36,26 +33,18 @@ export default function WelcomePage() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Ensure this runs only on the client
+    // Ensure this runs only on the client to prevent hydration errors if any client-specific logic were added later.
     setIsClient(true);
-    const welcomeSeen = localStorage.getItem(WELCOME_SEEN_KEY);
-    if (welcomeSeen) {
-      // If already seen, redirect to home immediately
-      router.replace('/');
-    }
-  }, [router]);
+    // No need to check localStorage anymore, the flow forces registration/login after welcome.
+  }, []);
 
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, welcomeSteps.length - 1));
   };
 
   const handleGetStarted = () => {
-    // Mark welcome as seen in localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(WELCOME_SEEN_KEY, 'true');
-    }
-    // Redirect to the main home page
-    router.replace('/');
+    // Redirect to the registration page
+    router.replace('/register');
   };
 
   const progressValue = ((currentStep + 1) / welcomeSteps.length) * 100;
@@ -72,7 +61,7 @@ export default function WelcomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-foreground p-4">
       <div className="w-full max-w-md text-center space-y-8 flex-grow flex flex-col justify-center">
         {/* Progress bar at the top */}
-        <Progress value={progressValue} className="w-full h-2 mb-8" />
+        <Progress value={progressValue} className="w-full h-2 mb-8 bg-muted" /> {/* Ensured background for visibility */}
 
         {/* Step Content */}
         <div className="space-y-4">
@@ -85,7 +74,7 @@ export default function WelcomePage() {
       <div className="w-full max-w-md p-4 mt-auto">
         {isLastStep ? (
           <Button size="lg" onClick={handleGetStarted} className="w-full">
-            Get Started <Check className="ml-2 h-5 w-5" />
+            Register / Login <Check className="ml-2 h-5 w-5" /> {/* Updated button text */}
           </Button>
         ) : (
           <Button size="lg" onClick={handleNext} variant="secondary" className="w-full">
