@@ -33,13 +33,13 @@ let initializationError: Error | null = null;
 
 // Check for required config values
 if (!firebaseConfig.apiKey) {
-    // Removed noisy client-side console.error logs
+    // Reduced client-side console noise
     initializationError = new Error("Firebase API Key is missing.");
 } else {
      if (typeof window === 'undefined') console.log("[Server] ✅ Firebase Config: API Key environment variable found.");
 }
 if (!firebaseConfig.projectId) {
-     // Removed noisy client-side console.error logs
+     // Reduced client-side console noise
     if (!initializationError) { // Don't overwrite the first error
         initializationError = new Error("Firebase Project ID is missing.");
     }
@@ -63,7 +63,12 @@ if (!initializationError) {
       // const analytics = getAnalytics(app); // Optional
       if (typeof window === 'undefined') console.log("[Server] ✅ Firebase services initialized successfully.");
     } catch (error) {
-        console.error("🔴 Firebase initialization FAILED:", error);
+        if (typeof window === 'undefined') {
+            console.error("🔴 [Server] Firebase initialization FAILED:", error);
+        } else {
+            // Log a single warning on the client for init failure
+             console.warn(`[Client] Firebase initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
         initializationError = error instanceof Error ? error : new Error(String(error));
         // Clear instances if initialization failed
         app = undefined;
@@ -71,9 +76,13 @@ if (!initializationError) {
         dbInstance = undefined;
     }
 } else {
-     // Log why initialization is skipped (both server and client)
-     // Keep this single error log to inform the developer.
-     console.error(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set in .env.local and restart the server.`);
+     // Log why initialization is skipped (single warning on client, error on server)
+     const errorMessage = `🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set in .env.local and restart the server.`;
+     if (typeof window === 'undefined') {
+         console.error(`[Server] ${errorMessage}`);
+     } else {
+         console.warn(`[Client] ${errorMessage}`); // Use warn on the client
+     }
 }
 
 
