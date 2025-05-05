@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, LogIn, LogOut } from 'lucide-react'; // Added LogOut
+import { Lightbulb, LogOut } from 'lucide-react'; // Removed LogIn
 import { usePathname, useRouter } from 'next/navigation'; // Import usePathname and useRouter
 import { toast } from '@/hooks/use-toast';
 
@@ -47,7 +47,7 @@ export function Header() {
 
 
   // Hide header on specific pages
-  const hiddenPaths = ['/welcome', '/login', '/register', '/admin/login']; // Welcome page handled by WelcomeHandler
+  const hiddenPaths = ['/login', '/register', '/admin/login']; // Removed /welcome
   if (hiddenPaths.includes(pathname)) {
     // console.log('[Header] Hiding header for path:', pathname);
     return null;
@@ -111,18 +111,13 @@ export function Header() {
           <Button variant="ghost" asChild size="sm">
             <Link href="/contact">Contact</Link>
           </Button>
-          {/* Conditional Login/Logout Button */}
-          {isLoggedIn ? (
+          {/* Conditional Logout Button */}
+          {isLoggedIn && ( // Only show Logout if logged in
              <Button variant="outline" size="sm" onClick={handleLogout}>
                <LogOut className="mr-2 h-4 w-4" /> Logout
              </Button>
-          ) : (
-            <Button variant="default" asChild size="sm">
-              <Link href="/login">
-                 <LogIn className="mr-2 h-4 w-4" /> Login / Register
-              </Link>
-            </Button>
           )}
+           {/* Login/Register button is now removed when not logged in */}
         </nav>
       </div>
     </header>
