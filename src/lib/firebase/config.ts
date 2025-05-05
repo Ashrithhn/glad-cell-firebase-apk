@@ -16,7 +16,7 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
   // Note: FIREBASE_REALTIME_DB_URL is typically used server-side with Admin SDK,
-  // not usually needed for client-side initialization.
+  // not usually needed for client-side initialization if using Firestore.
 };
 
 // Declare variables that might be reassigned
@@ -26,23 +26,37 @@ let dbInstance: Firestore | undefined;
 let initializationError: Error | null = null;
 
 // --- Initialization ---
-console.log("--- Firebase Config Loading ---"); // Log start of file execution
+console.log("--- Firebase Config Loading ---");
 
-// Check for required config values
-if (!firebaseConfig.apiKey) {
-    initializationError = new Error("Firebase API Key is missing.");
-    console.warn("🔴 Firebase Config Warning: API Key is MISSING or invalid. Check NEXT_PUBLIC_FIREBASE_API_KEY in .env.local and restart server."); // Use warn
-} else {
-    console.log("✅ Firebase Config: API Key environment variable found.");
-}
+// Check for ALL required client-side config values
+const requiredConfigKeys: (keyof FirebaseOptions)[] = [
+    'apiKey',
+    'authDomain',
+    'projectId',
+    'storageBucket',
+    'messagingSenderId',
+    'appId',
+];
 
-if (!firebaseConfig.projectId) {
-    if (!initializationError) { // Don't overwrite the first error
-        initializationError = new Error("Firebase Project ID is missing.");
-    }
-    console.warn("🔴 Firebase Config Warning: Project ID is MISSING or invalid. Check NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local and restart server."); // Use warn
+const missingKeys = requiredConfigKeys.filter(key => !firebaseConfig[key]);
+
+if (missingKeys.length > 0) {
+    const errorMessage = `Firebase configuration is incomplete. Missing environment variables: ${missingKeys.map(key => `NEXT_PUBLIC_FIREBASE_${key.toUpperCase()}`).join(', ')}.`;
+    initializationError = new Error(errorMessage);
+
+    // Log detailed error messages for each missing key
+    console.error("-----------------------------------------------------");
+    console.error("🔴 Firebase Config Error: Required environment variables are missing!");
+    missingKeys.forEach(key => {
+        const envVarName = `NEXT_PUBLIC_FIREBASE_${key.toUpperCase()}`;
+        console.error(`🔴 Missing Variable: ${envVarName}`);
+        console.error(`   -> Check your .env.local file for '${envVarName}'.`);
+    });
+    console.error("🔴 IMPORTANT: You MUST restart your Next.js server (e.g., 'npm run dev') after creating or modifying the .env.local file.");
+    console.error("-----------------------------------------------------");
+
 } else {
-    console.log(`✅ Firebase Config: Project ID environment variable found: ${firebaseConfig.projectId}`);
+    console.log("✅ Firebase Config: All required NEXT_PUBLIC_ environment variables seem to be present.");
 }
 
 
@@ -75,11 +89,12 @@ if (!initializationError) {
     dbInstance = undefined;
 
     console.error(`🔴 [Firebase] Initialization failed during setup: ${initializationError.message}`);
+    console.error("   -> This might be due to an invalid value in your .env.local (even if present) or network issues.");
   }
 } else {
      // Log why initialization is skipped (both server and client)
-     // Keep this single error log to inform the developer.
-     console.warn(`🟠 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set in .env.local and restart the server.`); // Use warn
+     // Use warn level for skipping, error level for the actual missing key message above
+     console.warn(`🟠 Skipping Firebase initialization due to missing configuration: ${initializationError.message}`);
 }
 
 
