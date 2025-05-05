@@ -1,5 +1,4 @@
 
-
 import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -73,7 +72,7 @@ if (!initializationError) {
     }
 } else {
      // Removed console.error line
-     console.log(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}`);
+     console.log(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Please check your .env.local file and restart the server.`);
 }
 
 
@@ -82,4 +81,3 @@ console.log("--- Firebase Config Finished ---"); // Log end of file execution
 // Export the instances (they might be undefined if initialization failed or skipped)
 // Modules importing these should check for undefined before use.
 export { app, authInstance as auth, dbInstance as db, initializationError };
-
