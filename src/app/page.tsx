@@ -1,9 +1,11 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowRight, Lightbulb, UserPlus, CalendarCheck } from 'lucide-react';
 
+// No need for client-side checks here anymore, WelcomeHandler handles redirection.
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center space-y-12">
@@ -33,23 +35,6 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-         {/* Registration card removed as per previous request */}
-        {/* <Card className="hover:shadow-lg transition-shadow duration-300 border-primary/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xl font-semibold">Register Now</CardTitle>
-            <UserPlus className="h-6 w-6 text-primary" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Become a part of the GLAD CELL community. Register with a small fee to submit your ideas and access exclusive resources.
-            </p>
-            <Button asChild>
-              <Link href="/register">
-                Register <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card> */}
 
         <Card className="hover:shadow-lg transition-shadow duration-300 md:col-span-2 lg:col-span-1"> {/* Adjusted span for layout */}
           <CardHeader className="flex flex-row items-center justify-between pb-2">
