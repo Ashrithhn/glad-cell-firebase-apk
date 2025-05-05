@@ -13,25 +13,29 @@ import { auth, db, initializationError } from '@/lib/firebase/config'; // Import
  * Registers a user with Firebase Authentication and stores profile data in Firestore.
  */
 export async function registerUser(userData: any): Promise<{ success: boolean; userId?: string; message?: string }> {
+  console.log('[Server Action] registerUser invoked.'); // Add invocation log
+
   // Check if Firebase services are initialized correctly
   if (initializationError) {
-    console.error('Firebase initialization failed. Cannot register user.', initializationError.message);
-    return { success: false, message: `Registration service unavailable: ${initializationError.message}. Check setup.` };
+    const errorMessage = `Registration service unavailable: Firebase initialization error - ${initializationError.message}. Check setup.`;
+    console.error(`[Server Action Error] registerUser: ${errorMessage}`);
+    return { success: false, message: errorMessage };
   }
   if (!auth || !db) {
-    console.error('Firebase Auth or Firestore service is not available despite no initialization error. Check configuration.');
-    return { success: false, message: 'Registration service temporarily unavailable. Please try again later.' };
+    const errorMessage = 'Registration service temporarily unavailable: Firebase Auth or Firestore service instance missing. Check configuration.';
+    console.error(`[Server Action Error] registerUser: ${errorMessage}`);
+    return { success: false, message: errorMessage };
   }
 
 
   const { email, password, name, branch, semester, registrationNumber, collegeName, city, pincode } = userData;
-  console.log('Attempting Firebase registration for user:', email);
+  console.log('[Server Action] Attempting Firebase registration for user:', email);
 
   try {
     // 1. Create user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    console.log('Firebase Auth user created:', user.uid);
+    console.log('[Server Action] Firebase Auth user created:', user.uid);
 
     // 2. Store additional user details in Firestore 'users' collection
     const userDocRef = doc(db, 'users', user.uid);
@@ -48,11 +52,11 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
       createdAt: serverTimestamp(),
       // Add any other relevant fields, like roles if needed later
     });
-    console.log('User profile stored in Firestore for UID:', user.uid);
+    console.log('[Server Action] User profile stored in Firestore for UID:', user.uid);
 
     return { success: true, userId: user.uid };
   } catch (error: any) {
-    console.error('Firebase Registration Error:', error);
+    console.error('[Server Action Error] Firebase Registration Error:', error.code, error.message); // Log code and message
     // Provide more specific error messages based on Firebase error codes
     let message = 'Registration failed. Please try again.';
     if (error.code === 'auth/email-already-in-use') {
@@ -65,7 +69,9 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
         // Specific message guiding the user to enable the sign-in method
         message = 'Registration failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
     } else if (error.code) {
-        message = `Registration failed: ${error.code}`;
+        message = `Registration failed: ${error.code}`; // Include error code if available
+    } else {
+        message = `Registration failed: ${error.message || 'An unknown error occurred.'}`; // Fallback message
     }
     return { success: false, message: message };
   }
@@ -75,26 +81,30 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
  * Logs in a user using Firebase Authentication.
  */
 export async function loginUser(credentials: any): Promise<{ success: boolean; userId?: string; message?: string }> {
+   console.log('[Server Action] loginUser invoked.'); // Add invocation log
+
    // Check if Firebase services are initialized correctly
    if (initializationError) {
-    console.error('Firebase initialization failed. Cannot login user.', initializationError.message);
-    return { success: false, message: `Login service unavailable: ${initializationError.message}. Check setup.` };
+    const errorMessage = `Login service unavailable: Firebase initialization error - ${initializationError.message}. Check setup.`;
+    console.error(`[Server Action Error] loginUser: ${errorMessage}`);
+    return { success: false, message: errorMessage };
    }
    if (!auth) {
-     console.error('Firebase Auth service is not available despite no initialization error. Check configuration.');
-     return { success: false, message: 'Login service temporarily unavailable. Please try again later.' };
+     const errorMessage = 'Login service temporarily unavailable: Firebase Auth service instance missing. Check configuration.';
+     console.error(`[Server Action Error] loginUser: ${errorMessage}`);
+     return { success: false, message: errorMessage };
    }
 
   const { email, password } = credentials;
-  console.log('Attempting Firebase login for user:', email);
+  console.log('[Server Action] Attempting Firebase login for user:', email);
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    console.log('Firebase Login Successful:', user.uid);
+    console.log('[Server Action] Firebase Login Successful:', user.uid);
     return { success: true, userId: user.uid };
   } catch (error: any) {
-    console.error('Firebase Login Error:', error);
+    console.error('[Server Action Error] Firebase Login Error:', error.code, error.message); // Log code and message
     let message = 'Login failed. Please check your credentials.';
      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
        message = 'Invalid email or password.';
@@ -104,7 +114,9 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
          // Specific message guiding the user to enable the sign-in method
          message = 'Login failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
      } else if (error.code) {
-         message = `Login failed: ${error.code}`;
+         message = `Login failed: ${error.code}`; // Include error code if available
+     } else {
+         message = `Login failed: ${error.message || 'An unknown error occurred.'}`; // Fallback message
      }
     return { success: false, message: message };
   }
@@ -114,25 +126,29 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
  * Logs out the currently signed-in user using Firebase Authentication.
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
+    console.log('[Server Action] logoutUser invoked.'); // Add invocation log
+
     // Check if Firebase services are initialized correctly
     if (initializationError) {
-        console.warn('[logoutUser] Firebase initialization failed. Skipping logout.', initializationError.message);
-        return { success: false, message: 'Logout service unavailable due to config error.' };
+        const errorMessage = `Logout service unavailable: Firebase initialization error - ${initializationError.message}.`;
+        console.warn(`[Server Action Warning] logoutUser: ${errorMessage}`); // Use warn as it might not be critical
+        return { success: false, message: errorMessage };
     }
     if (!auth) {
-        console.warn('[logoutUser] Firebase Auth service is not available. Skipping logout.'); // Changed to warn
-        return { success: false, message: 'Logout service unavailable.' };
+        const errorMessage = 'Logout service unavailable: Firebase Auth service instance missing.';
+        console.warn(`[Server Action Warning] logoutUser: ${errorMessage}`); // Use warn
+        return { success: false, message: errorMessage };
     }
 
 
-    console.log('Attempting Firebase logout');
+    console.log('[Server Action] Attempting Firebase logout');
     try {
         // Use the imported firebaseSignOut function
         await firebaseSignOut(auth);
-        console.log('Firebase Logout Successful');
+        console.log('[Server Action] Firebase Logout Successful');
         return { success: true };
     } catch (error: any) {
-        console.error('Firebase Logout Error:', error);
+        console.error('[Server Action Error] Firebase Logout Error:', error.code, error.message); // Log code and message
         return { success: false, message: error.message || 'Logout failed.' };
     }
 }
@@ -143,41 +159,60 @@ export async function logoutUser(): Promise<{ success: boolean; message?: string
  * For a real app, use Firebase Custom Claims for role-based access control.
  */
 export async function loginAdmin(credentials: any): Promise<{ success: boolean; message?: string }> {
-  console.log('Attempting to login admin:', credentials.username);
+  console.log('[Server Action] loginAdmin invoked.'); // Add invocation log
+  console.log('[Server Action] Attempting to login admin:', credentials.username);
   // Simulate admin credential check
   await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
 
   // Example check - NEVER use plain text passwords like this in production
   if (credentials.username === 'admin' && credentials.password === 'adminpass') {
+     console.log('[Server Action] Admin login successful (placeholder).');
      return { success: true };
   } else {
+     console.warn('[Server Action] Admin login failed (placeholder): Invalid credentials.');
      return { success: false, message: 'Invalid admin credentials.' };
   }
 }
 
 // Placeholder functions for Admin actions (implement similarly, potentially checking admin role)
 export async function addProgram(programData: any): Promise<{ success: boolean; message?: string }> {
+  console.log('[Server Action] addProgram invoked.');
   console.log('Adding program:', programData);
   // TODO: Add check to ensure only admins can call this
   // TODO: Add check for db instance availability
   if (initializationError || !db) {
-    console.error('Firestore service is not available.');
-    return { success: false, message: 'Database service unavailable.' };
+    const errorMessage = 'Database service unavailable for adding program.';
+    console.error(`[Server Action Error] addProgram: ${errorMessage}`);
+    return { success: false, message: errorMessage };
   }
   // TODO: Implement database interaction (e.g., add to Firestore 'programs' collection)
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return { success: true };
+  try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate DB interaction
+      console.log('[Server Action] Program added successfully (placeholder).');
+      return { success: true };
+  } catch(error: any) {
+      console.error('[Server Action Error] addProgram failed:', error.message);
+      return { success: false, message: 'Failed to add program.' };
+  }
 }
 
 export async function addEvent(eventData: any): Promise<{ success: boolean; message?: string }> {
+    console.log('[Server Action] addEvent invoked.');
     console.log('Adding event:', eventData);
     // TODO: Add check to ensure only admins can call this
     // TODO: Add check for db instance availability
     if (initializationError || !db) {
-      console.error('Firestore service is not available.');
-      return { success: false, message: 'Database service unavailable.' };
+      const errorMessage = 'Database service unavailable for adding event.';
+      console.error(`[Server Action Error] addEvent: ${errorMessage}`);
+      return { success: false, message: errorMessage };
     }
     // TODO: Implement database interaction (e.g., add to Firestore 'events' collection)
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true };
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate DB interaction
+        console.log('[Server Action] Event added successfully (placeholder).');
+        return { success: true };
+    } catch(error: any) {
+      console.error('[Server Action Error] addEvent failed:', error.message);
+      return { success: false, message: 'Failed to add event.' };
+    }
 }

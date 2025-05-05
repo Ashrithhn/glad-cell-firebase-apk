@@ -13,16 +13,26 @@ import { participateInEvent } from './events'; // Import the existing participat
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
-if (!razorpayKeyId || !razorpayKeySecret) {
-  console.error("Razorpay API keys are not configured in environment variables.");
-  // Consider throwing an error in production or handling this case appropriately
-}
+let razorpay: Razorpay | null = null;
+let razorpayInitError: string | null = null;
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: razorpayKeyId!,
-  key_secret: razorpayKeySecret!,
-});
+if (!razorpayKeyId || !razorpayKeySecret) {
+  razorpayInitError = "Razorpay API keys are not configured in environment variables.";
+  console.error(`[Server Action Init Error] payment.ts: ${razorpayInitError}`);
+} else {
+  try {
+    // Initialize Razorpay instance
+    razorpay = new Razorpay({
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret,
+    });
+    console.log('[Server Action Init] payment.ts: Razorpay initialized successfully.');
+  } catch (error: any) {
+    razorpayInitError = `Failed to initialize Razorpay: ${error.message}`;
+    console.error(`[Server Action Init Error] payment.ts: ${razorpayInitError}`);
+    razorpay = null; // Ensure instance is null on error
+  }
+}
 
 /**
  * Creates a Razorpay order.
@@ -34,8 +44,12 @@ export async function createRazorpayOrderAction(orderData: {
   currency: string;
   receipt: string;
 }): Promise<{ success: boolean; orderId?: string; amount?: number; currency?: string; message?: string }> {
+  console.log('[Server Action] createRazorpayOrderAction invoked.');
+
   if (!razorpay) {
-       return { success: false, message: 'Razorpay not initialized.' };
+       const errorMessage = `Razorpay not initialized. ${razorpayInitError || ''}`;
+       console.error(`[Server Action Error] createRazorpayOrderAction: ${errorMessage}`);
+       return { success: false, message: errorMessage };
   }
 
   const options = {
@@ -44,13 +58,13 @@ export async function createRazorpayOrderAction(orderData: {
     receipt: orderData.receipt,
   };
 
-  console.log('Creating Razorpay order with options:', options);
+  console.log('[Server Action] Creating Razorpay order with options:', options);
 
   try {
     const order = await razorpay.orders.create(options);
-    console.log('Razorpay Order Created:', order);
+    console.log('[Server Action] Razorpay Order Created:', order);
     if (!order || !order.id) {
-        throw new Error('Failed to create Razorpay order (Invalid response).')
+        throw new Error('Failed to create Razorpay order (Invalid response).');
     }
     return {
       success: true,
@@ -58,8 +72,8 @@ export async function createRazorpayOrderAction(orderData: {
       amount: order.amount,
       currency: order.currency,
     };
-  } catch (error) {
-    console.error('Error creating Razorpay order:', error);
+  } catch (error: any) {
+    console.error('[Server Action Error] Error creating Razorpay order:', error.message, error.stack); // Log stack too
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during order creation.';
     return { success: false, message: `Failed to create payment order: ${errorMessage}` };
   }
@@ -85,9 +99,15 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
   semester: number;
   registrationNumber: string;
 }): Promise<{ success: boolean; message?: string }> {
+    console.log('[Server Action] verifyPaymentAndParticipateAction invoked.');
+
+    // Check razorpayKeySecret specifically needed for verification
     if (!razorpayKeySecret) {
-      return { success: false, message: 'Razorpay key secret not configured for verification.' };
+      const errorMessage = 'Razorpay key secret not configured for verification.';
+      console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${errorMessage}`);
+      return { success: false, message: errorMessage };
     }
+
     const {
         razorpay_order_id,
         razorpay_payment_id,
@@ -98,10 +118,12 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
 
     // Basic validation
     if (!userId) {
-        return { success: false, message: 'User ID is missing for verification.' };
+        const errorMessage = 'User ID is missing for verification.';
+        console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${errorMessage}`);
+        return { success: false, message: errorMessage };
     }
 
-    console.log('Verifying Razorpay payment:', { razorpay_order_id, razorpay_payment_id, userId });
+    console.log('[Server Action] Verifying Razorpay payment:', { razorpay_order_id, razorpay_payment_id, userId });
 
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 
@@ -111,10 +133,13 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
         .update(body.toString())
         .digest('hex');
 
+        console.log(`[Server Action] Generated Signature: ${expectedSignature}`);
+        console.log(`[Server Action] Received Signature: ${razorpay_signature}`);
+
         const isAuthentic = expectedSignature === razorpay_signature;
 
         if (isAuthentic) {
-            console.log('Payment Signature Verified Successfully.');
+            console.log('[Server Action] Payment Signature Verified Successfully for order:', razorpay_order_id);
 
             // Payment is verified, now record participation
             const participationResult = await participateInEvent({
@@ -128,18 +153,22 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
             });
 
             if (participationResult.success) {
-                console.log('Participation recorded successfully for order:', razorpay_order_id);
+                console.log('[Server Action] Participation recorded successfully for order:', razorpay_order_id);
                 return { success: true, message: 'Payment verified and participation recorded.' };
             } else {
-                console.error('Payment verified but failed to record participation for order:', razorpay_order_id, participationResult.message);
-                return { success: false, message: `Payment verified, but failed to record participation: ${participationResult.message || 'Unknown error'}` };
+                // Critical: Payment succeeded but DB write failed. Log this clearly.
+                const dbErrorMessage = `Payment verified BUT failed to record participation for order: ${razorpay_order_id}. Reason: ${participationResult.message || 'Unknown database error'}`;
+                console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${dbErrorMessage}`);
+                // Return specific error about DB failure after successful payment
+                return { success: false, message: `Payment successful, but failed to save participation record. Please contact support with Order ID: ${razorpay_order_id}.` };
             }
         } else {
-            console.warn('Payment Signature Verification Failed for order:', razorpay_order_id);
+            const verificationFailMessage = `Payment Signature Verification Failed for order: ${razorpay_order_id}`;
+            console.warn(`[Server Action Warning] verifyPaymentAndParticipateAction: ${verificationFailMessage}`);
             return { success: false, message: 'Payment verification failed: Invalid signature.' };
         }
-    } catch (error) {
-        console.error('Error during payment verification or participation recording:', error);
+    } catch (error: any) {
+        console.error('[Server Action Error] Error during payment verification or participation recording:', error.message, error.stack);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { success: false, message: `Verification/Participation failed: ${errorMessage}` };
     }
