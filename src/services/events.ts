@@ -1,9 +1,30 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined db and error
 import type { User } from 'firebase/auth';
+
+/**
+ * Represents the structure of event/program data stored in Firestore.
+ * Matches the structure defined in services/admin.ts
+ */
+export interface EventData {
+    id?: string; // Added during retrieval
+    name: string;
+    description: string;
+    venue: string;
+    rules?: string;
+    startDate: Timestamp | string; // Store as Timestamp, handle ISO string input/output
+    endDate: Timestamp | string;   // Store as Timestamp, handle ISO string input/output
+    registrationDeadline?: Timestamp | string | null;
+    eventType: 'individual' | 'group';
+    minTeamSize?: number | null;
+    maxTeamSize?: number | null;
+    fee: number; // Fee in Paisa
+    createdAt?: Timestamp | string;
+}
+
 
 /**
  * Records event participation in Firestore.
@@ -78,7 +99,6 @@ export async function participateInEvent(participationData: {
 /**
  * Fetches user profile data from Firestore.
  * Assumes the user is authenticated on the client.
- * Note: This function might be better placed in auth.ts or a dedicated user service.
  */
  export async function getUserProfile(userId: string): Promise<{ success: boolean; data?: any; message?: string }> {
      console.log('[Server Action] getUserProfile invoked for user:', userId);
@@ -114,6 +134,11 @@ export async function participateInEvent(participationData: {
              if (data.createdAt && data.createdAt instanceof Timestamp) {
                data.createdAt = data.createdAt.toDate().toISOString();
              }
+              // Convert other timestamps if they exist (though not currently defined in schema)
+              if (data.updatedAt && data.updatedAt instanceof Timestamp) {
+                  data.updatedAt = data.updatedAt.toDate().toISOString();
+              }
+
 
              return { success: true, data: data };
          } else {
@@ -126,3 +151,65 @@ export async function participateInEvent(participationData: {
          return { success: false, message: `Failed to fetch user profile: ${error.message || 'Unknown database error'}` };
      }
  }
+
+
+/**
+ * Fetches all events/programs from the 'events' collection in Firestore, ordered by creation date.
+ * Renamed from getPrograms.
+ */
+export async function getEvents(): Promise<{ success: boolean; events?: EventData[]; message?: string }> {
+    console.log('[Server Action] getEvents invoked.');
+
+    if (initializationError) {
+      const errorMessage = `Event service unavailable: Firebase initialization error - ${initializationError.message}.`;
+      console.error(`[Server Action Error] getEvents: ${errorMessage}`);
+      return { success: false, message: errorMessage };
+    }
+    if (!db) {
+      const errorMessage = 'Event service unavailable: Firestore service instance missing.';
+      console.error(`[Server Action Error] getEvents: ${errorMessage}`);
+      return { success: false, message: errorMessage };
+    }
+
+    try {
+        const eventsQuery = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(eventsQuery);
+
+        const events: EventData[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+
+            // Convert Firestore Timestamps to ISO strings for client compatibility
+            const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
+                 if (timestamp instanceof Timestamp) {
+                    return timestamp.toDate().toISOString();
+                 }
+                 // If it's already a string or null/undefined, return as is (or null)
+                 return typeof timestamp === 'string' ? timestamp : null;
+            }
+
+            events.push({
+                id: doc.id,
+                name: data.name,
+                description: data.description,
+                venue: data.venue,
+                rules: data.rules,
+                startDate: convertTimestamp(data.startDate)!, // Assuming startDate is required and valid
+                endDate: convertTimestamp(data.endDate)!,     // Assuming endDate is required and valid
+                registrationDeadline: convertTimestamp(data.registrationDeadline),
+                eventType: data.eventType,
+                minTeamSize: data.minTeamSize,
+                maxTeamSize: data.maxTeamSize,
+                fee: data.fee,
+                createdAt: convertTimestamp(data.createdAt),
+            });
+        });
+
+        console.log(`[Server Action] getEvents: Fetched ${events.length} items.`);
+        return { success: true, events };
+
+    } catch (error: any) {
+        console.error('[Server Action Error] Error fetching events from Firestore:', error.code, error.message, error.stack);
+        return { success: false, message: `Could not fetch items due to a database error: ${error.message || 'Unknown error'}` };
+    }
+}

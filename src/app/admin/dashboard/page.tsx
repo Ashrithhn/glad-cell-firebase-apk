@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, GraduationCap } from 'lucide-react'; // Added icons
+import { PlusCircle, Users, Lightbulb, Activity, Settings } from 'lucide-react'; // Changed GraduationCap to Activity, removed duplicate Activity
 
 // In a real app, this page should be protected and only accessible to logged-in admins.
 // You would typically use middleware or a higher-order component for authentication checks.
@@ -16,45 +16,24 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Program Management Card */}
-        <Card>
-          <CardHeader>
-             <CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> Manage Programs</CardTitle>
-            <CardDescription>Add, edit, or remove programs and initiatives.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             {/* Link to view/manage existing programs */}
-            <Button asChild variant="secondary" className="mb-2 w-full">
-              <Link href="/admin/programs">
-                View/Manage Programs
-              </Link>
-            </Button>
-            {/* Link to add a new program */}
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/admin/programs/new">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Program
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
 
-        {/* Event Management Card */}
+        {/* Event/Program Management Card - Consolidated */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Manage Events</CardTitle>
-            <CardDescription>Create and manage upcoming events like competitions, workshops.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Manage Programs &amp; Events</CardTitle>
+            <CardDescription>Add, edit, or remove programs, events, competitions, workshops.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Link to view/manage existing events */}
+            {/* Link to view/manage existing events/programs */}
             <Button asChild variant="secondary" className="mb-2 w-full">
                <Link href="/admin/events">
-                 View/Manage Events
+                 View/Manage List
                </Link>
             </Button>
-            {/* Link to add a new event */}
+            {/* Link to add a new event/program */}
              <Button asChild variant="outline" className="w-full">
                <Link href="/admin/events/new">
-                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Event
+                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                </Link>
             </Button>
           </CardContent>
@@ -91,6 +70,23 @@ export default function AdminDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Settings Card (Optional) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5"/> Site Settings</CardTitle>
+            <CardDescription>Manage general site configurations.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Placeholder content or link to settings */}
+             <Button asChild variant="outline" className="w-full" disabled>
+               <Link href="/admin/settings"> {/* Placeholder Link */}
+                 Configure Settings (soon)
+               </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
 
         {/* Add more cards for other admin functions as needed */}
 

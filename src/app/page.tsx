@@ -2,24 +2,27 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle } from 'lucide-react';
-import { getPrograms } from '@/services/programs'; // Import the service function
-import type { ProgramData } from '@/services/programs'; // Import the type
+import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin } from 'lucide-react'; // Added MapPin
+import { getEvents } from '@/services/events'; // Import the renamed service function
+import type { EventData } from '@/services/events'; // Import the renamed type
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { format, parseISO } from 'date-fns'; // For date formatting
 
-// Fetch programs data on the server
-async function loadPrograms(): Promise<{ programs?: ProgramData[], error?: string }> {
-    const result = await getPrograms();
-    if (result.success) {
-        // Limit to maybe 1 or 2 most recent programs for the homepage
-        return { programs: result.programs?.slice(0, 1) }; // Show only the latest program/event
+// Fetch events data on the server
+async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }> {
+    const result = await getEvents(); // Use the renamed function
+    if (result.success && result.events && result.events.length > 0) {
+        // Assuming the first event is the latest due to Firestore ordering
+        return { event: result.events[0] };
+    } else if (!result.success) {
+        return { error: result.message || 'Failed to load events.' };
     } else {
-        return { error: result.message || 'Failed to load programs.' };
+        return { event: undefined }; // No events found
     }
 }
 
 export default async function Home() {
-  const { programs, error } = await loadPrograms();
+  const { event, error } = await loadLatestEvent();
 
   return (
     <div className="flex flex-col items-center justify-center space-y-12">
@@ -62,28 +65,35 @@ export default async function Home() {
              {error && (
                  <Alert variant="destructive" className="mt-2">
                      <AlertCircle className="h-4 w-4" />
-                     <AlertTitle>Could not load program</AlertTitle>
+                     <AlertTitle>Could not load event</AlertTitle>
                      <AlertDescription>{error}</AlertDescription>
                  </Alert>
              )}
-             {!error && programs && programs.length > 0 ? (
-                programs.map(program => ( // Display the latest program found
-                 <div key={program.id}>
-                    <p className="font-medium text-primary">{program.name}</p>
-                    <CardDescription className='mt-1'>
-                      {program.description.substring(0, 100)}{program.description.length > 100 ? '...' : ''} {/* Show short description */}
+             {!error && event ? (
+                 <div key={event.id} className='space-y-2'>
+                    <p className="font-medium text-primary text-lg">{event.name}</p>
+                     {/* Display Dates */}
+                     <p className="text-sm text-muted-foreground flex items-center gap-1">
+                         <CalendarCheck className="h-4 w-4 flex-shrink-0"/>
+                         {event.startDate ? format(parseISO(event.startDate as string), 'MMM d, yyyy') : 'N/A'}
+                         {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate as string), 'MMM d, yyyy')}` : ''}
+                     </p>
+                     {/* Display Venue */}
+                     <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-4 w-4 flex-shrink-0" />
+                        {event.venue || 'Venue TBD'}
+                     </p>
+                    <CardDescription className='mt-1 pt-2 border-t line-clamp-2'> {/* Show short description */}
+                      {event.description}
                     </CardDescription>
-                     {/* Display date if it exists (assuming events also use this structure or adapt as needed) */}
-                     {/* <p className="text-muted-foreground">Date: May 12, 2025</p> */}
                  </div>
-                ))
              ) : !error ? (
-                <p className="text-muted-foreground italic">No upcoming programs announced yet.</p>
-             ) : null /* Don't show 'No programs' if there was an error */}
+                <p className="text-muted-foreground italic">No upcoming programs or events announced yet.</p>
+             ) : null /* Don't show 'No items' if there was an error */}
 
-             <Button variant="outline" asChild>
+             <Button variant="outline" asChild className='mt-4'>
                <Link href="/programs">
-                 View All Programs <ArrowRight className="ml-2 h-4 w-4" />
+                 View All Programs &amp; Events <ArrowRight className="ml-2 h-4 w-4" />
                </Link>
              </Button>
            </CardContent>

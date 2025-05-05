@@ -26,21 +26,22 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Loader2, MapPin } from "lucide-react" // Added MapPin
 
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 import { addEvent } from '@/services/admin'; // Updated service import path
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth'; // For admin check
 
-// Define the validation schema using Zod
+// Define the validation schema using Zod, adding venue and registrationDeadline
 const formSchema = z.object({
-  name: z.string().min(3, { message: 'Event name must be at least 3 characters.' }).max(150),
+  name: z.string().min(3, { message: 'Name must be at least 3 characters.' }).max(150),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }).max(1000),
-  rules: z.string().optional(), // Rules are optional
+  venue: z.string().min(3, { message: 'Venue/Location must be at least 3 characters.'}).max(150), // Added venue
+  rules: z.string().optional(),
   startDate: z.date({ required_error: "A start date is required." }),
   endDate: z.date({ required_error: "An end date is required." }),
+  registrationDeadline: z.date().optional(), // Added optional registration deadline
   eventType: z.enum(['individual', 'group'], { required_error: "You must select an event type." }),
   minTeamSize: z.coerce.number().min(1).optional(),
   maxTeamSize: z.coerce.number().min(1).optional(),
@@ -53,7 +54,7 @@ const formSchema = z.object({
     return true;
   }, {
     message: 'Minimum and maximum team size are required for group events.',
-    path: ['minTeamSize'], // Attach error message somewhat arbitrarily
+    path: ['minTeamSize'],
   }).refine(data => {
       // Ensure min <= max if both are provided for group events
       if (data.eventType === 'group' && data.minTeamSize && data.maxTeamSize) {
@@ -69,6 +70,15 @@ const formSchema = z.object({
   }, {
       message: 'End date cannot be before the start date.',
       path: ['endDate'],
+  }).refine(data => {
+      // Ensure registration deadline is not after the start date, if provided
+      if (data.registrationDeadline) {
+          return data.registrationDeadline <= data.startDate;
+      }
+      return true;
+  }, {
+      message: 'Registration deadline cannot be after the event start date.',
+      path: ['registrationDeadline'],
   });
 
 
@@ -84,10 +94,12 @@ export function AddEventForm() {
     defaultValues: {
       name: '',
       description: '',
+      venue: '', // Added venue default
       rules: '',
       startDate: undefined,
       endDate: undefined,
-      eventType: undefined, // Initially undefined
+      registrationDeadline: undefined, // Added deadline default
+      eventType: undefined,
       minTeamSize: undefined,
       maxTeamSize: undefined,
       fee: 0,
@@ -100,7 +112,7 @@ export function AddEventForm() {
 
      // Basic check if user is admin (enhance with server-side check)
     if (!isAdmin) {
-        toast({ title: "Unauthorized", description: "You do not have permission to add events.", variant: "destructive" });
+        toast({ title: "Unauthorized", description: "You do not have permission to add items.", variant: "destructive" });
         setIsSubmitting(false);
         return;
     }
@@ -110,29 +122,30 @@ export function AddEventForm() {
       const dataToSend = {
         ...values,
         fee: Math.round(values.fee * 100), // Convert rupees to paisa
-        // Convert dates to ISO strings for Firestore compatibility if needed, or let Firestore handle Timestamp
+        // Convert dates to ISO strings for Firestore compatibility
         startDate: values.startDate.toISOString(),
         endDate: values.endDate.toISOString(),
+        registrationDeadline: values.registrationDeadline?.toISOString(), // Optional deadline
       };
 
       const result = await addEvent(dataToSend); // Call the server action
 
       if (result.success) {
         toast({
-          title: 'Event Added Successfully!',
-          description: `Event "${values.name}" has been created.`,
+          title: 'Item Added Successfully!',
+          description: `"${values.name}" has been created.`,
           variant: 'default',
         });
         form.reset(); // Clear the form
         router.push('/admin/events'); // Redirect to the events list
-        router.refresh(); // Optional: Force refresh data on the target page
+        router.refresh(); // Force refresh data on the target page
       } else {
-        throw new Error(result.message || 'Failed to add event.');
+        throw new Error(result.message || 'Failed to add item.');
       }
     } catch (error) {
       console.error('[Admin Add Event] Error:', error);
       toast({
-        title: 'Failed to Add Event',
+        title: 'Failed to Add Item',
         description: error instanceof Error ? error.message : 'An unexpected error occurred.',
         variant: 'destructive',
       });
@@ -155,9 +168,9 @@ export function AddEventForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Event Name</FormLabel>
+                <FormLabel>Name (Program/Event)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Annual Hackathon 2025" {...field} />
+                  <Input placeholder="e.g., Annual Hackathon 2025, Mentorship Program" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -171,7 +184,24 @@ export function AddEventForm() {
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Describe the event, its goals, target audience, etc." {...field} rows={5} />
+                  <Textarea placeholder="Describe the item, its goals, target audience, etc." {...field} rows={5} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="venue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Venue / Location</FormLabel>
+                <FormControl>
+                   <div className="relative">
+                     <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                     <Input placeholder="e.g., College Auditorium, Online via Meet" className="pl-10" {...field} />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -183,12 +213,12 @@ export function AddEventForm() {
             name="rules"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rules (Optional)</FormLabel>
+                <FormLabel>Rules / Guidelines (Optional)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter event rules, guidelines, judging criteria, etc. (One rule per line recommended)" {...field} rows={5} />
+                  <Textarea placeholder="Enter specific rules, judging criteria, program structure, etc. (One point per line recommended)" {...field} rows={5} />
                 </FormControl>
                  <FormDescription>
-                   Detailed rules and regulations for participants.
+                   Detailed information for participants or attendees.
                  </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -196,7 +226,7 @@ export function AddEventForm() {
           />
 
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                <FormField
                  control={form.control}
                  name="startDate"
@@ -209,16 +239,16 @@ export function AddEventForm() {
                            <Button
                              variant={"outline"}
                              className={cn(
-                               "w-full pl-3 text-left font-normal",
+                               "w-full justify-start text-left font-normal",
                                !field.value && "text-muted-foreground"
                              )}
                            >
+                             <CalendarIcon className="mr-2 h-4 w-4" />
                              {field.value ? (
                                format(field.value, "PPP")
                              ) : (
-                               <span>Pick a start date</span>
+                               <span>Pick start date</span>
                              )}
-                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                            </Button>
                          </FormControl>
                        </PopoverTrigger>
@@ -250,16 +280,16 @@ export function AddEventForm() {
                            <Button
                              variant={"outline"}
                              className={cn(
-                               "w-full pl-3 text-left font-normal",
+                               "w-full justify-start text-left font-normal",
                                !field.value && "text-muted-foreground"
                              )}
                            >
+                             <CalendarIcon className="mr-2 h-4 w-4" />
                              {field.value ? (
                                format(field.value, "PPP")
                              ) : (
-                               <span>Pick an end date</span>
+                               <span>Pick end date</span>
                              )}
-                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                            </Button>
                          </FormControl>
                        </PopoverTrigger>
@@ -281,6 +311,50 @@ export function AddEventForm() {
                    </FormItem>
                  )}
                />
+                <FormField
+                 control={form.control}
+                 name="registrationDeadline"
+                 render={({ field }) => (
+                   <FormItem className="flex flex-col">
+                     <FormLabel>Registration Deadline (Opt.)</FormLabel>
+                      <Popover>
+                       <PopoverTrigger asChild>
+                         <FormControl>
+                           <Button
+                             variant={"outline"}
+                             className={cn(
+                               "w-full justify-start text-left font-normal",
+                               !field.value && "text-muted-foreground"
+                             )}
+                           >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                             {field.value ? (
+                               format(field.value, "PPP")
+                             ) : (
+                               <span>Pick deadline (optional)</span>
+                             )}
+                           </Button>
+                         </FormControl>
+                       </PopoverTrigger>
+                       <PopoverContent className="w-auto p-0" align="start">
+                         <Calendar
+                           mode="single"
+                           selected={field.value}
+                           onSelect={field.onChange}
+                            disabled={(date) =>
+                              // Disable dates before today or after the start date
+                              date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                              (form.getValues("startDate") && date > form.getValues("startDate"))
+                            }
+                           initialFocus
+                         />
+                       </PopoverContent>
+                     </Popover>
+                      <FormDescription className="text-xs">Last day to register, if applicable.</FormDescription>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
            </div>
 
 
@@ -289,7 +363,7 @@ export function AddEventForm() {
              name="eventType"
              render={({ field }) => (
                <FormItem className="space-y-3">
-                 <FormLabel>Event Type</FormLabel>
+                 <FormLabel>Participation Type</FormLabel>
                  <FormControl>
                    <RadioGroup
                      onValueChange={field.onChange}
@@ -301,7 +375,7 @@ export function AddEventForm() {
                          <RadioGroupItem value="individual" />
                        </FormControl>
                        <FormLabel className="font-normal">
-                         Individual Participation
+                         Individual
                        </FormLabel>
                      </FormItem>
                      <FormItem className="flex items-center space-x-3 space-y-0">
@@ -309,7 +383,7 @@ export function AddEventForm() {
                          <RadioGroupItem value="group" />
                        </FormControl>
                        <FormLabel className="font-normal">
-                         Team/Group Participation
+                         Team/Group
                        </FormLabel>
                      </FormItem>
                    </RadioGroup>
@@ -321,7 +395,7 @@ export function AddEventForm() {
 
            {/* Conditional Fields for Group Events */}
            {eventType === 'group' && (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md bg-muted/50">
                 <FormField
                  control={form.control}
                  name="minTeamSize"
@@ -356,13 +430,13 @@ export function AddEventForm() {
             name="fee"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Participation Fee (INR)</FormLabel>
+                <FormLabel>Fee (INR)</FormLabel>
                  <FormControl>
                    {/* Use type="number" and step for currency */}
                    <Input type="number" step="0.01" min="0" placeholder="Enter fee in Rupees (e.g., 100.00 or 0 for free)" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                  </FormControl>
                  <FormDescription>
-                   Enter 0 for a free event. The amount will be processed in Paisa via Razorpay.
+                   Enter 0 for free items. Processed in Paisa via Razorpay if applicable.
                  </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -376,13 +450,13 @@ export function AddEventForm() {
           <Button type="submit" className="w-full sm:w-auto" disabled={isDisabled}>
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding Event...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding Item...
               </>
             ) : (
-              'Add Event'
+              'Add Item'
             )}
           </Button>
-           {!isAdmin && !authLoading && <p className="text-sm text-destructive mt-2">Only administrators can add events.</p>}
+           {!isAdmin && !authLoading && <p className="text-sm text-destructive mt-2">Only administrators can add items.</p>}
         </div>
       </form>
     </Form>

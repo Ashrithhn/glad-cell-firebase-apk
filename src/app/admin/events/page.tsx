@@ -2,53 +2,60 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, List } from 'lucide-react';
+import { PlusCircle, List, ArrowLeft, AlertCircle, Calendar } from 'lucide-react';
+import { getEvents } from '@/services/events'; // Import the renamed service function
+import type { EventData } from '@/services/events'; // Import the renamed type
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { EventListClient } from '@/components/features/admin/event-list-client'; // Import the new client component
 
-// TODO: Fetch events data from Firestore
-const sampleEvents = [
-  { id: 'kickstart-2025', name: 'Startup Ideation Kickstart', date: '2025-05-12', fee: 10000 },
-  { id: 'hackathon-fall-2025', name: 'Fall Hackathon 2025', date: '2025-10-20', fee: 0 },
-];
+// Fetch event data from Firestore on the server
+async function loadEvents(): Promise<{ events?: EventData[], error?: string }> {
+    const result = await getEvents(); // Use the renamed function
+    if (result.success) {
+        return { events: result.events };
+    } else {
+        return { error: result.message || 'Failed to load events.' };
+    }
+}
 
-export default function AdminManageEventsPage() {
+export default async function AdminManageEventsPage() {
+  const { events, error } = await loadEvents();
+
   return (
     <div className="container mx-auto py-12 px-4">
+       <Button asChild variant="outline" className="mb-4">
+         <Link href="/admin/dashboard">
+            <ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard
+         </Link>
+       </Button>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-primary">Manage Events</h1>
+        <h1 className="text-3xl font-bold text-primary">Manage Programs &amp; Events</h1>
         <Button asChild variant="default">
           <Link href="/admin/events/new">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Event
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
           </Link>
         </Button>
       </div>
 
+      {error && (
+         <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Events</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+         </Alert>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><List className="h-5 w-5"/> Existing Events</CardTitle>
-          <CardDescription>List of current and past events.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><List className="h-5 w-5"/> Existing Items</CardTitle>
+          <CardDescription>List of current programs and events.</CardDescription>
         </CardHeader>
         <CardContent>
-          {sampleEvents.length > 0 ? (
-            <ul className="space-y-4">
-              {sampleEvents.map((event) => (
-                <li key={event.id} className="flex justify-between items-center p-4 border rounded-md hover:bg-muted/50">
-                  <div>
-                    <p className="font-semibold">{event.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Date: {event.date} | Fee: ₹{event.fee / 100}
-                    </p>
-                  </div>
-                  <div>
-                    {/* TODO: Add Edit/Delete buttons and functionality */}
-                    <Button variant="outline" size="sm" disabled className="mr-2">Edit (soon)</Button>
-                    <Button variant="destructive" size="sm" disabled>Delete (soon)</Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground text-center">No events found.</p>
-          )}
+          {!error && events ? (
+            <EventListClient events={events} /> // Use client component to display list and handle delete
+          ) : !error ? (
+            <p className="text-muted-foreground text-center">No items found.</p>
+          ) : null /* Don't show 'No items' if there was an error */}
         </CardContent>
       </Card>
     </div>
