@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -30,7 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authError, setAuthError] = useState<Error | null>(initializationError); // Track Firebase init error
 
   useEffect(() => {
-    setAuthError(initializationError); // Update error state if config re-evaluates (though unlikely)
+    setAuthError(initializationError); // Update error state if config re-evaluates
 
     let unsubscribe: (() => void) | undefined = undefined;
 
@@ -52,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         setLoading(false);
-        console.log('Auth State Changed:', currentUser?.uid || 'Logged out');
+        // console.log('Auth State Changed:', currentUser?.uid || 'Logged out');
 
         // Dispatch authChange event for components using older localStorage method (like Header)
         if (typeof window !== 'undefined') {
@@ -60,10 +61,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         });
     } else if (initializationError) {
-        console.error(`[useAuth] Firebase initialization failed: ${initializationError.message}. Cannot subscribe to auth state changes.`);
+        // Use console.warn instead of console.error for a less severe log level
+        console.warn(`[useAuth] Firebase initialization failed: ${initializationError.message}. Cannot subscribe to auth state changes.`);
         setLoading(false); // Stop loading as auth is unavailable
     } else {
-        console.error('[useAuth] Firebase auth instance is missing and no initialization error recorded. Check Firebase config.');
+        console.warn('[useAuth] Firebase auth instance is missing and no initialization error recorded. Check Firebase config.');
         setLoading(false); // Stop loading if auth is not available
     }
 
@@ -88,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Cleanup subscription on unmount
     return () => {
         if (unsubscribe) {
-            console.log('[useAuth] Unsubscribing from auth state changes.');
+            // console.log('[useAuth] Unsubscribing from auth state changes.');
             unsubscribe();
         }
         window.removeEventListener('storage', handleStorageChange);
@@ -137,11 +139,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Handle logout error if necessary, e.g., show a toast
         }
     } else if (authError) {
-        console.error(`[useAuth Logout] Cannot logout, Firebase auth error: ${authError.message}`);
+        console.warn(`[useAuth Logout] Cannot logout, Firebase auth error: ${authError.message}`); // Changed to warn
         setLoading(false);
     }
      else {
-        console.error('[useAuth Logout] Firebase auth instance is missing. Cannot perform logout.');
+        console.warn('[useAuth Logout] Firebase auth instance is missing. Cannot perform logout.'); // Changed to warn
         setLoading(false); // Stop loading if logout cannot be performed
     }
 
@@ -178,3 +180,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
