@@ -46,6 +46,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        // Add suppressHydrationWarning to ignore attributes added by browser extensions
+        suppressHydrationWarning
         {...props}
       />
     )
