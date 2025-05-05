@@ -23,30 +23,45 @@ let authInstance: Auth | undefined;
 let dbInstance: Firestore | undefined;
 let initializationError: Error | null = null;
 
-console.log("--- Firebase Config Loading ---");
+// --- Initialization ---
+console.log("--- Firebase Config Loading ---"); // Log start of file execution
 
-// --- Validation ---
+// Check for required config values
 if (!firebaseConfig.apiKey) {
-  initializationError = new Error("Firebase API Key is missing.");
-  console.error("🔴 Firebase Config Error: API Key MISSING. Check NEXT_PUBLIC_FIREBASE_API_KEY in .env.local and restart server.");
+    initializationError = new Error("Firebase API Key is missing.");
+    // Log detailed error for developer, especially on server
+    if (typeof window === 'undefined') {
+        console.error("-----------------------------------------------------");
+        console.error("🔴 [Server] Firebase Config Error: API Key is MISSING or invalid.");
+        console.error("🔴 [Server] Ensure 'NEXT_PUBLIC_FIREBASE_API_KEY' is correctly set in your .env.local file.");
+        console.error("🔴 [Server] IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
+        console.error("-----------------------------------------------------");
+    }
 } else {
-  if (typeof window === 'undefined') {
-    console.log("[Server] ✅ Firebase Config: API Key found.");
-  }
+    if (typeof window === 'undefined') {
+        console.log("[Server] ✅ Firebase Config: API Key environment variable found.");
+    }
 }
 
 if (!firebaseConfig.projectId) {
-  if (!initializationError) { // Don't overwrite the first error
-    initializationError = new Error("Firebase Project ID is missing.");
-  }
-  console.error("🔴 Firebase Config Error: Project ID MISSING. Check NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local and restart server.");
+    if (!initializationError) { // Don't overwrite the first error
+        initializationError = new Error("Firebase Project ID is missing.");
+    }
+     if (typeof window === 'undefined') {
+        console.error("-----------------------------------------------------");
+        console.error("🔴 [Server] Firebase Config Error: Project ID is MISSING or invalid.");
+        console.error("🔴 [Server] Ensure 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' is set in your .env.local file.");
+        console.error("🔴 [Server] IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
+        console.error("-----------------------------------------------------");
+    }
 } else {
-   if (typeof window === 'undefined') {
-     console.log(`[Server] ✅ Firebase Config: Project ID found: ${firebaseConfig.projectId}`);
-   }
+     if (typeof window === 'undefined') {
+        console.log(`[Server] ✅ Firebase Config: Project ID environment variable found: ${firebaseConfig.projectId}`);
+     }
 }
 
-// --- Initialization ---
+
+// Proceed with initialization only if no critical errors found yet
 if (!initializationError) {
   try {
     if (typeof window === 'undefined') {
@@ -55,13 +70,13 @@ if (!initializationError) {
 
     if (getApps().length === 0) {
       app = initializeApp(firebaseConfig);
-      if (typeof window === 'undefined') {
-          console.log("[Server] Initialized new Firebase app.");
-      }
+       if (typeof window === 'undefined') {
+         console.log("[Server] ✅ Initialized new Firebase app.");
+       }
     } else {
       app = getApp();
        if (typeof window === 'undefined') {
-           console.log("[Server] Using existing Firebase app.");
+          console.log("[Server] ✅ Using existing Firebase app.");
        }
     }
 
@@ -71,35 +86,31 @@ if (!initializationError) {
     // const analytics = getAnalytics(app); // Optional
 
     if (typeof window === 'undefined') {
-        console.log("[Server] ✅ Firebase services initialized successfully.");
+        console.log("[Server] ✅ Firebase services obtained successfully.");
     }
 
   } catch (error) {
-    const errorMessage = `Firebase initialization failed: ${error instanceof Error ? error.message : String(error)}`;
-    if (typeof window === 'undefined') {
-      console.error(`🔴 [Server] ${errorMessage}`);
-    } else {
-      // Log a single warning on the client for init failure
-      console.warn(`[Client] ${errorMessage}`);
-    }
+    // Capture any error during initializeApp or getAuth/getFirestore
     initializationError = error instanceof Error ? error : new Error(String(error));
-
-    // Clear instances if initialization failed - These MUST be 'let' declarations
+    // Clear instances if initialization failed
     app = undefined;
     authInstance = undefined;
     dbInstance = undefined;
+
+    // Log detailed error during initialization attempt
+    if (typeof window === 'undefined') {
+        console.error(`🔴 [Server] Firebase initialization failed during setup: ${initializationError.message}`);
+    }
   }
 } else {
-  // Log why initialization is skipped (only if an error was previously caught)
-  const skipMessage = `🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (e.g., NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set correctly in .env.local and restart the server.`;
-   if (typeof window === 'undefined') {
-       console.error(`[Server] ${skipMessage}`);
-   } else {
-       console.warn(`[Client] ${skipMessage}`); // Use warn on the client
-   }
+     // Log why initialization is skipped (both server and client)
+     // Keep this single error log to inform the developer.
+     console.error(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set in .env.local and restart the server.`);
 }
 
-console.log("--- Firebase Config Finished ---");
+
+console.log("--- Firebase Config Finished ---"); // Log end of file execution
 
 // Export the instances (they might be undefined) and the error status
+// Renaming exports for clarity (authInstance -> auth, dbInstance -> db)
 export { app, authInstance as auth, dbInstance as db, initializationError };
