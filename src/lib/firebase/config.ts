@@ -1,7 +1,10 @@
+
 import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 // import { getAnalytics } from "firebase/analytics"; // Optional
+
+console.log("--- Firebase Config Loading ---"); // Log start of file execution
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,50 +16,64 @@ const firebaseConfig: FirebaseOptions = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
 };
 
+// Log the environment variable value being read *before* validation checks
+console.log(`Reading NEXT_PUBLIC_FIREBASE_API_KEY: ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `Starts with '${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 5)}...'` : '**MISSING or UNDEFINED**'}`);
+console.log(`Reading NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '**MISSING or UNDEFINED**'}`);
+
 // Check if essential config values are present before initialization
+let hasError = false;
 if (!firebaseConfig.apiKey) {
     console.error("-----------------------------------------------------");
-    console.error("Firebase Config Error: API Key is MISSING.");
-    console.error("Ensure 'NEXT_PUBLIC_FIREBASE_API_KEY' is correctly set in your environment variables (.env.local).");
-    console.error("If running server-side actions, ensure the server process can access this variable.");
+    console.error("🔴 Firebase Config Error: API Key is MISSING or invalid.");
+    console.error("🔴 Ensure 'NEXT_PUBLIC_FIREBASE_API_KEY' is correctly set in your .env.local file.");
+    console.error("🔴 IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
     console.error("-----------------------------------------------------");
-    // Throwing an error might be too disruptive in dev, but is recommended for production builds.
-    // throw new Error("Firebase API Key is missing in environment configuration.");
+    hasError = true;
 } else {
-    console.log("Firebase Config: API Key found (starts with:", firebaseConfig.apiKey.substring(0, 5) + "...)");
+    console.log("✅ Firebase Config: API Key found.");
 }
 if (!firebaseConfig.projectId) {
     console.error("-----------------------------------------------------");
-    console.error("Firebase Config Error: Project ID is MISSING.");
-    console.error("Ensure 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' is set in your environment variables (.env.local).");
+    console.error("🔴 Firebase Config Error: Project ID is MISSING or invalid.");
+    console.error("🔴 Ensure 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' is set in your .env.local file.");
+    console.error("🔴 IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
     console.error("-----------------------------------------------------");
+    hasError = true;
 } else {
-    console.log("Firebase Config: Project ID found:", firebaseConfig.projectId);
+    console.log("✅ Firebase Config: Project ID found:", firebaseConfig.projectId);
 }
 // Add more checks as needed (e.g., authDomain)
 
+let app: FirebaseApp | undefined;
+let authInstance: Auth | undefined; // Use undefined initially
+let dbInstance: Firestore | undefined; // Use undefined initially
 
-let app: FirebaseApp;
-let authInstance: Auth; // Renamed to avoid conflict with exported 'auth'
-let dbInstance: Firestore; // Renamed to avoid conflict with exported 'db'
-
-try {
-  // Initialize Firebase
-  console.log("Attempting Firebase initialization..."); // Log before init
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  authInstance = getAuth(app);
-  dbInstance = getFirestore(app);
-  // const analytics = getAnalytics(app); // Optional
-  console.log("Firebase initialized successfully."); // Add log for confirmation
-} catch (error) {
-    console.error("-----------------------------------------------------");
-    console.error("Firebase initialization FAILED:", error);
-    console.error("-----------------------------------------------------");
-    // Depending on the app structure, you might want to throw the error
-    // or provide dummy/fallback instances if parts of the app can run without Firebase.
-    // Re-throwing to make the error clear during development.
-    throw new Error(`Firebase initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+if (!hasError) {
+    try {
+      // Initialize Firebase
+      console.log("Attempting Firebase initialization...");
+      app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+      authInstance = getAuth(app);
+      dbInstance = getFirestore(app);
+      // const analytics = getAnalytics(app); // Optional
+      console.log("✅ Firebase initialized successfully.");
+    } catch (error) {
+        console.error("-----------------------------------------------------");
+        console.error("🔴 Firebase initialization FAILED:", error);
+        console.error("🔴 This often happens if the API Key is incorrect even if present.");
+        console.error("🔴 Double-check the key value in Firebase Console -> Project Settings.");
+        console.error("-----------------------------------------------------");
+        // We will still export potentially undefined instances, but the error is logged.
+        // Re-throwing might stop the server entirely, logging is often better for diagnosis.
+        // throw new Error(`Firebase initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+        hasError = true; // Mark that initialization failed
+    }
+} else {
+     console.error("🔴 Skipping Firebase initialization due to missing configuration.");
 }
 
-// Export the initialized instances
+console.log("--- Firebase Config Finished ---"); // Log end of file execution
+
+// Export the instances (they might be undefined if initialization failed)
+// Consumers of these exports should handle the possibility of them being undefined.
 export { app, authInstance as auth, dbInstance as db };

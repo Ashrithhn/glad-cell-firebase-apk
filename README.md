@@ -17,7 +17,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
     This project uses Firebase for authentication and database services, and Razorpay for payments. You need to configure environment variables for these services.
 
-    *   Create a file named `.env.local` in the **root directory** of the project.
+    *   Create a file named `.env.local` in the **root directory** of the project (the same level as `package.json`).
     *   Add the following variables to the `.env.local` file, replacing the placeholder values with your actual keys:
 
         ```dotenv
@@ -45,11 +45,11 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     If you encounter a `FirebaseError: Firebase: Error (auth/invalid-api-key)` when running the application (especially server-side actions like login/register or accessing Firestore), it almost always means your `NEXT_PUBLIC_FIREBASE_API_KEY` is missing, incorrect, or not accessible by the Next.js server process.
 
     **Troubleshooting Steps:**
-    *   **Verify `.env.local`:** Ensure the `.env.local` file exists in the project's root directory (the same level as `package.json`).
+    *   **Verify `.env.local`:** Ensure the `.env.local` file exists in the project's **root directory** (the same level as `package.json`).
     *   **Check Variable Name:** Confirm the variable name is exactly `NEXT_PUBLIC_FIREBASE_API_KEY`.
-    *   **Check Key Value:** Double-check that the API key copied from your Firebase project settings is correct.
-    *   **Restart Server:** **You MUST restart your Next.js development server (`npm run dev`) after creating or modifying the `.env.local` file.** Next.js only loads environment variables at build/startup time.
-    *   **Server Access:** For server-side code (like Server Actions in `src/services`), ensure the server process itself can read the environment variables. In development (`npm run dev`), `.env.local` usually works. For deployments, consult your hosting provider's documentation on setting environment variables.
+    *   **Check Key Value:** Double-check that the API key copied from your Firebase project settings is correct. Make sure there are no extra spaces or characters.
+    *   **Restart Server:** **⭐️ YOU MUST RESTART your Next.js development server (`npm run dev`) after creating or modifying the `.env.local` file. ⭐️** Next.js only loads environment variables at build/startup time. This is the most common reason for this error!
+    *   **Server Access:** For server-side code (like Server Actions in `src/services`), ensure the server process itself can read the environment variables. In development (`npm run dev`), `.env.local` usually works if you restart the server. For deployments, consult your hosting provider's documentation on setting environment variables.
 
 3.  **Run the Development Server:**
     ```bash
@@ -60,7 +60,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     pnpm dev
     ```
 
-4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result.
+4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the terminal where you ran `npm run dev` for any error messages, especially Firebase configuration errors.
 
 ## Project Structure
 
