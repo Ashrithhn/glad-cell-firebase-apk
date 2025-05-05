@@ -51,6 +51,20 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     *   **Restart Server:** **⭐️ YOU MUST RESTART your Next.js development server (`npm run dev`) after creating or modifying the `.env.local` file. ⭐️** Next.js only loads environment variables at build/startup time. This is the most common reason for this error!
     *   **Server Access:** For server-side code (like Server Actions in `src/services`), ensure the server process itself can read the environment variables. In development (`npm run dev`), `.env.local` usually works if you restart the server. For deployments, consult your hosting provider's documentation on setting environment variables.
 
+    **🔴 IMPORTANT: Firebase `auth/configuration-not-found` Error 🔴**
+
+    If you encounter a `FirebaseError: Firebase: Error (auth/configuration-not-found)` when trying to **register or log in**, it means you haven't enabled the necessary sign-in method (like Email/Password) in your Firebase project.
+
+    **How to Fix:**
+    1.  Go to the [Firebase Console](https://console.firebase.google.com/).
+    2.  Select your project (`gladcell-baab0` or your project ID).
+    3.  In the left-hand menu, navigate to **Authentication**.
+    4.  Click the **Sign-in method** tab.
+    5.  Find **Email/Password** in the list of providers.
+    6.  Click the pencil icon (Edit) and **enable** the provider.
+    7.  Click **Save**.
+    8.  **Restart your Next.js development server (`npm run dev`)** if it was running.
+
 3.  **Run the Development Server:**
     ```bash
     npm run dev

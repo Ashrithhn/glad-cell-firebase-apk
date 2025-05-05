@@ -53,9 +53,11 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     if (error.code === 'auth/email-already-in-use') {
       message = 'This email address is already registered.';
     } else if (error.code === 'auth/weak-password') {
-      message = 'Password is too weak. It should be at least 8 characters.'; // Updated minimum length
+      message = 'Password is too weak. It should be at least 8 characters.';
     } else if (error.code === 'auth/invalid-api-key') {
         message = 'Invalid Firebase configuration. Please contact support.'; // More user-friendly message
+    } else if (error.code === 'auth/configuration-not-found') {
+        message = 'Firebase Authentication is not enabled for this project. Please contact support or check Firebase console setup.';
     } else if (error.code) {
         message = `Registration failed: ${error.code}`;
     }
@@ -88,6 +90,8 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
        message = 'Invalid email or password.';
      } else if (error.code === 'auth/invalid-api-key') {
          message = 'Invalid Firebase configuration. Please contact support.';
+     } else if (error.code === 'auth/configuration-not-found') {
+         message = 'Firebase Authentication is not enabled for this project. Please contact support or check Firebase console setup.';
      } else if (error.code) {
          message = `Login failed: ${error.code}`;
      }
@@ -101,7 +105,7 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
     // Check if Firebase Auth service is available
     if (!auth) {
-        console.error('Firebase Auth service is not available. Check configuration.');
+        console.warn('[logoutUser] Firebase Auth service is not available. Skipping logout.'); // Changed to warn
         return { success: false, message: 'Logout service unavailable.' };
     }
 
