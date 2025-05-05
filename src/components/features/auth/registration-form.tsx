@@ -44,7 +44,7 @@ export function RegistrationForm() {
     defaultValues: {
       name: '',
       branch: '',
-      semester: undefined, // Use undefined for number coercion
+      semester: '', // Initialize with empty string instead of undefined
       registrationNumber: '',
       email: '',
       collegeName: 'Government Engineering College Mosalehosahalli', // Pre-fill if applicable
@@ -99,7 +99,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your full name" {...field} />
+                    <Input placeholder="Enter your full name" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -112,7 +112,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,7 +125,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Unique Registration Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your USN or Reg No." {...field} />
+                    <Input placeholder="Enter your USN or Reg No." {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,7 +138,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Create a password" {...field} />
+                    <Input type="password" placeholder="Create a password" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -155,7 +155,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Branch</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Computer Science" {...field} />
+                    <Input placeholder="e.g., Computer Science" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,7 +168,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Semester</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" max="8" placeholder="Enter your current semester (1-8)" {...field} />
+                    <Input type="number" min="1" max="8" placeholder="Enter your current semester (1-8)" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +181,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>College Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -195,7 +195,7 @@ export function RegistrationForm() {
                   <FormItem>
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your city" {...field} />
+                      <Input placeholder="Enter your city" {...field} suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -208,7 +208,7 @@ export function RegistrationForm() {
                   <FormItem>
                     <FormLabel>Pincode</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter 6-digit pincode" {...field} />
+                      <Input placeholder="Enter 6-digit pincode" {...field} suppressHydrationWarning/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,7 +219,7 @@ export function RegistrationForm() {
 
           {/* Submit Button - Spanning both columns */}
           <div className="md:col-span-2 mt-4">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting} suppressHydrationWarning>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registering...

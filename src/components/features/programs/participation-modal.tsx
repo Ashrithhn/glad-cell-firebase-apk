@@ -74,7 +74,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
       email: '',
       phone: '',
       branch: '',
-      semester: undefined,
+      semester: '', // Initialize with empty string instead of undefined
       registrationNumber: '',
     },
   });
@@ -174,6 +174,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                 title: 'Participation Recorded!',
                 description: `You are now registered for ${eventDetails.name}.`,
                 variant: 'default',
+                className: 'bg-accent text-accent-foreground', // Use accent color for success
               });
               form.reset(); // Reset form fields
               onClose(); // Close the modal
@@ -204,7 +205,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
           semester: values.semester.toString(),
         },
         theme: {
-          color: '#2563EB', // Primary color (Tailwind blue-600)
+          color: '#007BFF', // Use Primary color from theme
         },
         modal: {
             ondismiss: function() {
