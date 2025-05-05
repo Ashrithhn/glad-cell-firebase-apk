@@ -28,10 +28,10 @@ export function Header() {
   const isLoggedIn = !!userId || isAdmin;
 
   // Hide header on specific pages
-  const hiddenPaths = ['/login', '/register', '/admin/login', '/welcome']; // Add welcome if it exists
-  if (hiddenPaths.includes(pathname)) {
-    return null;
-  }
+  // const hiddenPaths = ['/login', '/register', '/admin/login', '/welcome']; // Add welcome if it exists
+  // if (hiddenPaths.includes(pathname)) {
+  //   return null;
+  // }
 
   const handleLogout = async () => {
     try {
@@ -106,18 +106,18 @@ export function Header() {
             </Button>
           )}
           {isLoggedIn ? (
-             <Button variant="outline" size="sm" onClick={handleLogout} suppressHydrationWarning>
+             <Button variant="outline" size="sm" onClick={handleLogout}>
                <LogOut className="mr-2 h-4 w-4" /> Logout
              </Button>
           ) : (
-            <React.Fragment>
+             <> {/* Use shorthand fragment or no fragment */}
                  <Button variant="outline" asChild size="sm">
                      <Link href="/login"><UserIcon className="mr-2 h-4 w-4"/>Login</Link>
                  </Button>
                   <Button variant="default" asChild size="sm">
                      <Link href="/register"><UserIcon className="mr-2 h-4 w-4"/>Register</Link>
                  </Button>
-            </React.Fragment>
+             </>
           )}
         </nav>
 
