@@ -1,8 +1,8 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase/config'; // Import db and auth
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config'; // Import potentially undefined db
 import type { User } from 'firebase/auth';
 
 /**
@@ -26,6 +26,12 @@ export async function participateInEvent(participationData: {
         // Add more fields as needed
     };
 }): Promise<{ success: boolean; message?: string }> {
+  // Check if Firestore service is available
+  if (!db) {
+    console.error('Firestore service is not available. Check configuration.');
+    return { success: false, message: 'Participation service unavailable. Please try again later.' };
+  }
+
   console.log('Attempting to record participation in Firestore for event:', participationData.eventId, 'by user:', participationData.userId);
 
   try {
@@ -63,6 +69,12 @@ export async function participateInEvent(participationData: {
  * Note: This function might be better placed in auth.ts or a dedicated user service.
  */
  export async function getUserProfile(userId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+     // Check if Firestore service is available
+     if (!db) {
+         console.error('Firestore service is not available. Cannot fetch profile.');
+         return { success: false, message: 'Profile service unavailable.' };
+     }
+
      if (!userId) {
          return { success: false, message: 'User ID is required.' };
      }

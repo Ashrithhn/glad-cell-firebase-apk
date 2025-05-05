@@ -7,12 +7,18 @@ import {
     signOut as firebaseSignOut, // Rename to avoid conflict
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/config'; // Import initialized auth and db
+import { auth, db } from '@/lib/firebase/config'; // Import potentially undefined auth and db
 
 /**
  * Registers a user with Firebase Authentication and stores profile data in Firestore.
  */
 export async function registerUser(userData: any): Promise<{ success: boolean; userId?: string; message?: string }> {
+  // Check if Firebase services are available
+  if (!auth || !db) {
+    console.error('Firebase Auth or Firestore service is not available. Check configuration.');
+    return { success: false, message: 'Registration service unavailable. Please try again later.' };
+  }
+
   const { email, password, name, branch, semester, registrationNumber, collegeName, city, pincode } = userData;
   console.log('Attempting Firebase registration for user:', email);
 
@@ -47,7 +53,9 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     if (error.code === 'auth/email-already-in-use') {
       message = 'This email address is already registered.';
     } else if (error.code === 'auth/weak-password') {
-      message = 'Password is too weak. It should be at least 6 characters.';
+      message = 'Password is too weak. It should be at least 8 characters.'; // Updated minimum length
+    } else if (error.code === 'auth/invalid-api-key') {
+        message = 'Invalid Firebase configuration. Please contact support.'; // More user-friendly message
     } else if (error.code) {
         message = `Registration failed: ${error.code}`;
     }
@@ -59,6 +67,12 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
  * Logs in a user using Firebase Authentication.
  */
 export async function loginUser(credentials: any): Promise<{ success: boolean; userId?: string; message?: string }> {
+   // Check if Firebase Auth service is available
+  if (!auth) {
+    console.error('Firebase Auth service is not available. Check configuration.');
+    return { success: false, message: 'Login service unavailable. Please try again later.' };
+  }
+
   const { email, password } = credentials;
   console.log('Attempting Firebase login for user:', email);
 
@@ -72,6 +86,8 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
     let message = 'Login failed. Please check your credentials.';
      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
        message = 'Invalid email or password.';
+     } else if (error.code === 'auth/invalid-api-key') {
+         message = 'Invalid Firebase configuration. Please contact support.';
      } else if (error.code) {
          message = `Login failed: ${error.code}`;
      }
@@ -83,6 +99,12 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
  * Logs out the currently signed-in user using Firebase Authentication.
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
+    // Check if Firebase Auth service is available
+    if (!auth) {
+        console.error('Firebase Auth service is not available. Check configuration.');
+        return { success: false, message: 'Logout service unavailable.' };
+    }
+
     console.log('Attempting Firebase logout');
     try {
         // Use the imported firebaseSignOut function
@@ -116,16 +138,26 @@ export async function loginAdmin(credentials: any): Promise<{ success: boolean; 
 // Placeholder functions for Admin actions (implement similarly, potentially checking admin role)
 export async function addProgram(programData: any): Promise<{ success: boolean; message?: string }> {
   console.log('Adding program:', programData);
-  // TODO: Implement database interaction (e.g., add to Firestore 'programs' collection)
   // TODO: Add check to ensure only admins can call this
+  // TODO: Add check for db instance availability
+  if (!db) {
+    console.error('Firestore service is not available.');
+    return { success: false, message: 'Database service unavailable.' };
+  }
+  // TODO: Implement database interaction (e.g., add to Firestore 'programs' collection)
   await new Promise(resolve => setTimeout(resolve, 500));
   return { success: true };
 }
 
 export async function addEvent(eventData: any): Promise<{ success: boolean; message?: string }> {
     console.log('Adding event:', eventData);
-    // TODO: Implement database interaction (e.g., add to Firestore 'events' collection)
     // TODO: Add check to ensure only admins can call this
+    // TODO: Add check for db instance availability
+    if (!db) {
+      console.error('Firestore service is not available.');
+      return { success: false, message: 'Database service unavailable.' };
+    }
+    // TODO: Implement database interaction (e.g., add to Firestore 'events' collection)
     await new Promise(resolve => setTimeout(resolve, 500));
     return { success: true };
 }
