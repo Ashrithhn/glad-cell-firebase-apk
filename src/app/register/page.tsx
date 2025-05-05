@@ -8,22 +8,25 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { user, userId, isAdmin, loading } = useAuth(); // Use auth context
+  const { user, userId, isAdmin, loading, authError } = useAuth(); // Use auth context, include authError
   const isLoggedIn = !!userId || isAdmin;
 
   useEffect(() => {
     // Redirect if user is already logged in and auth check is complete
-    if (!loading && isLoggedIn) {
+    if (!loading && isLoggedIn && !authError) { // Only redirect if no auth error
       console.log('[Register Page] User already logged in, redirecting to /');
       router.replace('/'); // Redirect to home page
     }
-  }, [loading, isLoggedIn, router]);
+  }, [loading, isLoggedIn, router, authError]);
 
   // Show loading skeleton while checking auth status or if logged in
-  if (loading || isLoggedIn) {
+  if (loading || (isLoggedIn && !authError)) { // Also show skeleton if logged in until redirect happens (unless there's an auth error)
     return (
       <div className="flex justify-center items-center min-h-screen bg-background px-4 py-12">
         <Card className="w-full max-w-2xl shadow-lg">
@@ -71,6 +74,15 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {authError && (
+             <Alert variant="destructive" className="mb-4">
+                 <AlertCircle className="h-4 w-4" />
+                 <AlertTitle>Configuration Error</AlertTitle>
+                 <AlertDescription>
+                     {authError.message}. Please check the setup or contact support. Registration functionality is unavailable.
+                 </AlertDescription>
+             </Alert>
+          )}
           <RegistrationForm />
         </CardContent>
       </Card>

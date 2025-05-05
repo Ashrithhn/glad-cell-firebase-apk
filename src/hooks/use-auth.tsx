@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config'; // Import potentially undefined auth
+import { auth, initializationError } from '@/lib/firebase/config'; // Import potentially undefined auth and initializationError
 import { logoutUser as serverLogout } from '@/services/auth'; // Import server-side logout
 
 interface AuthContextType {
@@ -13,6 +13,7 @@ interface AuthContextType {
   isAdmin: boolean; // Added isAdmin state
   login: (uid: string) => Promise<void>; // Simulate login state update
   logout: () => Promise<void>;
+  authError: Error | null; // Expose potential Firebase initialization error
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,13 +27,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false); // Initialize admin state
+  const [authError, setAuthError] = useState<Error | null>(initializationError); // Track Firebase init error
 
   useEffect(() => {
+    setAuthError(initializationError); // Update error state if config re-evaluates (though unlikely)
+
     let unsubscribe: (() => void) | undefined = undefined;
 
-    // Only attempt to subscribe if auth instance exists
-    if (auth) {
-        console.log('[useAuth] Auth instance found, subscribing to auth state changes.');
+    // Only attempt to subscribe if auth instance exists AND initialization didn't fail
+    if (auth && !initializationError) {
+        console.log('[useAuth] Auth instance available, subscribing to auth state changes.');
         unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         setUser(currentUser);
         setUserId(currentUser?.uid || null);
@@ -55,8 +59,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             window.dispatchEvent(new Event('authChange'));
         }
         });
+    } else if (initializationError) {
+        console.error(`[useAuth] Firebase initialization failed: ${initializationError.message}. Cannot subscribe to auth state changes.`);
+        setLoading(false); // Stop loading as auth is unavailable
     } else {
-        console.error('[useAuth] Firebase auth instance is missing. Cannot subscribe to auth state changes. Check Firebase config.');
+        console.error('[useAuth] Firebase auth instance is missing and no initialization error recorded. Check Firebase config.');
         setLoading(false); // Stop loading if auth is not available
     }
 
@@ -91,6 +98,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Simulate client-side state update after successful server login
   const login = async (uid: string) => {
+    if (authError) {
+        console.error("[useAuth Login] Cannot login, Firebase auth error:", authError.message);
+        return;
+    }
     // The actual Firebase login happens server-side (or via Firebase client SDK).
     // This function primarily updates the context state based on the server response.
     // For this hook, onAuthStateChanged handles the actual user object update.
@@ -116,8 +127,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     setLoading(true);
-    // Only attempt logout if auth instance is available
-    if (auth) {
+    // Only attempt logout if auth instance is available and initialized correctly
+    if (auth && !authError) {
         try {
             await serverLogout(); // Call the server action to sign out from Firebase
             console.log('Auth Context Logout initiated successfully.');
@@ -125,8 +136,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.error('Error during server logout:', error);
             // Handle logout error if necessary, e.g., show a toast
         }
-    } else {
-        console.error('[useAuth] Firebase auth instance is missing. Cannot perform logout.');
+    } else if (authError) {
+        console.error(`[useAuth Logout] Cannot logout, Firebase auth error: ${authError.message}`);
+        setLoading(false);
+    }
+     else {
+        console.error('[useAuth Logout] Firebase auth instance is missing. Cannot perform logout.');
         setLoading(false); // Stop loading if logout cannot be performed
     }
 
@@ -134,9 +149,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('isAdminLoggedIn');
     }
-    // onAuthStateChanged will handle setting user and userId to null if auth exists
-    // If auth doesn't exist, we should manually clear state
-    if (!auth) {
+    // onAuthStateChanged will handle setting user and userId to null if auth exists and is working
+    // If auth doesn't exist or failed, we should manually clear state
+    if (!auth || authError) {
         setUser(null);
         setUserId(null);
         setLoading(false);
@@ -146,11 +161,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('authChange'));
     }
-    // setLoading will be set to false by onAuthStateChanged if auth exists
+    // setLoading will be set to false by onAuthStateChanged if auth exists and works
   };
 
   return (
-    <AuthContext.Provider value={{ user, userId, loading, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ user, userId, loading, isAdmin, login, logout, authError }}>
       {children}
     </AuthContext.Provider>
   );

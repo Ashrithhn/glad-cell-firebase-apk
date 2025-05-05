@@ -26,10 +26,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, AlertCircle } from 'lucide-react';
 import { createRazorpayOrderAction, verifyPaymentAndParticipateAction } from '@/services/payment';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { getUserProfile } from '@/services/events'; // Or from a dedicated user service
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Import Alert components
 
 // Define environment variable for Razorpay Key ID
 const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -67,7 +68,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isPaying, setIsPaying] = React.useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = React.useState(false);
-  const { user, userId, loading: authLoading } = useAuth(); // Get user ID from auth context
+  const { user, userId, loading: authLoading, authError } = useAuth(); // Get user ID and authError from auth context
   const [isFetchingProfile, setIsFetchingProfile] = React.useState(false);
 
   const form = useForm<FormData>({
@@ -85,7 +86,8 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
   // Effect to prefill form with user data when modal opens and user is logged in
   React.useEffect(() => {
       const fetchAndPrefillProfile = async () => {
-          if (isOpen && userId && !authLoading) {
+          // Ensure prefill only happens if auth is working
+          if (isOpen && userId && !authLoading && !authError) {
               setIsFetchingProfile(true);
               console.log('Fetching profile for prefill:', userId);
               try {
@@ -93,7 +95,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                   if (profileResult.success && profileResult.data) {
                       console.log('Prefilling form with profile:', profileResult.data);
                       // Ensure semester is treated as a number for the form state
-                      const semesterValue = parseInt(profileResult.data.semester, 10);
+                      const semesterValue = parseInt(String(profileResult.data.semester), 10); // Ensure string conversion before parseInt
                       form.reset({
                           name: profileResult.data.name || '',
                           email: profileResult.data.email || '',
@@ -122,14 +124,21 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
               }
           } else if (!isOpen) {
               form.reset(); // Reset form when modal closes
+          } else if (authError) {
+              // Optionally reset or clear form if there's an auth error on open
+              form.reset();
           }
       };
       fetchAndPrefillProfile();
-  }, [isOpen, userId, user, authLoading, form]);
+  }, [isOpen, userId, user, authLoading, form, authError]); // Add authError dependency
 
 
   // Load Razorpay script
   const loadRazorpay = () => {
+    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
+        setRazorpayLoaded(true); // Already loaded
+        return;
+    }
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onload = () => setRazorpayLoaded(true);
@@ -140,26 +149,35 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
             description: "Could not load payment gateway. Please try again later.",
             variant: "destructive",
         });
-        setIsPaying(false);
+        setIsPaying(false); // Also reset paying state if load fails
+        setIsSubmitting(false); // Reset submitting state
     };
     document.body.appendChild(script);
   };
 
    React.useEffect(() => {
-    if (isOpen) {
+    // Load Razorpay only if modal is open and there's no auth error
+    if (isOpen && !authError) {
       loadRazorpay();
     }
+     // Cleanup function to remove script if component unmounts
      return () => {
        const script = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-       if (script) {
-         document.body.removeChild(script);
-         setRazorpayLoaded(false);
+       if (script && script.parentNode) {
+         // Check parentNode before removal
+         script.parentNode.removeChild(script);
+         setRazorpayLoaded(false); // Reset loaded state on cleanup
        }
      };
-  }, [isOpen]);
+  }, [isOpen, authError]); // Add authError dependency
 
 
   async function initiatePayment(values: FormData) {
+     // Prevent initiation if auth error, not logged in, or payment keys missing
+     if (authError) {
+         toast({ title: "Error", description: "Cannot proceed due to configuration error.", variant: "destructive" });
+         return;
+     }
      if (!userId) {
          toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
          return;
@@ -169,10 +187,10 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
        toast({ title: "Configuration Error", description: "Payment gateway not set up.", variant: "destructive" });
        return;
      }
-     if (!razorpayLoaded || !window.Razorpay) {
+     if (!razorpayLoaded || typeof window === 'undefined' || !window.Razorpay) {
          console.error("Razorpay SDK not loaded yet.");
          toast({ title: "Payment Initializing", description: "Payment gateway is loading. Please wait and try again.", variant: "default" });
-         if (!razorpayLoaded) loadRazorpay();
+         if (!razorpayLoaded) loadRazorpay(); // Attempt to load again if not loaded
          return;
      }
 
@@ -232,6 +250,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                 variant: 'destructive',
              });
           } finally {
+              // Reset states regardless of verification outcome
               setIsPaying(false);
               setIsSubmitting(false);
           }
@@ -249,18 +268,21 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
           semester: values.semester.toString(),
         },
         theme: {
-          color: '#007BFF', // Use Primary color HSL here if needed
+          color: '#2563EB', // Example blue color - match your primary theme color
         },
         modal: {
             ondismiss: function() {
                 console.log('Razorpay checkout closed');
-                setIsPaying(false);
-                setIsSubmitting(false);
-                toast({
-                    title: "Payment Cancelled",
-                    description: "You closed the payment window.",
-                    variant: "default",
-                });
+                // Only reset states if payment wasn't already handled by success/fail handler
+                if(isPaying) {
+                    setIsPaying(false);
+                    setIsSubmitting(false);
+                    toast({
+                        title: "Payment Cancelled",
+                        description: "You closed the payment window before completing the transaction.",
+                        variant: "default",
+                    });
+                }
             }
         }
       };
@@ -271,14 +293,15 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
             console.error("Razorpay Payment Failed:", response.error);
              toast({
                 title: "Payment Failed",
-                description: `Code: ${response.error.code}, Description: ${response.error.description}`,
+                description: `Code: ${response.error?.code || 'N/A'}, Description: ${response.error?.description || 'Unknown Razorpay error'}`,
                 variant: "destructive",
              });
+            // Reset states on failure
             setIsPaying(false);
             setIsSubmitting(false);
       });
 
-      rzp.open();
+      rzp.open(); // Open Razorpay checkout
 
     } catch (error) {
       console.error('Payment Initiation Error:', error);
@@ -287,6 +310,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
         description: error instanceof Error ? error.message : 'Could not initiate payment.',
         variant: 'destructive',
       });
+      // Reset states on initiation error
       setIsPaying(false);
       setIsSubmitting(false);
     }
@@ -294,15 +318,16 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      form.reset();
-      onClose();
+      form.reset(); // Reset form when dialog closes
+      onClose(); // Call original onClose
     }
   };
 
   const formattedFee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(eventDetails.fee / 100);
 
-  // Disable form/button if auth is loading, profile is fetching, or payment is processing
-  const isDisabled = authLoading || isFetchingProfile || isSubmitting || isPaying;
+  // Disable form/button if auth is loading, profile is fetching, payment is processing, or there's an auth error
+  const isDisabled = authLoading || isFetchingProfile || isSubmitting || isPaying || !!authError;
+  const isPaymentDisabled = isDisabled || !razorpayLoaded; // Payment specifically needs Razorpay loaded
 
   return (
     <>
@@ -316,89 +341,103 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
             </DialogDescription>
             {isFetchingProfile && <p className="text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Loading profile...</p>}
           </DialogHeader>
+
+          {authError && (
+             <Alert variant="destructive" className="my-4">
+                 <AlertCircle className="h-4 w-4" />
+                 <AlertTitle>Configuration Error</AlertTitle>
+                 <AlertDescription>
+                     {authError.message}. Participation is currently unavailable.
+                 </AlertDescription>
+             </Alert>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(initiatePayment)} className="grid gap-4 py-4">
-              {/* Fields remain the same, but values are now prefilled */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your full name" {...field} disabled={isDisabled} suppressHydrationWarning/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} disabled={isDisabled} suppressHydrationWarning/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="Enter 10-digit phone number" {...field} disabled={isDisabled} suppressHydrationWarning/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="branch"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Branch</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., CSE" {...field} disabled={isDisabled} suppressHydrationWarning/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="semester"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Semester</FormLabel>
-                      <FormControl>
-                         <Input type="number" min="1" max="8" placeholder="1-8" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} disabled={isDisabled} suppressHydrationWarning/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="registrationNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reg. Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="USN/Reg No." {...field} disabled={isDisabled} suppressHydrationWarning/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Wrap fields in fieldset for easy disabling */}
+              <fieldset disabled={isDisabled} className="grid gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your full name" {...field} suppressHydrationWarning/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="Enter 10-digit phone number" {...field} suppressHydrationWarning/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="branch"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Branch</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., CSE" {...field} suppressHydrationWarning/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="semester"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Semester</FormLabel>
+                          <FormControl>
+                             {/* Corrected value and onChange */}
+                             <Input type="number" min="1" max="8" placeholder="1-8" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="registrationNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reg. Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="USN/Reg No." {...field} suppressHydrationWarning/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+               </fieldset>
 
               <div className="border-t pt-4 mt-4 space-y-2">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -407,18 +446,20 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                 <p className="text-sm text-muted-foreground">
                   Click below to proceed with the payment of {formattedFee} via Razorpay.
                 </p>
+                 {authError && <p className="text-sm text-destructive italic">Payment disabled due to configuration error.</p>}
               </div>
 
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline" disabled={isDisabled} suppressHydrationWarning>
+                  {/* Disable cancel button only during active payment processing */}
+                  <Button type="button" variant="outline" disabled={isPaying} suppressHydrationWarning>
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit" disabled={isDisabled || !razorpayLoaded} suppressHydrationWarning>
+                <Button type="submit" disabled={isPaymentDisabled} suppressHydrationWarning>
                   {isPaying ? (
                     <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing... </>
-                  ) : !razorpayLoaded ? (
+                  ) : !razorpayLoaded && !authError ? ( // Show loading only if no auth error
                      <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Gateway... </>
                   ) : isFetchingProfile ? (
                       <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Profile... </>

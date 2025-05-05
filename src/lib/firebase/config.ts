@@ -17,23 +17,25 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 // Log the environment variable value being read *before* validation checks
-console.log(`Reading NEXT_PUBLIC_FIREBASE_API_KEY: ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `Starts with '${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 5)}...'` : '**MISSING or UNDEFINED**'}`);
+// Sensitive keys should not be fully logged in production environments.
+console.log(`Reading NEXT_PUBLIC_FIREBASE_API_KEY: ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Exists' : '**MISSING or UNDEFINED**'}`);
 console.log(`Reading NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '**MISSING or UNDEFINED**'}`);
+
 
 let app: FirebaseApp | undefined;
 let authInstance: Auth | undefined;
 let dbInstance: Firestore | undefined;
-let hasError = false;
+let initializationError: Error | null = null;
 
+// Check for required config values
 if (!firebaseConfig.apiKey) {
     console.error("-----------------------------------------------------");
     console.error("🔴 Firebase Config Error: API Key is MISSING or invalid.");
     console.error("🔴 Ensure 'NEXT_PUBLIC_FIREBASE_API_KEY' is correctly set in your .env.local file.");
     console.error("🔴 IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
     console.error("-----------------------------------------------------");
-    hasError = true;
+    initializationError = new Error("Firebase API Key is missing.");
 } else {
-    // Only log success if the key is present, not necessarily valid yet.
     console.log("✅ Firebase Config: API Key environment variable found.");
 }
 if (!firebaseConfig.projectId) {
@@ -42,49 +44,47 @@ if (!firebaseConfig.projectId) {
     console.error("🔴 Ensure 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' is set in your .env.local file.");
     console.error("🔴 IMPORTANT: You MUST restart your Next.js server (npm run dev) after modifying .env.local.");
     console.error("-----------------------------------------------------");
-    hasError = true;
+    if (!initializationError) { // Don't overwrite the first error
+        initializationError = new Error("Firebase Project ID is missing.");
+    }
 } else {
     console.log("✅ Firebase Config: Project ID found:", firebaseConfig.projectId);
 }
-// Add more checks as needed (e.g., authDomain)
 
-if (!hasError) {
+// Attempt initialization only if required config seems present
+if (!initializationError) {
     try {
-      // Initialize Firebase
       console.log("Attempting Firebase initialization...");
-      // Check if running on the server or client before initializing
-      // This avoids initializing multiple times in some scenarios, although getApps/getApp handles it
-      if (typeof window === 'undefined' || !getApps().length) {
+      if (getApps().length === 0) {
          app = initializeApp(firebaseConfig);
+         console.log("Initialized new Firebase app.");
       } else {
          app = getApp();
+         console.log("Using existing Firebase app.");
       }
       authInstance = getAuth(app);
       dbInstance = getFirestore(app);
       // const analytics = getAnalytics(app); // Optional
-      console.log("✅ Firebase initialized successfully.");
+      console.log("✅ Firebase services initialized successfully.");
     } catch (error) {
         console.error("-----------------------------------------------------");
         console.error("🔴 Firebase initialization FAILED:", error);
-        console.error("🔴 This often happens if the API Key or other config values are incorrect even if present.");
+        console.error("🔴 This often happens if the config values are incorrect even if present.");
         console.error("🔴 Double-check the values in Firebase Console -> Project Settings.");
         console.error("-----------------------------------------------------");
-        hasError = true; // Mark that initialization failed
+        initializationError = error instanceof Error ? error : new Error(String(error));
         // Clear instances if initialization failed
         app = undefined;
         authInstance = undefined;
         dbInstance = undefined;
     }
 } else {
-     console.error("🔴 Skipping Firebase initialization due to missing configuration.");
-     // Ensure instances are undefined if config is missing
-     app = undefined;
-     authInstance = undefined;
-     dbInstance = undefined;
+     console.error(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}`);
 }
+
 
 console.log("--- Firebase Config Finished ---"); // Log end of file execution
 
-// Export the instances (they might be undefined if initialization failed)
+// Export the instances (they might be undefined if initialization failed or skipped)
 // Modules importing these should check for undefined before use.
-export { app, authInstance as auth, dbInstance as db };
+export { app, authInstance as auth, dbInstance as db, initializationError };

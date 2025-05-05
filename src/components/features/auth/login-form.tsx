@@ -32,7 +32,7 @@ type FormData = z.infer<typeof formSchema>;
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
-  const { login } = useAuth(); // Use the login function from useAuth
+  const { login, authError } = useAuth(); // Use the login function and authError from useAuth
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -46,6 +46,11 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
+        // Prevent submission if Firebase isn't configured
+      if (authError) {
+          throw new Error("Cannot log in due to Firebase configuration error.");
+      }
+
       const result = await loginUser(values); // Call the backend service
 
       if (result.success && result.userId) {
@@ -75,36 +80,41 @@ export function LoginForm() {
     }
   }
 
+  // Disable the entire form if there's an auth error
+  const isDisabled = isSubmitting || !!authError;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email Address</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="Enter your password" {...field} suppressHydrationWarning/>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={isSubmitting} suppressHydrationWarning>
+        <fieldset disabled={isDisabled} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="Enter your password" {...field} suppressHydrationWarning/>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </fieldset>
+        <Button type="submit" className="w-full" disabled={isDisabled} suppressHydrationWarning>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
