@@ -19,7 +19,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Removed env block for Razorpay key
+  // Make Razorpay Key ID available on the client-side
+  // Ensure NEXT_PUBLIC_RAZORPAY_KEY_ID is set in your environment (.env.local)
+  env: {
+    NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
+  },
 };
 
 export default nextConfig;

@@ -39,7 +39,7 @@ export default function ProgramsPage() {
       id: 'kickstart-2025',
       name: 'Startup Ideation Kickstart',
       date: 'May 12, 2025',
-      // Add any other relevant details like participation fee if needed
+      fee: 10000, // Example fee: ₹100.00 (in paisa)
   };
 
 
@@ -59,12 +59,13 @@ export default function ProgramsPage() {
             Upcoming Event: {eventDetails.name}
             </CardTitle>
           <CardDescription className="pt-1">
-             Our inaugural program designed to help students generate and refine startup ideas.
+             Our inaugural program designed to help students generate and refine startup ideas. Participation requires login and payment.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
            <div className="flex items-center gap-4">
              <p className="text-lg font-semibold text-accent">Date: {eventDetails.date}</p>
+             <p className="text-lg font-semibold">Fee: ₹{eventDetails.fee / 100}</p> {/* Display fee */}
              {/* <Badge variant="outline">Full Day Event</Badge> */}
            </div>
 
@@ -88,14 +89,14 @@ export default function ProgramsPage() {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
                 {isLoggedIn === null ? (
                      // Optional: Show a loading state or disable button while checking auth
-                     <Button disabled className="flex-shrink-0">Loading...</Button>
+                     <Button disabled className="flex-shrink-0" suppressHydrationWarning>Loading...</Button>
                 ) : (
-                     <Button onClick={handleParticipateClick} className="flex-shrink-0">
+                     <Button onClick={handleParticipateClick} className="flex-shrink-0" suppressHydrationWarning>
                          <LogIn className="mr-2 h-4 w-4" /> Participate Now
                      </Button>
                 )}
                 <p className="text-sm text-muted-foreground italic flex-1">
-                 More details regarding venue, specific timings, and participation will be announced soon. Participation requires login.
+                 More details regarding venue and specific timings will be announced soon. Participation requires login and completion of the payment process.
                </p>
             </div>
 
@@ -119,4 +120,3 @@ export default function ProgramsPage() {
     </div>
   );
 }
-
