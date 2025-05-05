@@ -19,7 +19,8 @@ import {
   Moon,
   BarChart, // Added Admin Icon
   Home, // Added Home Icon
-  Lightbulb // Added Ideas Icon
+  Lightbulb, // Added Ideas Icon
+  MessageSquare // Added Feedback Icon
 } from 'lucide-react';
 
 interface SidebarContentProps {
@@ -41,6 +42,12 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
      handleLogout();
      closeSheet();
    };
+
+   const handleFeedbackClick = () => {
+       // TODO: Implement feedback mechanism (e.g., open modal, link to form)
+       alert("Feedback feature coming soon!"); // Placeholder
+       closeSheet();
+   }
 
   return (
     <div className="flex flex-col h-full pt-6">
@@ -90,6 +97,13 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
               WhatsApp Community
             </a>
         </Button>
+
+         {/* Feedback Button */}
+        <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Feedback
+        </Button>
+
 
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
           <Link href="/about">
@@ -141,13 +155,13 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Button>
         </div>
       )}
-       {!isLoggedIn && ( // Show Login/Register if not logged in
+       {/* Show Login/Register only if not logged in AND no auth error */}
+       {!isLoggedIn && !authError && (
            <div className="mt-auto pb-4 px-2 space-y-2">
-                {/* Disable buttons if there is an authError */}
-                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick} disabled={!!authError}>
+                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
                     <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
                  </Button>
-                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick} disabled={!!authError}>
+                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
                      <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
                  </Button>
            </div>

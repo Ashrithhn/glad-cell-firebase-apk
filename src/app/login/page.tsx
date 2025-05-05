@@ -14,18 +14,18 @@ import { AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const { user, userId, isAdmin, loading, authError } = useAuth(); // Use auth context, include authError
-  const isLoggedIn = !!userId || isAdmin;
+  const isLoggedIn = !authLoading && (!!userId || isAdmin); // Consider logged in only if loading is complete
 
   useEffect(() => {
     // Redirect if user is already logged in and auth check is complete
-    if (!loading && isLoggedIn && !authError) { // Only redirect if no auth error
+    if (isLoggedIn && !authError) { // Only redirect if no auth error and logged in
       console.log('[Login Page] User already logged in, redirecting to /');
       router.replace('/'); // Redirect to home page
     }
-  }, [loading, isLoggedIn, router, authError]);
+  }, [isLoggedIn, router, authError]);
 
-  // Show loading skeleton while checking auth status
-  if (loading || (isLoggedIn && !authError)) { // Also show skeleton if logged in until redirect happens (unless there's an auth error)
+  // Show loading skeleton while checking auth status or if logged in (and no error)
+  if (loading || (isLoggedIn && !authError)) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-background px-4">
         <Card className="w-full max-w-md shadow-lg">
@@ -47,21 +47,24 @@ export default function LoginPage() {
   // Render login form if not loading and not logged in
   return (
     <div className="flex justify-center items-center min-h-screen bg-background px-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Login</CardTitle>
-          <CardDescription>
-            Access your GLAD CELL account. Don't have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline">
+      <Card className="w-full max-w-md shadow-lg border-primary/20"> {/* Added subtle border */}
+        <CardHeader className="text-center space-y-2">
+          <CardTitle className="text-3xl font-bold text-primary tracking-tight">Welcome Back!</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Access your GLAD CELL account. Don't have one?{' '}
+            <Link href="/register" className="font-medium text-primary hover:underline">
               Register here
             </Link>
-            <br/>
-            <Link href="/admin/login" className="text-sm text-muted-foreground hover:underline mt-2 inline-block">
-              Admin Login
-            </Link>
+            {/* Admin Login link removed - access via /admin/login directly */}
+             {/*
+             <br/>
+             <Link href="/admin/login" className="text-sm text-muted-foreground hover:underline mt-2 inline-block">
+               Admin Login
+             </Link>
+             */}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6 space-y-4"> {/* Added space-y */}
           {authError && (
             <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />

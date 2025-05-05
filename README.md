@@ -13,6 +13,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     # or
     pnpm install
     ```
+    **Note:** If you encounter "Module not found" errors (e.g., for `framer-motion`, `firebase`, etc.) after pulling changes or cloning, try running `npm install` again to ensure all dependencies are correctly installed in your `node_modules` directory.
 
 2.  **Set Up Environment Variables:**
 
@@ -35,7 +36,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         # Firebase Realtime Database URL (Optional - ONLY for Server-Side use)
         # Get this from Firebase Console > Realtime Database > Data tab
         # DO NOT prefix with NEXT_PUBLIC_ if only used server-side.
-        # FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
+        FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
 
         # Razorpay Configuration (Get these from your Razorpay dashboard)
         # These are used server-side, no NEXT_PUBLIC_ prefix needed.
