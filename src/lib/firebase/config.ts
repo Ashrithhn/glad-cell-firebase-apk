@@ -7,17 +7,17 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 // --- Firebase Configuration ---
 // IMPORTANT: Reads from environment variables (.env.local)
 // These MUST be prefixed with NEXT_PUBLIC_ to be available on the client-side.
-const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCl9_mWuHFm24UuVYEeeARmMNvfDtKcDCc",
+    authDomain: "gladcell-baab0.firebaseapp.com",
+    projectId: "gladcell-baab0",
+    storageBucket: "gladcell-baab0.firebasestorage.app",
+    messagingSenderId: "562322178232",
+    appId: "1:562322178232:web:b74f28817a376a9c19f44d",
+    measurementId: "G-7BCRMWEJ8Q"
+  };
   // Note: FIREBASE_REALTIME_DB_URL is typically used server-side with Admin SDK,
   // not usually needed for client-side initialization if using Firestore.
-};
 
 // Declare variables that might be reassigned
 let app: FirebaseApp | undefined;

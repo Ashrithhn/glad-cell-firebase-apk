@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -22,16 +23,17 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 
 // Define the validation schema using Zod
+// Updated validation schema based on user request
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }).max(100),
   branch: z.string().min(1, { message: 'Branch is required.' }).max(100),
   semester: z.coerce.number().min(1, { message: 'Semester must be between 1 and 8.' }).max(8, { message: 'Semester must be between 1 and 8.' }),
-  registrationNumber: z.string().min(5, { message: 'Registration number must be valid.' }).max(20),
+  registrationNumber: z.string().min(5, { message: 'Unique registration number is required and must be valid.' }).max(20),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   collegeName: z.string().min(1, { message: 'College name is required.' }).max(150),
   city: z.string().min(1, { message: 'City is required.' }).max(100),
   pincode: z.string().regex(/^\d{6}$/, { message: 'Pincode must be 6 digits.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }), // Increased minimum length for better security
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }), // Use min length 8 for Firebase
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -58,16 +60,16 @@ export function RegistrationForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    console.log('Registration Data:', values);
+    console.log('[Client] Registration Data:', values);
 
     try {
       // Prevent submission if Firebase isn't configured
       if (authError) {
-          throw new Error("Cannot register due to Firebase configuration error.");
+          throw new Error(`Cannot register: ${authError.message}`);
       }
       // Call Firebase registration service
       const result = await registerUser(values);
-      console.log('Registration Result:', result);
+      console.log('[Client] Registration Result:', result);
 
       if (result.success) {
         toast({
@@ -79,14 +81,15 @@ export function RegistrationForm() {
         // Redirect to login page after successful registration
         router.push('/login');
       } else {
-        // Throw error with the specific message from the service
+        // Throw error with the specific message from the service to be caught below
         throw new Error(result.message || 'Registration failed.');
       }
     } catch (error) {
-      console.error('Registration Error:', error);
+      console.error('[Client] Registration Error:', error);
       // Display the specific error message from the catch block in the toast
       toast({
         title: 'Registration Failed',
+        // Ensure the specific error from the server action (or the authError) is shown
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
@@ -151,7 +154,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Create a password (min. 8 characters)" {...field} suppressHydrationWarning/>
+                        <Input type="password" placeholder="Create a password (min. 8 chars)" {...field} suppressHydrationWarning/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -182,7 +185,7 @@ export function RegistrationForm() {
                       <FormLabel>Semester</FormLabel>
                       <FormControl>
                         {/* Ensure type="number" and value handling */}
-                        <Input type="number" min="1" max="8" placeholder="Enter your current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning/>
+                        <Input type="number" min="1" max="8" placeholder="Enter current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
