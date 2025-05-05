@@ -29,13 +29,13 @@ let initializationError: Error | null = null;
 
 // Check for required config values
 if (!firebaseConfig.apiKey) {
-    // Removed console.error lines for cleaner console, but the issue remains
+    // Removed console.error logs for cleaner console, but the issue remains
     initializationError = new Error("Firebase API Key is missing.");
 } else {
     console.log("✅ Firebase Config: API Key environment variable found.");
 }
 if (!firebaseConfig.projectId) {
-    // Removed console.error lines for cleaner console, but the issue remains
+    // Removed console.error logs for cleaner console, but the issue remains
     if (!initializationError) { // Don't overwrite the first error
         initializationError = new Error("Firebase Project ID is missing.");
     }
@@ -59,11 +59,8 @@ if (!initializationError) {
       // const analytics = getAnalytics(app); // Optional
       console.log("✅ Firebase services initialized successfully.");
     } catch (error) {
-        console.error("-----------------------------------------------------");
+        // Keep minimal error logging for server-side issues during initialization attempt
         console.error("🔴 Firebase initialization FAILED:", error);
-        console.error("🔴 This often happens if the config values are incorrect even if present.");
-        console.error("🔴 Double-check the values in Firebase Console -> Project Settings.");
-        console.error("-----------------------------------------------------");
         initializationError = error instanceof Error ? error : new Error(String(error));
         // Clear instances if initialization failed
         app = undefined;
@@ -71,7 +68,7 @@ if (!initializationError) {
         dbInstance = undefined;
     }
 } else {
-     // Removed console.error line
+     // Keep a single log indicating why initialization is skipped
      console.log(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Please check your .env.local file and restart the server.`);
 }
 
@@ -81,3 +78,4 @@ console.log("--- Firebase Config Finished ---"); // Log end of file execution
 // Export the instances (they might be undefined if initialization failed or skipped)
 // Modules importing these should check for undefined before use.
 export { app, authInstance as auth, dbInstance as db, initializationError };
+
