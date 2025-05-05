@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
   description:
-    'An initiative by the Department of Computer Science and Engineering, Government Engineering College Mosalehosahalli, to foster startup and ideathon concepts.',
+    'GLAD CELL - An initiative by the Department of Computer Science and Engineering, Government Engineering College Mosalehosahalli, to foster startup and ideathon concepts.',
 };
 
 export default function RootLayout({
