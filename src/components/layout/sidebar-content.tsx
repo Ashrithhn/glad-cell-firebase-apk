@@ -27,9 +27,10 @@ interface SidebarContentProps {
   isAdmin: boolean; // Added isAdmin prop
   handleLogout: () => void;
   closeSheet: () => void;
+  authError: Error | null; // Accept authError
 }
 
-export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet }: SidebarContentProps) {
+export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, authError }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
 
   const handleLinkClick = () => {
@@ -142,10 +143,11 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet }
       )}
        {!isLoggedIn && ( // Show Login/Register if not logged in
            <div className="mt-auto pb-4 px-2 space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                {/* Disable buttons if there is an authError */}
+                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick} disabled={!!authError}>
                     <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
                  </Button>
-                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick} disabled={!!authError}>
                      <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
                  </Button>
            </div>
