@@ -12,7 +12,7 @@ import { format, parseISO } from 'date-fns'; // For date formatting
 async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }> {
     const result = await getEvents(); // Use the renamed function
     if (result.success && result.events && result.events.length > 0) {
-        // Assuming the first event is the latest due to Firestore ordering
+        // Assuming the first event is the latest due to Firestore ordering by createdAt desc
         return { event: result.events[0] };
     } else if (!result.success) {
         return { error: result.message || 'Failed to load events.' };
@@ -86,11 +86,18 @@ export default async function Home() {
                     <CardDescription className='mt-1 pt-2 border-t line-clamp-2'> {/* Show short description */}
                       {event.description}
                     </CardDescription>
+                    {/* Add Participate Button here */}
+                     <Button size="sm" asChild className="mt-2">
+                       <Link href={`/programs#${event.id}`}> {/* Link to programs page, potentially with hash */}
+                          Participate / View Details <ArrowRight className="ml-2 h-4 w-4" />
+                       </Link>
+                    </Button>
                  </div>
              ) : !error ? (
                 <p className="text-muted-foreground italic">No upcoming programs or events announced yet.</p>
              ) : null /* Don't show 'No items' if there was an error */}
 
+             {/* This button links to the programs page */}
              <Button variant="outline" asChild className='mt-4'>
                <Link href="/programs">
                  View All Programs &amp; Events <ArrowRight className="ml-2 h-4 w-4" />
@@ -102,3 +109,4 @@ export default async function Home() {
     </div>
   );
 }
+
