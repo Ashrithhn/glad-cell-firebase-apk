@@ -79,10 +79,12 @@ export function RegistrationForm() {
         // Redirect to login page after successful registration
         router.push('/login');
       } else {
+        // Throw error with the specific message from the service
         throw new Error(result.message || 'Registration failed.');
       }
     } catch (error) {
       console.error('Registration Error:', error);
+      // Display the specific error message from the catch block in the toast
       toast({
         title: 'Registration Failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
@@ -246,3 +248,4 @@ export function RegistrationForm() {
       </Form>
   );
 }
+
