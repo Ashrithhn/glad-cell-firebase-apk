@@ -72,8 +72,10 @@ if (!initializationError) {
     }
 } else {
      // Log why initialization is skipped (both server and client)
+     // Keep this single error log to inform the developer.
      console.error(`🔴 Skipping Firebase initialization due to missing configuration: ${initializationError.message}. Ensure required environment variables (NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_PROJECT_ID) are set in .env.local and restart the server.`);
 }
+
 
 console.log("--- Firebase Config Finished ---"); // Log end of file execution
 
