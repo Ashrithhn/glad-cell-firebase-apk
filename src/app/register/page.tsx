@@ -1,33 +1,29 @@
 
-'use client'; // Required for useEffect and useRouter
+'use client'; // Required for hooks
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RegistrationForm } from '@/components/features/auth/registration-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const { user, userId, isAdmin, loading } = useAuth(); // Use auth context
+  const isLoggedIn = !!userId || isAdmin;
 
   useEffect(() => {
-    // Check login status only on the client
-    if (typeof window !== 'undefined') {
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      if (loggedIn) {
-        // console.log('[Register Page] User already logged in, redirecting to /');
-        router.replace('/'); // Redirect to home page if logged in
-      } else {
-        setIsLoading(false); // Only show form if not logged in
-      }
+    // Redirect if user is already logged in and auth check is complete
+    if (!loading && isLoggedIn) {
+      console.log('[Register Page] User already logged in, redirecting to /');
+      router.replace('/'); // Redirect to home page
     }
-     // Add router to dependency array if its instance might change, though unlikely here
-  }, [router]);
+  }, [loading, isLoggedIn, router]);
 
-  // Show loading skeleton while checking auth status
-  if (isLoading) {
+  // Show loading skeleton while checking auth status or if logged in
+  if (loading || isLoggedIn) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-background px-4 py-12">
         <Card className="w-full max-w-2xl shadow-lg">
@@ -61,7 +57,7 @@ export default function RegisterPage() {
     );
   }
 
-  // Render registration form if not logged in and check is complete
+  // Render registration form if not loading and not logged in
   return (
     <div className="flex justify-center items-center min-h-screen bg-background px-4 py-12">
       <Card className="w-full max-w-2xl shadow-lg">

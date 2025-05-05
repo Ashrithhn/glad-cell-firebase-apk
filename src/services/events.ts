@@ -1,55 +1,85 @@
 
 'use server';
 
-/**
- * @fileOverview Service functions for handling event-related actions.
- */
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase/config'; // Import db and auth
+import type { User } from 'firebase/auth';
 
 /**
- * Placeholder service for recording event participation.
- * In a real application, this would interact with a database (e.g., Firestore)
- * to store participation records, link to user accounts, and potentially
- * handle payment confirmations.
+ * Records event participation in Firestore.
+ * Assumes the user performing the action is the one logged in via Firebase Auth on the client.
  */
 export async function participateInEvent(participationData: {
+    userId: string; // Firebase Auth User ID
     eventId: string;
     eventName: string;
     name: string;
     email: string;
-    phone: string; // Added phone
+    phone: string;
     branch: string;
     semester: number;
     registrationNumber: string;
-    paymentDetails?: { // Optional payment details
+    paymentDetails?: {
         orderId: string;
         paymentId: string;
         method: string;
         // Add more fields as needed
     };
 }): Promise<{ success: boolean; message?: string }> {
-  console.log('Attempting to record participation for event:', participationData.eventId, 'by user:', participationData.email);
-  console.log('Participation Data with Payment (if any):', participationData);
+  console.log('Attempting to record participation in Firestore for event:', participationData.eventId, 'by user:', participationData.userId);
 
+  try {
+    // Optional: Check if user is already registered for this event
+    const participationQuery = query(
+        collection(db, 'participations'),
+        where('userId', '==', participationData.userId),
+        where('eventId', '==', participationData.eventId),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(participationQuery);
+    if (!querySnapshot.empty) {
+        console.warn(`User ${participationData.userId} already registered for event ${participationData.eventId}`);
+        return { success: false, message: 'You are already registered for this event.' };
+    }
 
-  // Simulate database interaction
-  // Example:
-  // 1. Validate input data.
-  // 2. Check if the user is already registered for this event (using email or registrationNumber).
-  // 3. If paymentDetails are present, verify their validity/uniqueness if needed (though signature verification is primary).
-  // 4. Create a new document in a 'participations' collection in Firestore,
-  //    linking the user ID (if available), event ID, storing participation details,
-  //    and paymentDetails.
+    // Add a new document to the 'participations' collection
+    const docRef = await addDoc(collection(db, 'participations'), {
+      ...participationData,
+      participatedAt: serverTimestamp(), // Add a timestamp
+    });
 
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    console.log('Participation recorded in Firestore with ID:', docRef.id);
+    return { success: true };
 
-  // Simulate success
-  return { success: true };
-
-  // Example error handling:
-  // if (user_already_registered) {
-  //   return { success: false, message: 'You are already registered for this event.' };
-  // }
-  // if (db_error) {
-  //   return { success: false, message: 'Could not record participation due to a database error.' };
-  // }
+  } catch (error: any) {
+    console.error('Error recording participation in Firestore:', error);
+    return { success: false, message: 'Could not record participation due to a database error.' };
+  }
 }
+
+/**
+ * Fetches user profile data from Firestore.
+ * Assumes the user is authenticated on the client.
+ * Note: This function might be better placed in auth.ts or a dedicated user service.
+ */
+ export async function getUserProfile(userId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+     if (!userId) {
+         return { success: false, message: 'User ID is required.' };
+     }
+     console.log('Fetching profile for user:', userId);
+     try {
+         const userDocRef = doc(db, 'users', userId);
+         const docSnap = await getDoc(userDocRef);
+
+         if (docSnap.exists()) {
+             console.log('User profile found:', docSnap.data());
+             return { success: true, data: docSnap.data() };
+         } else {
+             console.warn('No profile document found for user:', userId);
+             return { success: false, message: 'User profile not found.' };
+         }
+     } catch (error: any) {
+         console.error('Error fetching user profile:', error);
+         return { success: false, message: 'Failed to fetch user profile.' };
+     }
+ }

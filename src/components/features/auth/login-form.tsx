@@ -17,13 +17,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { loginUser } from '@/services/auth'; // Placeholder service
+import { loginUser } from '@/services/auth'; // Updated service
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth'; // Import useAuth hook
 
 // Define the validation schema using Zod
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }), // Basic check for login
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -31,6 +32,7 @@ type FormData = z.infer<typeof formSchema>;
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
+  const { login } = useAuth(); // Use the login function from useAuth
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -42,21 +44,12 @@ export function LoginForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    // console.log('Login Data:', values);
 
     try {
-      // Placeholder: Call a service to login the user
-      const result = await loginUser(values);
-      // console.log('Login Result:', result);
+      const result = await loginUser(values); // Call the backend service
 
-      if (result.success) {
-        // Simulate setting authentication state (using localStorage for demo)
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('isLoggedIn', 'true');
-            // Optionally trigger a custom event or use a state management library
-            // to notify other components (like the Header) about the state change.
-             window.dispatchEvent(new Event('authChange'));
-        }
+      if (result.success && result.userId) {
+        await login(result.userId); // Use the login function from useAuth hook
 
         toast({
           title: 'Login Successful!',
@@ -64,9 +57,8 @@ export function LoginForm() {
           variant: 'default',
         });
 
-        // Redirect to home page after successful login
-        router.push('/'); // Redirect to the main home page
-        router.refresh(); // Force refresh to potentially update header state if needed
+        router.push('/'); // Redirect to home page
+        router.refresh(); // Refresh to update header, etc.
       } else {
         throw new Error(result.message || 'Invalid email or password.');
       }
@@ -77,11 +69,7 @@ export function LoginForm() {
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
-       // Clear the flag if login fails, just in case
-       if (typeof window !== 'undefined') {
-          localStorage.removeItem('isLoggedIn');
-          window.dispatchEvent(new Event('authChange'));
-       }
+      // No need to manually remove localStorage items here as useAuth handles it
     } finally {
       setIsSubmitting(false);
     }

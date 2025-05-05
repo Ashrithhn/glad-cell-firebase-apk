@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { loginAdmin } from '@/services/auth'; // Placeholder service
 import { useRouter } from 'next/navigation';
+// No need for useAuth here as admin login is separate for now
 
 // Define the validation schema using Zod
 const formSchema = z.object({
@@ -45,16 +46,16 @@ export function AdminLoginForm() {
     // console.log('Admin Login Data:', values);
 
     try {
-      // Placeholder: Call a service to login the admin
-      const result = await loginAdmin(values);
+      const result = await loginAdmin(values); // Still uses the placeholder service
       // console.log('Admin Login Result:', result);
 
       if (result.success) {
          // Simulate setting admin authentication state (using localStorage for demo)
+         // IMPORTANT: This is NOT secure for production. Use Firebase Custom Claims.
         if (typeof window !== 'undefined') {
             localStorage.setItem('isAdminLoggedIn', 'true');
-             // Optionally trigger an event if needed elsewhere
-             window.dispatchEvent(new Event('authChange')); // Can use the same event or a specific admin one
+             // Trigger authChange event to update global state (via useAuth hook listener)
+             window.dispatchEvent(new Event('authChange'));
         }
 
         toast({
@@ -62,9 +63,8 @@ export function AdminLoginForm() {
           description: 'Redirecting to dashboard...',
           variant: 'default',
         });
-        // Redirect to admin dashboard page after successful login
-        router.push('/admin/dashboard'); // Example dashboard route
-        router.refresh();
+        router.push('/admin/dashboard'); // Redirect to admin dashboard
+        router.refresh(); // Refresh layout
       } else {
         throw new Error(result.message || 'Invalid admin credentials.');
       }
@@ -78,7 +78,7 @@ export function AdminLoginForm() {
        // Clear the flag if login fails
        if (typeof window !== 'undefined') {
           localStorage.removeItem('isAdminLoggedIn');
-          window.dispatchEvent(new Event('authChange'));
+          window.dispatchEvent(new Event('authChange')); // Notify of state change
        }
     } finally {
       setIsSubmitting(false);

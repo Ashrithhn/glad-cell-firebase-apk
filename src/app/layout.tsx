@@ -4,7 +4,8 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { ThemeProvider } from '@/components/layout/theme-provider'; // Import ThemeProvider
+import { ThemeProvider } from '@/components/layout/theme-provider';
+import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
 
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
@@ -18,25 +19,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Removed hardcoded dark class
     <html lang="en" suppressHydrationWarning>
       <body className={cn('antialiased font-sans')}>
-         {/* Wrap content with ThemeProvider */}
          <ThemeProvider
             attribute="class"
-            defaultTheme="dark" // Keep dark as default
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
-            <div className="flex flex-col min-h-screen">
-              {/* Conditionally render Header based on route if needed */}
-              <Header />
-              <main className="flex-grow container mx-auto py-8 px-4"> {/* Add container and padding */}
-                {children}
-              </main>
-              {/* Consider adding a Footer component here if needed */}
-            </div>
-            <Toaster />
+            {/* Wrap content with AuthProvider */}
+            <AuthProvider>
+                <div className="flex flex-col min-h-screen">
+                  <Header />
+                  <main className="flex-grow container mx-auto py-8 px-4">
+                    {children}
+                  </main>
+                  {/* Consider adding a Footer component here if needed */}
+                </div>
+                <Toaster />
+            </AuthProvider>
          </ThemeProvider>
       </body>
     </html>

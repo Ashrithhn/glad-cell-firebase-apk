@@ -33,7 +33,6 @@ export async function createRazorpayOrderAction(orderData: {
   amount: number; // Amount in the smallest currency unit (e.g., paisa for INR)
   currency: string;
   receipt: string;
-  // notes?: Record<string, any>; // Optional notes
 }): Promise<{ success: boolean; orderId?: string; amount?: number; currency?: string; message?: string }> {
   if (!razorpay) {
        return { success: false, message: 'Razorpay not initialized.' };
@@ -43,7 +42,6 @@ export async function createRazorpayOrderAction(orderData: {
     amount: orderData.amount,
     currency: orderData.currency,
     receipt: orderData.receipt,
-    // notes: orderData.notes || {},
   };
 
   console.log('Creating Razorpay order with options:', options);
@@ -63,11 +61,6 @@ export async function createRazorpayOrderAction(orderData: {
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during order creation.';
-    // Check for specific Razorpay error structure if available
-    // const razorpayError = error as any;
-    // if (razorpayError?.error?.description) {
-    //   errorMessage = razorpayError.error.description;
-    // }
     return { success: false, message: `Failed to create payment order: ${errorMessage}` };
   }
 }
@@ -82,11 +75,12 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
   razorpay_payment_id: string;
   razorpay_signature: string;
   // Participant details to pass to participateInEvent
+  userId: string; // Ensure userId is passed explicitly
   eventId: string;
   eventName: string;
   name: string;
   email: string;
-  phone: string; // Added phone
+  phone: string;
   branch: string;
   semester: number;
   registrationNumber: string;
@@ -98,10 +92,16 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature,
+        userId, // Destructure userId
         ...participantDetails // Rest of the data is participant info
     } = verificationData;
 
-    console.log('Verifying Razorpay payment:', { razorpay_order_id, razorpay_payment_id });
+    // Basic validation
+    if (!userId) {
+        return { success: false, message: 'User ID is missing for verification.' };
+    }
+
+    console.log('Verifying Razorpay payment:', { razorpay_order_id, razorpay_payment_id, userId });
 
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 
@@ -117,13 +117,13 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
             console.log('Payment Signature Verified Successfully.');
 
             // Payment is verified, now record participation
-            // Add payment details to the participation data if needed for your records
             const participationResult = await participateInEvent({
+                userId: userId, // Pass the verified userId
                 ...participantDetails,
                 paymentDetails: { // Optional: Store payment info
                     orderId: razorpay_order_id,
                     paymentId: razorpay_payment_id,
-                    method: 'Razorpay' // Or fetch more details if needed
+                    method: 'Razorpay'
                 }
             });
 
@@ -131,9 +131,7 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
                 console.log('Participation recorded successfully for order:', razorpay_order_id);
                 return { success: true, message: 'Payment verified and participation recorded.' };
             } else {
-                // Handle case where participation recording failed after successful payment
                 console.error('Payment verified but failed to record participation for order:', razorpay_order_id, participationResult.message);
-                // You might want to flag this for manual intervention
                 return { success: false, message: `Payment verified, but failed to record participation: ${participationResult.message || 'Unknown error'}` };
             }
         } else {

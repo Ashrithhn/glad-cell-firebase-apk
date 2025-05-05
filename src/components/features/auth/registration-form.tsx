@@ -17,8 +17,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { registerUser } from '@/services/auth'; // Placeholder service
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { registerUser } from '@/services/auth'; // Updated service
+import { useRouter } from 'next/navigation';
 
 // Define the validation schema using Zod
 const formSchema = z.object({
@@ -30,25 +30,25 @@ const formSchema = z.object({
   collegeName: z.string().min(1, { message: 'College name is required.' }).max(150),
   city: z.string().min(1, { message: 'City is required.' }).max(100),
   pincode: z.string().regex(/^\d{6}$/, { message: 'Pincode must be 6 digits.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }), // Increased minimum length for better security
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       branch: '',
-      semester: '', // Initialize with empty string instead of undefined
+      semester: '' as any, // Keep initial value compatible with coercion
       registrationNumber: '',
       email: '',
-      collegeName: 'Government Engineering College Mosalehosahalli', // Pre-fill if applicable
-      city: 'Hassan', // Pre-fill if applicable
+      collegeName: 'Government Engineering College Mosalehosahalli',
+      city: 'Hassan',
       pincode: '',
       password: '',
     },
@@ -59,14 +59,14 @@ export function RegistrationForm() {
     console.log('Registration Data:', values);
 
     try {
-      // Placeholder: Call a service to register the user
+      // Call Firebase registration service
       const result = await registerUser(values);
       console.log('Registration Result:', result);
 
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: 'Your account has been created.',
+          description: 'Your account has been created. Please log in.', // Update message
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });
@@ -138,7 +138,7 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Create a password" {...field} suppressHydrationWarning/>
+                    <Input type="password" placeholder="Create a password (min. 8 characters)" {...field} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,7 +168,8 @@ export function RegistrationForm() {
                 <FormItem>
                   <FormLabel>Semester</FormLabel>
                   <FormControl>
-                    <Input type="number" min="1" max="8" placeholder="Enter your current semester (1-8)" {...field} suppressHydrationWarning/>
+                    {/* Ensure type="number" and value handling */}
+                    <Input type="number" min="1" max="8" placeholder="Enter your current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

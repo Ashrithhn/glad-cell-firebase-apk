@@ -17,15 +17,19 @@ import {
   LogOut,
   Sun,
   Moon,
+  BarChart, // Added Admin Icon
+  Home, // Added Home Icon
+  Lightbulb // Added Ideas Icon
 } from 'lucide-react';
 
 interface SidebarContentProps {
-  isLoggedIn: boolean | null;
+  isLoggedIn: boolean;
+  isAdmin: boolean; // Added isAdmin prop
   handleLogout: () => void;
-  closeSheet: () => void; // Function to close the sheet
+  closeSheet: () => void;
 }
 
-export function SidebarContent({ isLoggedIn, handleLogout, closeSheet }: SidebarContentProps) {
+export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
 
   const handleLinkClick = () => {
@@ -40,21 +44,44 @@ export function SidebarContent({ isLoggedIn, handleLogout, closeSheet }: Sidebar
   return (
     <div className="flex flex-col h-full pt-6">
       <nav className="flex-grow space-y-2">
-        {isLoggedIn && (
+         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/">
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Link>
+          </Button>
+
           <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-             {/* Link to a future profile page */}
+            <Link href="/ideas">
+              <Lightbulb className="mr-2 h-4 w-4" />
+              Ideas
+            </Link>
+          </Button>
+
+        {isLoggedIn && !isAdmin && ( // Show profile only for logged-in non-admin users
+          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
             <Link href="/profile">
               <User className="mr-2 h-4 w-4" />
               Profile
             </Link>
           </Button>
         )}
+
+        {isAdmin && ( // Show Admin Dashboard link if admin
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                 <Link href="/admin/dashboard">
+                     <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
+                 </Link>
+            </Button>
+        )}
+
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
           <Link href="/programs">
             <CalendarCheck className="mr-2 h-4 w-4" />
             Events
           </Link>
         </Button>
+
          {/* Placeholder link - replace with your actual WhatsApp group link */}
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
             <a href="https://chat.whatsapp.com/YourGroupInviteLink" target="_blank" rel="noopener noreferrer">
@@ -62,17 +89,18 @@ export function SidebarContent({ isLoggedIn, handleLogout, closeSheet }: Sidebar
               WhatsApp Community
             </a>
         </Button>
+
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          {/* Link to a future About Us page */}
           <Link href="/about">
             <Info className="mr-2 h-4 w-4" />
             About Us
           </Link>
         </Button>
+
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/contact"> {/* Assuming contact page serves as help */}
+          <Link href="/contact">
             <HelpCircle className="mr-2 h-4 w-4" />
-            Help
+            Contact & Help
           </Link>
         </Button>
 
@@ -86,18 +114,17 @@ export function SidebarContent({ isLoggedIn, handleLogout, closeSheet }: Sidebar
             <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
                  <div className="flex items-center space-x-2">
                  {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                 <Label htmlFor="theme-switch" className="text-sm">
+                 <Label htmlFor="theme-switch-mobile" className="text-sm"> {/* Unique ID for mobile switch */}
                     {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                  </Label>
                  </div>
                 <Switch
-                    id="theme-switch"
+                    id="theme-switch-mobile" // Unique ID
                     checked={theme === 'dark'}
                     onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
                     aria-label="Toggle theme"
                 />
             </div>
-            {/* Add more settings options here */}
         </div>
 
          <Separator />
@@ -113,6 +140,16 @@ export function SidebarContent({ isLoggedIn, handleLogout, closeSheet }: Sidebar
           </Button>
         </div>
       )}
+       {!isLoggedIn && ( // Show Login/Register if not logged in
+           <div className="mt-auto pb-4 px-2 space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                    <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
+                 </Button>
+                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                     <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
+                 </Button>
+           </div>
+       )}
     </div>
   );
 }

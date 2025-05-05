@@ -1,40 +1,46 @@
 
-'use client'; // Required for useState and onClick handlers
+'use client'; // Required for hooks and handlers
 
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Target, Lightbulb, LogIn } from 'lucide-react';
+import { CalendarCheck, Target, Lightbulb, LogIn, UserCheck } from 'lucide-react'; // Added UserCheck
 import { ParticipationModal } from '@/components/features/programs/participation-modal';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { Skeleton } from '@/components/ui/skeleton'; // For loading state
+import { useRouter } from 'next/navigation'; // For redirecting to login
 
 export default function ProgramsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean | null>(null);
+  const { user, userId, isAdmin, loading: authLoading } = useAuth(); // Use auth context
   const { toast } = useToast();
+  const router = useRouter(); // Initialize router
 
-  React.useEffect(() => {
-    // Check login status on client
-    if (typeof window !== 'undefined') {
-      const loggedInStatus = localStorage.getItem('isLoggedIn') === 'true';
-      setIsLoggedIn(loggedInStatus);
-    }
-  }, []);
+  // Determine login status based on auth context
+  const isLoggedIn = !authLoading && (!!userId || isAdmin);
 
   const handleParticipateClick = () => {
-     if (isLoggedIn) {
+     if (isLoggedIn && !isAdmin) { // Only allow logged-in non-admin users
         setIsModalOpen(true);
-     } else {
+     } else if (isAdmin) {
+         toast({
+             title: "Admin View",
+             description: "Admins cannot participate in events.",
+             variant: "default",
+         });
+     }
+     else {
          toast({
              title: "Login Required",
-             description: "Please log in to participate in the event.",
+             description: "Please log in or register to participate.",
              variant: "destructive",
          });
-         // Optionally redirect to login page: router.push('/login');
+         router.push('/login'); // Redirect to login page
      }
   };
 
-  // Define event details (can be fetched from an API later)
+  // Define event details (can be fetched from an API/Firestore later)
   const eventDetails = {
       id: 'kickstart-2025',
       name: 'Startup Ideation Kickstart',
@@ -65,8 +71,7 @@ export default function ProgramsPage() {
         <CardContent className="p-6 space-y-6">
            <div className="flex items-center gap-4">
              <p className="text-lg font-semibold text-accent">Date: {eventDetails.date}</p>
-             <p className="text-lg font-semibold">Fee: ₹{eventDetails.fee / 100}</p> {/* Display fee */}
-             {/* <Badge variant="outline">Full Day Event</Badge> */}
+             <p className="text-lg font-semibold">Fee: ₹{eventDetails.fee / 100}</p>
            </div>
 
           <div className="space-y-3">
@@ -87,16 +92,19 @@ export default function ProgramsPage() {
            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
-                {isLoggedIn === null ? (
-                     // Optional: Show a loading state or disable button while checking auth
-                     <Button disabled className="flex-shrink-0" suppressHydrationWarning>Loading...</Button>
-                ) : (
-                     <Button onClick={handleParticipateClick} className="flex-shrink-0" suppressHydrationWarning>
-                         <LogIn className="mr-2 h-4 w-4" /> Participate Now
+                {authLoading ? (
+                     <Skeleton className="h-10 w-40" /> // Show skeleton while loading auth state
+                ) : isLoggedIn && !isAdmin ? (
+                     <Button onClick={handleParticipateClick} className="flex-shrink-0">
+                         <UserCheck className="mr-2 h-4 w-4" /> Participate Now
+                     </Button>
+                 ) : (
+                    <Button onClick={handleParticipateClick} className="flex-shrink-0">
+                         <LogIn className="mr-2 h-4 w-4" /> Login to Participate
                      </Button>
                 )}
                 <p className="text-sm text-muted-foreground italic flex-1">
-                 More details regarding venue and specific timings will be announced soon. Participation requires login and completion of the payment process.
+                 More details regarding venue and specific timings will be announced soon. Participation requires login and completion of the payment process. Admins cannot participate.
                </p>
             </div>
 
@@ -109,8 +117,8 @@ export default function ProgramsPage() {
          <p className="text-muted-foreground mt-2">We are actively planning more workshops, competitions, and mentorship sessions.</p>
        </div>
 
-       {/* Participation Modal */}
-       {isLoggedIn && (
+       {/* Participation Modal - Conditionally render only if user is logged in */}
+       {isLoggedIn && !isAdmin && (
          <ParticipationModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
