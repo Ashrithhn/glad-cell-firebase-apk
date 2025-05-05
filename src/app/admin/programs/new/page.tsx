@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 // Import or create a form component for adding programs
-// import { AddProgramForm } from '@/components/features/admin/add-program-form';
+import { AddProgramForm } from '@/components/features/admin/add-program-form'; // Import the actual form
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -19,13 +19,11 @@ export default function AdminAddProgramPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary">Add New Program</CardTitle>
           <CardDescription>
-            Enter the details for the new GLAD CELL program. (Form coming soon)
+            Enter the details for the new GLAD CELL program.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* <AddProgramForm /> */}
-           <p className="text-muted-foreground italic">Program creation form will be implemented here.</p>
-           {/* Placeholder for form fields: Name, Description, Duration, Goals, etc. */}
+          <AddProgramForm /> {/* Use the form component */}
         </CardContent>
       </Card>
     </div>
