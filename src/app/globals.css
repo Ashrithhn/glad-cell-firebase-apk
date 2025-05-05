@@ -9,7 +9,7 @@ body {
 @layer base {
   /* Removed light theme as dark mode is forced */
   .dark {
-    --background: 210 10% 4%; /* Near Black */
+    --background: 0 0% 0%; /* Black Background */
     --foreground: 0 0% 98%; /* White text */
     --card: 210 10% 10%; /* Slightly lighter dark */
     --card-foreground: 0 0% 98%;
