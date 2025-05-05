@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import {
@@ -174,47 +173,3 @@ export async function loginAdmin(credentials: any): Promise<{ success: boolean; 
      return { success: false, message: 'Invalid admin credentials.' };
   }
 }
-
-// Placeholder functions for Admin actions (implement similarly, potentially checking admin role)
-export async function addProgram(programData: any): Promise<{ success: boolean; message?: string }> {
-  console.log('[Server Action] addProgram invoked.');
-  console.log('Adding program:', programData);
-  // TODO: Add check to ensure only admins can call this
-  // TODO: Add check for db instance availability
-  if (initializationError || !db) {
-    const errorMessage = 'Database service unavailable for adding program.';
-    console.error(`[Server Action Error] addProgram: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-  // TODO: Implement database interaction (e.g., add to Firestore 'programs' collection)
-  try {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate DB interaction
-      console.log('[Server Action] Program added successfully (placeholder).');
-      return { success: true };
-  } catch(error: any) {
-      console.error('[Server Action Error] addProgram failed:', error.message);
-      return { success: false, message: 'Failed to add program.' };
-  }
-}
-
-export async function addEvent(eventData: any): Promise<{ success: boolean; message?: string }> {
-    console.log('[Server Action] addEvent invoked.');
-    console.log('Adding event:', eventData);
-    // TODO: Add check to ensure only admins can call this
-    // TODO: Add check for db instance availability
-    if (initializationError || !db) {
-      const errorMessage = 'Database service unavailable for adding event.';
-      console.error(`[Server Action Error] addEvent: ${errorMessage}`);
-      return { success: false, message: errorMessage };
-    }
-    // TODO: Implement database interaction (e.g., add to Firestore 'events' collection)
-    try {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate DB interaction
-        console.log('[Server Action] Event added successfully (placeholder).');
-        return { success: true };
-    } catch(error: any) {
-      console.error('[Server Action Error] addEvent failed:', error.message);
-      return { success: false, message: 'Failed to add event.' };
-    }
-}
-
