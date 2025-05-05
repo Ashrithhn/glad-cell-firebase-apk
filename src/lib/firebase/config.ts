@@ -79,3 +79,4 @@ console.log("--- Firebase Config Finished ---"); // Log end of file execution
 // Modules importing these should check for undefined before use.
 export { app, authInstance as auth, dbInstance as db, initializationError };
 
+
