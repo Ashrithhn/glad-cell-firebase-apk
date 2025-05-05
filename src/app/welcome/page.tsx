@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+// import Image from 'next/image'; // Removed Image import
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -17,30 +17,30 @@ const welcomeSteps = [
   {
     title: 'Welcome to GLAD CELL!',
     description: 'An initiative by the Department of Computer Science and Engineering, GECM Hassan, fostering innovation.',
-    imageSrc: 'https://picsum.photos/seed/welcome/600/400',
-    imageAlt: 'Abstract representation of innovation',
-    aiHint: 'innovation abstract technology',
+    // imageSrc: 'https://picsum.photos/seed/welcome/600/400', // Removed
+    // imageAlt: 'Abstract representation of innovation', // Removed
+    // aiHint: 'innovation abstract technology', // Removed
   },
   {
     title: 'Share & Discover Ideas',
     description: 'Explore groundbreaking concepts from students or submit your own unique startup ideas.',
-    imageSrc: 'https://picsum.photos/seed/ideas/600/400',
-    imageAlt: 'Lightbulb representing ideas',
-    aiHint: 'ideas lightbulb collaboration',
+    // imageSrc: 'https://picsum.photos/seed/ideas/600/400', // Removed
+    // imageAlt: 'Lightbulb representing ideas', // Removed
+    // aiHint: 'ideas lightbulb collaboration', // Removed
   },
   {
     title: 'Focus on the Best',
     description: 'Collaborate, refine, and get support to turn the most promising ideas into reality.',
-    imageSrc: 'https://picsum.photos/seed/focus/600/400',
-    imageAlt: 'Team working together',
-    aiHint: 'collaboration teamwork focus',
+    // imageSrc: 'https://picsum.photos/seed/focus/600/400', // Removed
+    // imageAlt: 'Team working together', // Removed
+    // aiHint: 'collaboration teamwork focus', // Removed
   },
   {
     title: "Let's Get Started!",
     description: 'Join the GLAD CELL community and start your innovation journey today.',
-    imageSrc: 'https://picsum.photos/seed/start/600/400',
-    imageAlt: 'Rocket launching symbolizing startup',
-    aiHint: 'startup launch rocket',
+    // imageSrc: 'https://picsum.photos/seed/start/600/400', // Removed
+    // imageAlt: 'Rocket launching symbolizing startup', // Removed
+    // aiHint: 'startup launch rocket', // Removed
   },
 ];
 
@@ -65,7 +65,9 @@ export default function WelcomePage() {
 
   const handleGetStarted = () => {
     // Mark welcome as seen in localStorage
-    localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+    }
     // Redirect to the main home page
     router.replace('/');
   };
@@ -80,47 +82,30 @@ export default function WelcomePage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-secondary/30 p-4">
-      <Card className="w-full max-w-md shadow-2xl overflow-hidden">
+    // Adjusted styles for full-screen dark background
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+      <Card className="w-full max-w-md shadow-2xl overflow-hidden bg-card border-border">
         <CardContent className="p-6 text-center space-y-6">
-           <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden mb-4">
-             <Image
-               key={stepData.imageSrc} // Force re-render on step change for potential animation
-               src={stepData.imageSrc}
-               alt={stepData.imageAlt}
-               layout="fill"
-               objectFit="cover"
-               className="animate-fade-in" // Simple fade-in animation
-               data-ai-hint={stepData.aiHint}
-             />
-           </div>
+           {/* Removed Image wrapper div */}
 
           <Progress value={progressValue} className="w-full h-2" />
 
           <h2 className="text-2xl font-semibold text-primary">{stepData.title}</h2>
           <p className="text-muted-foreground">{stepData.description}</p>
         </CardContent>
-        <CardFooter className="bg-muted/50 p-4 flex justify-center">
+        <CardFooter className="bg-card p-4 flex justify-center border-t border-border">
           {isLastStep ? (
-            <Button size="lg" onClick={handleGetStarted} className="w-full">
+            <Button size="lg" onClick={handleGetStarted} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               Get Started <Check className="ml-2 h-5 w-5" />
             </Button>
           ) : (
-            <Button size="lg" onClick={handleNext} className="w-full">
+            <Button size="lg" onClick={handleNext} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80">
               Continue <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           )}
         </CardFooter>
       </Card>
-      <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out forwards;
-        }
-      `}</style>
+      {/* Removed style tag for fade-in animation */}
     </div>
   );
 }

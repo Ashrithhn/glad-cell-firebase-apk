@@ -18,13 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark"> {/* Force dark mode */}
       <body className={cn('antialiased font-sans')}>
-        {/* WelcomeHandler wraps the part of the layout that should only show AFTER the welcome flow */}
         <WelcomeHandler>
           <div className="flex flex-col min-h-screen">
             <Header />
-            <main className="flex-grow container mx-auto px-4 py-8">
+            {/* Removed container mx-auto for full width */}
+            <main className="flex-grow px-4 py-8">
               {children}
             </main>
              {/* Consider adding a Footer component here if needed */}

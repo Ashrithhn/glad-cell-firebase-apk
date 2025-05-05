@@ -1,12 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CalendarCheck, Target, Lightbulb, ArrowRight } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function ProgramsPage() {
   return (
-    <div className="space-y-12 max-w-4xl mx-auto">
+    <div className="space-y-12 max-w-4xl mx-auto px-4">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-primary">Our Programs</h1>
         <p className="text-muted-foreground mt-2">
@@ -15,16 +14,7 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-         <div className="relative w-full h-48 md:h-64">
-            <Image
-              src="https://picsum.photos/800/300"
-              alt="Startup Event Concept"
-              layout="fill"
-              objectFit="cover"
-              data-ai-hint="startup event launch meeting"
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
+         {/* Removed Image component */}
         <CardHeader className="border-b">
           <CardTitle className="text-2xl text-primary flex items-center gap-2">
             <CalendarCheck className="h-6 w-6" />

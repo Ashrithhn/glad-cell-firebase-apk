@@ -1,14 +1,13 @@
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, Lightbulb, UserPlus, CalendarCheck } from 'lucide-react';
+import { ArrowRight, Lightbulb, CalendarCheck } from 'lucide-react';
 
 // No need for client-side checks here anymore, WelcomeHandler handles redirection.
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center space-y-12">
+    <div className="flex flex-col items-center justify-center space-y-12 px-4">
       <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary">
           Welcome to GLAD CELL!
@@ -19,24 +18,11 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="relative w-full max-w-3xl aspect-video rounded-lg overflow-hidden shadow-lg">
-        <Image
-          src="https://picsum.photos/800/450?grayscale&blur=2"
-          alt="Innovation Hub Concept"
-          layout="fill"
-          objectFit="cover"
-          data-ai-hint="collaboration innovation technology students"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 p-6 text-white">
-          <h2 className="text-2xl font-semibold">Fostering Innovation Together</h2>
-          <p className="text-sm opacity-80">Join our community and turn ideas into reality.</p>
-        </div>
-      </div>
+      {/* Removed Image component */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
 
-        <Card className="hover:shadow-lg transition-shadow duration-300 md:col-span-2 lg:col-span-1"> {/* Adjusted span for layout */}
+        <Card className="hover:shadow-lg transition-shadow duration-300 md:col-span-1"> {/* Adjusted span for layout */}
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xl font-semibold">Explore Ideas</CardTitle>
             <Lightbulb className="h-6 w-6 text-primary" />
@@ -53,7 +39,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-         <Card className="w-full max-w-4xl hover:shadow-lg transition-shadow duration-300 bg-secondary/50 md:col-span-2 lg:col-span-1"> {/* Adjusted span for layout */}
+         <Card className="w-full hover:shadow-lg transition-shadow duration-300 bg-secondary/50 md:col-span-1"> {/* Adjusted span for layout */}
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xl font-semibold">Upcoming Program</CardTitle>
                <CalendarCheck className="h-6 w-6 text-accent" />
