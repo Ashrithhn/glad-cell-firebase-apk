@@ -1,8 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarCheck, Target, Lightbulb, ArrowRight, LogIn } from 'lucide-react'; // Added LogIn
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { CalendarCheck, Target, Lightbulb } from 'lucide-react'; // Removed LogIn and ArrowRight as they are no longer used on this page
 
 export default function ProgramsPage() {
   return (
@@ -15,14 +13,13 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-         {/* Removed Image component */}
         <CardHeader className="border-b">
           <CardTitle className="text-2xl text-primary flex items-center gap-2">
             <CalendarCheck className="h-6 w-6" />
             Upcoming Event: Startup Ideation Kickstart
             </CardTitle>
           <CardDescription className="pt-1">
-            Our inaugural program designed to help students generate and refine startup ideas. Registration is required.
+            Our inaugural program designed to help students generate and refine startup ideas.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
@@ -48,15 +45,11 @@ export default function ProgramsPage() {
             </p>
            </div>
 
-           {/* Changed Register button to point to login/register flow */}
+           {/* Removed Login/Register button section */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <Button asChild>
-                <Link href="/login"> {/* Point to login, which links to register */}
-                    <LogIn className="mr-2 h-4 w-4" /> Login/Register to Participate
-                </Link>
-                </Button>
+                {/* Button removed */}
                 <p className="text-sm text-muted-foreground italic flex-1">
-                 More details regarding venue and specific timings will be announced soon. Stay tuned!
+                 More details regarding venue, specific timings, and participation will be announced soon. Stay tuned!
                </p>
             </div>
 
