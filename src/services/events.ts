@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined db and error
 import type { User } from 'firebase/auth';
 
@@ -107,7 +107,15 @@ export async function participateInEvent(participationData: {
 
          if (docSnap.exists()) {
              console.log('[Server Action] User profile found for:', userId); // Don't log data itself by default
-             return { success: true, data: docSnap.data() };
+             const data = docSnap.data();
+
+             // Convert Timestamp to a serializable format (ISO string)
+             // before returning it from the Server Action
+             if (data.createdAt && data.createdAt instanceof Timestamp) {
+               data.createdAt = data.createdAt.toDate().toISOString();
+             }
+
+             return { success: true, data: data };
          } else {
              const notFoundMessage = `User profile not found for user: ${userId}`;
              console.warn(`[Server Action] getUserProfile: ${notFoundMessage}`);
