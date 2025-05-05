@@ -7,8 +7,45 @@ body {
 }
 
 @layer base {
-  /* Removed light theme as dark mode is forced */
+  :root {
+    /* Light Theme Variables (Default) */
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 3.9%; /* Almost Black */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 210 100% 50%; /* Blue */
+    --primary-foreground: 0 0% 98%; /* White */
+    --secondary: 0 0% 96.1%; /* Light Gray */
+    --secondary-foreground: 0 0% 9%; /* Dark Gray */
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%; /* Medium Gray */
+    --accent: 130 70% 55%; /* Green */
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%; /* Light Gray Border */
+    --input: 0 0% 89.8%;
+    --ring: 210 100% 50%; /* Blue */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 0 0% 98%; /* Slightly off-white */
+    --sidebar-foreground: 0 0% 3.9%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 130 70% 90%; /* Lighter green */
+    --sidebar-accent-foreground: 130 70% 10%; /* Darker green text */
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 210 100% 50%;
+    --radius: 0.5rem;
+  }
+
   .dark {
+    /* Dark Theme Variables */
     --background: 0 0% 0%; /* Black Background */
     --foreground: 0 0% 98%; /* White text */
     --card: 210 10% 10%; /* Slightly lighter dark */
@@ -41,7 +78,7 @@ body {
     --sidebar-accent-foreground: 0 0% 98%; /* White text */
     --sidebar-border: 210 10% 20%;
     --sidebar-ring: 210 100% 60%;
-    --radius: 0.5rem;
+    /* --radius remains the same */
   }
 }
 
@@ -51,5 +88,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Add transition for smooth theme changes */
+    @apply transition-colors duration-300;
   }
 }

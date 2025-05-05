@@ -6,8 +6,8 @@ import { ArrowRight, Lightbulb, CalendarCheck } from 'lucide-react';
 
 export default function Home() {
   return (
-    // Removed explicit bg-white to allow theme background (dark) to apply
-    <div className="flex flex-col items-center justify-center space-y-12 px-4">
+    // Removed padding as it's now handled by the container in layout.tsx
+    <div className="flex flex-col items-center justify-center space-y-12">
       <div className="text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-primary">
           Welcome to GLAD CELL!

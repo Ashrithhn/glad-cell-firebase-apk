@@ -4,7 +4,7 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-// import { WelcomeHandler } from '@/components/layout/welcome-handler'; // Removed WelcomeHandler
+import { ThemeProvider } from '@/components/layout/theme-provider'; // Import ThemeProvider
 
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
@@ -18,19 +18,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Apply dark mode globally
-    <html lang="en" className="dark">
+    // Removed hardcoded dark class
+    <html lang="en" suppressHydrationWarning>
       <body className={cn('antialiased font-sans')}>
-          {/* Removed WelcomeHandler wrapper */}
-          <div className="flex flex-col min-h-screen">
-             {/* Conditionally render Header based on route if needed (e.g., hide on /welcome, /login, /register) */}
-             {/* <Header /> */}
-             <main className="flex-grow"> {/* Removed padding to allow full-screen pages like login/register */}
-              {children}
-            </main>
-             {/* Consider adding a Footer component here if needed */}
-          </div>
-          <Toaster />
+         {/* Wrap content with ThemeProvider */}
+         <ThemeProvider
+            attribute="class"
+            defaultTheme="dark" // Keep dark as default
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex flex-col min-h-screen">
+              {/* Conditionally render Header based on route if needed */}
+              <Header />
+              <main className="flex-grow container mx-auto py-8 px-4"> {/* Add container and padding */}
+                {children}
+              </main>
+              {/* Consider adding a Footer component here if needed */}
+            </div>
+            <Toaster />
+         </ThemeProvider>
       </body>
     </html>
   );
