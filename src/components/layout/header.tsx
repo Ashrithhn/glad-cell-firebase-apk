@@ -112,10 +112,16 @@ export function Header() {
           ) : (
              <> {/* Use shorthand fragment or no fragment */}
                  <Button variant="outline" asChild size="sm">
-                     <Link href="/login"><UserIcon className="mr-2 h-4 w-4"/>Login</Link>
+                     <Link href="/login">
+                         {/* Wrap content in span */}
+                         <span><UserIcon className="mr-2 h-4 w-4"/>Login</span>
+                     </Link>
                  </Button>
                   <Button variant="default" asChild size="sm">
-                     <Link href="/register"><UserIcon className="mr-2 h-4 w-4"/>Register</Link>
+                     <Link href="/register">
+                         {/* Wrap content in span */}
+                         <span><UserIcon className="mr-2 h-4 w-4"/>Register</span>
+                     </Link>
                  </Button>
              </>
           )}
