@@ -8,17 +8,23 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Lightbulb className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg text-primary">IdeaSpark</span>
+          <span className="font-bold text-lg text-primary">GLAD CELL</span>
         </Link>
-        <nav className="flex items-center gap-4">
-          <Button variant="ghost" asChild>
+        <nav className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+          <Button variant="ghost" asChild size="sm">
             <Link href="/">Home</Link>
           </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/register">Register</Link>
-          </Button>
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" asChild size="sm">
             <Link href="/ideas">Ideas</Link>
+          </Button>
+           <Button variant="ghost" asChild size="sm">
+            <Link href="/programs">Our Programs</Link>
+          </Button>
+          <Button variant="ghost" asChild size="sm">
+            <Link href="/contact">Contact</Link>
+          </Button>
+           <Button variant="default" asChild size="sm">
+            <Link href="/register">Register</Link>
           </Button>
         </nav>
       </div>
