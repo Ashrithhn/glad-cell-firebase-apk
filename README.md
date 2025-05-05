@@ -15,7 +15,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
 2.  **Set Up Environment Variables:**
 
-    This project uses Firebase for authentication and database services, and Razorpay for payments. You need to configure environment variables for these services.
+    This project uses Firebase for authentication and database services (Firestore), and Razorpay for payments. You need to configure environment variables for these services.
 
     *   Create a file named `.env.local` in the **root directory** of the project (the same level as `package.json`).
     *   Add the following variables to the `.env.local` file, replacing the placeholder values with your actual keys:
@@ -29,6 +29,10 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
         NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
         NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=YOUR_FIREBASE_MEASUREMENT_ID # Optional
+
+        # Firebase Realtime Database URL (Optional - Add if you plan to use Realtime Database server-side)
+        # Get this from Firebase Console > Realtime Database > Data tab (looks like https://<project-id>-default-rtdb.firebaseio.com/)
+        # FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
 
         # Razorpay Configuration (Get these from your Razorpay dashboard)
         RAZORPAY_KEY_ID=YOUR_RAZORPAY_KEY_ID
@@ -68,10 +72,6 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 3.  **Run the Development Server:**
     ```bash
     npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
     ```
 
 4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the terminal where you ran `npm run dev` for any error messages, especially Firebase configuration errors.
