@@ -42,22 +42,29 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    console.log('Admin Login Data:', values);
+    // console.log('Admin Login Data:', values);
 
     try {
       // Placeholder: Call a service to login the admin
       const result = await loginAdmin(values);
-      console.log('Admin Login Result:', result);
+      // console.log('Admin Login Result:', result);
 
       if (result.success) {
+         // Simulate setting admin authentication state (using localStorage for demo)
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('isAdminLoggedIn', 'true');
+             // Optionally trigger an event if needed elsewhere
+             window.dispatchEvent(new Event('authChange')); // Can use the same event or a specific admin one
+        }
+
         toast({
           title: 'Admin Login Successful!',
           description: 'Redirecting to dashboard...',
           variant: 'default',
         });
         // Redirect to admin dashboard page after successful login
-        // In a real app, you'd likely store an admin session/token here
         router.push('/admin/dashboard'); // Example dashboard route
+        router.refresh();
       } else {
         throw new Error(result.message || 'Invalid admin credentials.');
       }
@@ -68,6 +75,11 @@ export function AdminLoginForm() {
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
+       // Clear the flag if login fails
+       if (typeof window !== 'undefined') {
+          localStorage.removeItem('isAdminLoggedIn');
+          window.dispatchEvent(new Event('authChange'));
+       }
     } finally {
       setIsSubmitting(false);
     }
@@ -83,7 +95,7 @@ export function AdminLoginForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="Enter admin username" {...field} />
+                <Input placeholder="Enter admin username" {...field} suppressHydrationWarning />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,13 +108,13 @@ export function AdminLoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter admin password" {...field} />
+                <Input type="password" placeholder="Enter admin password" {...field} suppressHydrationWarning/>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting} suppressHydrationWarning>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...

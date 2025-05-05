@@ -42,22 +42,31 @@ export function LoginForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    console.log('Login Data:', values);
+    // console.log('Login Data:', values);
 
     try {
       // Placeholder: Call a service to login the user
       const result = await loginUser(values);
-      console.log('Login Result:', result);
+      // console.log('Login Result:', result);
 
       if (result.success) {
+        // Simulate setting authentication state (using localStorage for demo)
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('isLoggedIn', 'true');
+            // Optionally trigger a custom event or use a state management library
+            // to notify other components (like the Header) about the state change.
+             window.dispatchEvent(new Event('authChange'));
+        }
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome back!',
           variant: 'default',
         });
+
         // Redirect to home page after successful login
-        // In a real app, you'd likely store a session/token here
         router.push('/'); // Redirect to the main home page
+        router.refresh(); // Force refresh to potentially update header state if needed
       } else {
         throw new Error(result.message || 'Invalid email or password.');
       }
@@ -68,6 +77,11 @@ export function LoginForm() {
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
+       // Clear the flag if login fails, just in case
+       if (typeof window !== 'undefined') {
+          localStorage.removeItem('isLoggedIn');
+          window.dispatchEvent(new Event('authChange'));
+       }
     } finally {
       setIsSubmitting(false);
     }
@@ -83,7 +97,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email Address</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} />
+                <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,13 +110,13 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter your password" {...field} />
+                <Input type="password" placeholder="Enter your password" {...field} suppressHydrationWarning/>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting} suppressHydrationWarning>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
