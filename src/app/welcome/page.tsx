@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -68,28 +67,32 @@ export default function WelcomePage() {
     return null; // Or a loading skeleton
   }
 
+  // Full-screen black background container
   return (
-    // Explicitly set background to black for this page only
-    <div className="flex items-center justify-center min-h-screen bg-black p-4">
-      {/* Card remains styled by theme */}
-      <Card className="w-full max-w-md shadow-2xl overflow-hidden bg-card border-border">
-        <CardContent className="p-6 text-center space-y-6">
-          <Progress value={progressValue} className="w-full h-2" />
-          <h2 className="text-2xl font-semibold text-primary">{stepData.title}</h2>
-          <p className="text-muted-foreground">{stepData.description}</p>
-        </CardContent>
-        <CardFooter className="bg-card p-4 flex justify-center border-t border-border">
-          {isLastStep ? (
-            <Button size="lg" onClick={handleGetStarted} className="w-full">
-              Get Started <Check className="ml-2 h-5 w-5" />
-            </Button>
-          ) : (
-            <Button size="lg" onClick={handleNext} variant="secondary" className="w-full">
-              Continue <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-foreground p-4">
+      <div className="w-full max-w-md text-center space-y-8 flex-grow flex flex-col justify-center">
+        {/* Progress bar at the top */}
+        <Progress value={progressValue} className="w-full h-2 mb-8" />
+
+        {/* Step Content */}
+        <div className="space-y-4">
+          <h2 className="text-3xl font-semibold text-primary">{stepData.title}</h2>
+          <p className="text-lg text-muted-foreground">{stepData.description}</p>
+        </div>
+      </div>
+
+      {/* Footer with buttons */}
+      <div className="w-full max-w-md p-4 mt-auto">
+        {isLastStep ? (
+          <Button size="lg" onClick={handleGetStarted} className="w-full">
+            Get Started <Check className="ml-2 h-5 w-5" />
+          </Button>
+        ) : (
+          <Button size="lg" onClick={handleNext} variant="secondary" className="w-full">
+            Continue <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

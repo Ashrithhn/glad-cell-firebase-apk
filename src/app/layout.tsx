@@ -4,7 +4,7 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { WelcomeHandler } from '@/components/layout/welcome-handler'; // Import the handler
+// Removed WelcomeHandler import
 
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
@@ -18,9 +18,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark"> {/* Force dark mode */}
+    <html lang="en" className="dark"> {/* Force dark mode globally */}
       <body className={cn('antialiased font-sans')}>
-        <WelcomeHandler>
+         {/* Removed WelcomeHandler wrapper */}
           <div className="flex flex-col min-h-screen">
             <Header />
             {/* Removed container mx-auto for full width */}
@@ -30,10 +30,7 @@ export default function RootLayout({
              {/* Consider adding a Footer component here if needed */}
           </div>
           <Toaster />
-        </WelcomeHandler>
-         {/* Render children directly if it's the welcome page itself, handled inside WelcomeHandler */}
-         {/* Fallback rendering for the actual welcome page content (will be rendered by Next.js routing) */}
-         {children}
+         {/* Render children directly */}
       </body>
     </html>
   );
