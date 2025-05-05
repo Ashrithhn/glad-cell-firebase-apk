@@ -7,17 +7,22 @@ import {
     signOut as firebaseSignOut, // Rename to avoid conflict
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/config'; // Import potentially undefined auth and db
+import { auth, db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined auth, db, and error
 
 /**
  * Registers a user with Firebase Authentication and stores profile data in Firestore.
  */
 export async function registerUser(userData: any): Promise<{ success: boolean; userId?: string; message?: string }> {
-  // Check if Firebase services are available
-  if (!auth || !db) {
-    console.error('Firebase Auth or Firestore service is not available. Check configuration.');
-    return { success: false, message: 'Registration service unavailable. Please try again later.' };
+  // Check if Firebase services are initialized correctly
+  if (initializationError) {
+    console.error('Firebase initialization failed. Cannot register user.', initializationError.message);
+    return { success: false, message: `Registration service unavailable: ${initializationError.message}. Check setup.` };
   }
+  if (!auth || !db) {
+    console.error('Firebase Auth or Firestore service is not available despite no initialization error. Check configuration.');
+    return { success: false, message: 'Registration service temporarily unavailable. Please try again later.' };
+  }
+
 
   const { email, password, name, branch, semester, registrationNumber, collegeName, city, pincode } = userData;
   console.log('Attempting Firebase registration for user:', email);
@@ -55,9 +60,10 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     } else if (error.code === 'auth/weak-password') {
       message = 'Password is too weak. It should be at least 8 characters.';
     } else if (error.code === 'auth/invalid-api-key') {
-        message = 'Invalid Firebase configuration. Please contact support.'; // More user-friendly message
+        message = 'Invalid Firebase configuration (API Key). Please contact support.'; // More user-friendly message
     } else if (error.code === 'auth/configuration-not-found') {
-        message = 'Firebase Authentication is not enabled for this project. Please contact support or check Firebase console setup.';
+        // Specific message guiding the user to enable the sign-in method
+        message = 'Registration failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
     } else if (error.code) {
         message = `Registration failed: ${error.code}`;
     }
@@ -69,11 +75,15 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
  * Logs in a user using Firebase Authentication.
  */
 export async function loginUser(credentials: any): Promise<{ success: boolean; userId?: string; message?: string }> {
-   // Check if Firebase Auth service is available
-  if (!auth) {
-    console.error('Firebase Auth service is not available. Check configuration.');
-    return { success: false, message: 'Login service unavailable. Please try again later.' };
-  }
+   // Check if Firebase services are initialized correctly
+   if (initializationError) {
+    console.error('Firebase initialization failed. Cannot login user.', initializationError.message);
+    return { success: false, message: `Login service unavailable: ${initializationError.message}. Check setup.` };
+   }
+   if (!auth) {
+     console.error('Firebase Auth service is not available despite no initialization error. Check configuration.');
+     return { success: false, message: 'Login service temporarily unavailable. Please try again later.' };
+   }
 
   const { email, password } = credentials;
   console.log('Attempting Firebase login for user:', email);
@@ -89,9 +99,10 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
        message = 'Invalid email or password.';
      } else if (error.code === 'auth/invalid-api-key') {
-         message = 'Invalid Firebase configuration. Please contact support.';
+         message = 'Invalid Firebase configuration (API Key). Please contact support.';
      } else if (error.code === 'auth/configuration-not-found') {
-         message = 'Firebase Authentication is not enabled for this project. Please contact support or check Firebase console setup.';
+         // Specific message guiding the user to enable the sign-in method
+         message = 'Login failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
      } else if (error.code) {
          message = `Login failed: ${error.code}`;
      }
@@ -103,11 +114,16 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
  * Logs out the currently signed-in user using Firebase Authentication.
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
-    // Check if Firebase Auth service is available
+    // Check if Firebase services are initialized correctly
+    if (initializationError) {
+        console.warn('[logoutUser] Firebase initialization failed. Skipping logout.', initializationError.message);
+        return { success: false, message: 'Logout service unavailable due to config error.' };
+    }
     if (!auth) {
         console.warn('[logoutUser] Firebase Auth service is not available. Skipping logout.'); // Changed to warn
         return { success: false, message: 'Logout service unavailable.' };
     }
+
 
     console.log('Attempting Firebase logout');
     try {
@@ -144,7 +160,7 @@ export async function addProgram(programData: any): Promise<{ success: boolean; 
   console.log('Adding program:', programData);
   // TODO: Add check to ensure only admins can call this
   // TODO: Add check for db instance availability
-  if (!db) {
+  if (initializationError || !db) {
     console.error('Firestore service is not available.');
     return { success: false, message: 'Database service unavailable.' };
   }
@@ -157,7 +173,7 @@ export async function addEvent(eventData: any): Promise<{ success: boolean; mess
     console.log('Adding event:', eventData);
     // TODO: Add check to ensure only admins can call this
     // TODO: Add check for db instance availability
-    if (!db) {
+    if (initializationError || !db) {
       console.error('Firestore service is not available.');
       return { success: false, message: 'Database service unavailable.' };
     }
