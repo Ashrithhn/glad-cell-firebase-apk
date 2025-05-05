@@ -12,6 +12,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        // Add suppressHydrationWarning to ignore attributes added by browser extensions
+        suppressHydrationWarning
         {...props}
       />
     )
