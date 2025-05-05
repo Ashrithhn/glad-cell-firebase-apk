@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// import Image from 'next/image'; // Removed Image import
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -17,30 +16,18 @@ const welcomeSteps = [
   {
     title: 'Welcome to GLAD CELL!',
     description: 'An initiative by the Department of Computer Science and Engineering, GECM Hassan, fostering innovation.',
-    // imageSrc: 'https://picsum.photos/seed/welcome/600/400', // Removed
-    // imageAlt: 'Abstract representation of innovation', // Removed
-    // aiHint: 'innovation abstract technology', // Removed
   },
   {
     title: 'Share & Discover Ideas',
     description: 'Explore groundbreaking concepts from students or submit your own unique startup ideas.',
-    // imageSrc: 'https://picsum.photos/seed/ideas/600/400', // Removed
-    // imageAlt: 'Lightbulb representing ideas', // Removed
-    // aiHint: 'ideas lightbulb collaboration', // Removed
   },
   {
     title: 'Focus on the Best',
     description: 'Collaborate, refine, and get support to turn the most promising ideas into reality.',
-    // imageSrc: 'https://picsum.photos/seed/focus/600/400', // Removed
-    // imageAlt: 'Team working together', // Removed
-    // aiHint: 'collaboration teamwork focus', // Removed
   },
   {
     title: "Let's Get Started!",
     description: 'Join the GLAD CELL community and start your innovation journey today.',
-    // imageSrc: 'https://picsum.photos/seed/start/600/400', // Removed
-    // imageAlt: 'Rocket launching symbolizing startup', // Removed
-    // aiHint: 'startup launch rocket', // Removed
   },
 ];
 
@@ -82,30 +69,27 @@ export default function WelcomePage() {
   }
 
   return (
-    // Adjusted styles for full-screen dark background
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    // Explicitly set background to black for this page only
+    <div className="flex items-center justify-center min-h-screen bg-black p-4">
+      {/* Card remains styled by theme */}
       <Card className="w-full max-w-md shadow-2xl overflow-hidden bg-card border-border">
         <CardContent className="p-6 text-center space-y-6">
-           {/* Removed Image wrapper div */}
-
           <Progress value={progressValue} className="w-full h-2" />
-
           <h2 className="text-2xl font-semibold text-primary">{stepData.title}</h2>
           <p className="text-muted-foreground">{stepData.description}</p>
         </CardContent>
         <CardFooter className="bg-card p-4 flex justify-center border-t border-border">
           {isLastStep ? (
-            <Button size="lg" onClick={handleGetStarted} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="lg" onClick={handleGetStarted} className="w-full">
               Get Started <Check className="ml-2 h-5 w-5" />
             </Button>
           ) : (
-            <Button size="lg" onClick={handleNext} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80">
+            <Button size="lg" onClick={handleNext} variant="secondary" className="w-full">
               Continue <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           )}
         </CardFooter>
       </Card>
-      {/* Removed style tag for fade-in animation */}
     </div>
   );
 }
