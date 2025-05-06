@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings } from 'lucide-react'; // Changed GraduationCap to Activity, removed duplicate Activity
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2 } from 'lucide-react'; // Added new icons
 
 // In a real app, this page should be protected and only accessible to logged-in admins.
 // You would typically use middleware or a higher-order component for authentication checks.
@@ -47,9 +47,9 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {/* Placeholder content or link to idea management */}
-            <Button asChild variant="outline" className="w-full">
+            <Button asChild variant="outline" className="w-full" disabled>
                <Link href="/admin/ideas"> {/* Placeholder Link */}
-                 View Submitted Ideas
+                 View Submitted Ideas (soon)
                </Link>
             </Button>
           </CardContent>
@@ -63,13 +63,39 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {/* Placeholder content or link to user management */}
-             <Button asChild variant="outline" className="w-full">
+             <Button asChild variant="outline" className="w-full" disabled>
                <Link href="/admin/users"> {/* Placeholder Link */}
-                 View Registered Users
+                 View Registered Users (soon)
                </Link>
             </Button>
           </CardContent>
         </Card>
+
+        {/* Site Content Management Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/> Site Content</CardTitle>
+            <CardDescription>Edit text content for various site pages.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild variant="outline" className="w-full justify-start">
+               <Link href="/admin/content/about">
+                 <FileText className="mr-2 h-4 w-4"/> Edit About Page
+               </Link>
+            </Button>
+             <Button asChild variant="outline" className="w-full justify-start">
+               <Link href="/admin/content/contact">
+                 <Contact className="mr-2 h-4 w-4"/> Edit Contact Info
+               </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+               <Link href="/admin/content/links">
+                 <Link2 className="mr-2 h-4 w-4"/> Manage Links (e.g., WhatsApp)
+               </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
 
         {/* Settings Card (Optional) */}
         <Card>

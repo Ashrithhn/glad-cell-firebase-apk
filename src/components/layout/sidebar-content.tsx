@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   User,
   CalendarCheck,
-  MessageCircle,
+  MessageCircle, // Keep for WhatsApp
   Info,
   HelpCircle,
   Settings,
@@ -20,19 +20,44 @@ import {
   BarChart, // Added Admin Icon
   Home, // Added Home Icon
   Lightbulb, // Added Ideas Icon
-  MessageSquare // Added Feedback Icon
+  MessageSquare, // Added Feedback Icon
+  Loader2, // For loading state
+  Link2 // Generic link icon
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react'; // Import React hooks
+import { getContent } from '@/services/content'; // Import content service
+import type { SiteLinks } from '@/services/content'; // Import type
+import { useAuth } from '@/hooks/use-auth'; // Keep useAuth for login state etc.
+import { toast } from '@/hooks/use-toast'; // For feedback placeholder
 
 interface SidebarContentProps {
   isLoggedIn: boolean;
-  isAdmin: boolean; // Added isAdmin prop
+  isAdmin: boolean;
   handleLogout: () => void;
   closeSheet: () => void;
-  authError: Error | null; // Accept authError
+  authError: Error | null;
 }
 
 export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, authError }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
+  const [links, setLinks] = useState<SiteLinks | null>(null);
+  const [loadingLinks, setLoadingLinks] = useState(true);
+
+  useEffect(() => {
+    async function fetchLinks() {
+      setLoadingLinks(true);
+      const result = await getContent('links');
+      if (result.success && typeof result.data === 'object' && result.data !== null) {
+        setLinks(result.data as SiteLinks);
+      } else {
+        console.warn("Could not fetch site links for sidebar:", result.message);
+        setLinks({ whatsappCommunity: '' }); // Default to empty if fetch fails
+      }
+      setLoadingLinks(false);
+    }
+    fetchLinks();
+  }, []);
+
 
   const handleLinkClick = () => {
     closeSheet(); // Close sheet when a link is clicked
@@ -45,9 +70,15 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
    const handleFeedbackClick = () => {
        // TODO: Implement feedback mechanism (e.g., open modal, link to form)
-       alert("Feedback feature coming soon!"); // Placeholder
+       toast({
+           title: "Feedback",
+           description: "Feedback feature coming soon! Thanks for your interest.",
+           variant: "default"
+       });
        closeSheet();
    }
+
+   const whatsappLink = links?.whatsappCommunity;
 
   return (
     <div className="flex flex-col h-full pt-6">
@@ -90,13 +121,20 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Link>
         </Button>
 
-         {/* Placeholder link - replace with your actual WhatsApp group link */}
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <a href="https://chat.whatsapp.com/YourGroupInviteLink" target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              WhatsApp Community
-            </a>
-        </Button>
+         {/* Dynamic WhatsApp Community Link */}
+        {loadingLinks ? (
+             <Button variant="ghost" className="w-full justify-start" disabled>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Link...
+             </Button>
+        ) : whatsappLink ? (
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  WhatsApp Community
+                </a>
+            </Button>
+        ) : null /* Don't render if link is empty or not loaded */}
+
 
          {/* Feedback Button */}
         <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>

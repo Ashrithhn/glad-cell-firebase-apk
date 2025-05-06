@@ -1,7 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Mail, Phone, MapPin } from 'lucide-react';
 
-export default function ContactPage() {
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Mail, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { getContent } from '@/services/content'; // Import service
+import type { ContactInfo } from '@/services/content'; // Import type
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+
+// Fetch contact info on the server
+async function loadContactInfo(): Promise<{ contactInfo?: ContactInfo, error?: string }> {
+    const result = await getContent('contact'); // Fetch 'contact' content block
+    if (result.success && typeof result.data === 'object' && result.data !== null) {
+        return { contactInfo: result.data as ContactInfo };
+    } else if (!result.success) {
+        return { error: result.message || 'Failed to load contact info.' };
+    }
+    // Return default empty structure if no content exists yet
+    return { contactInfo: { address: 'Address not set.', email: 'Email not set.', phone: 'Phone not set.' } };
+}
+
+
+export default async function ContactPage() {
+  const { contactInfo, error } = await loadContactInfo();
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
@@ -10,6 +29,14 @@ export default function ContactPage() {
           Get in touch with the GLAD CELL team at GEC Mosalehosahalli.
         </p>
       </div>
+
+       {error && (
+         <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Contact Info</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+         </Alert>
+      )}
 
       <Card className="shadow-md">
         <CardHeader>
@@ -21,11 +48,8 @@ export default function ContactPage() {
             <MapPin className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
             <div>
               <h3 className="font-semibold">Address</h3>
-              <p className="text-muted-foreground">
-                Department of Computer Science and Engineering,<br />
-                Government Engineering College Mosalehosahalli,<br />
-                Hassan District, Karnataka - 573131 <br/>
-                India
+              <p className="text-muted-foreground whitespace-pre-line"> {/* Use whitespace-pre-line to respect newlines */}
+                {contactInfo?.address || 'N/A'}
               </p>
             </div>
           </div>
@@ -34,8 +58,8 @@ export default function ContactPage() {
             <Mail className="h-5 w-5 text-primary flex-shrink-0" />
             <div>
               <h3 className="font-semibold">Email</h3>
-              <a href="mailto:gladcell.cse@gecmh.ac.in" className="text-primary hover:underline text-muted-foreground">
-                gladcell.cse@gecmh.ac.in {/* Placeholder Email */}
+              <a href={`mailto:${contactInfo?.email}`} className="text-primary hover:underline text-muted-foreground">
+                {contactInfo?.email || 'N/A'}
               </a>
             </div>
           </div>
@@ -45,9 +69,10 @@ export default function ContactPage() {
             <div>
               <h3 className="font-semibold">Phone</h3>
               <p className="text-muted-foreground">
-                +91-XXX-XXXXXXX {/* Placeholder Phone */}
+                 {contactInfo?.phone || 'N/A'}
               </p>
-              <p className="text-xs text-muted-foreground">(Available during college working hours)</p>
+              {/* You might want a separate field for availability */}
+              <p className="text-xs text-muted-foreground">(Availability may vary)</p>
             </div>
           </div>
         </CardContent>
