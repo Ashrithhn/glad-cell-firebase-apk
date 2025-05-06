@@ -10,28 +10,30 @@ import { Separator } from '@/components/ui/separator';
 import {
   User,
   CalendarCheck,
-  MessageCircle, // Keep for WhatsApp
+  MessageCircle, 
   Info,
   Settings,
   LogOut,
   Sun,
   Moon,
-  BarChart, // Added Admin Icon
-  Home, // Added Home Icon
-  Lightbulb, // Added Ideas Icon
-  MessageSquare, // Added Feedback Icon
-  Loader2, // For loading state
-  Link2, // Generic link icon
+  BarChart, 
+  Home, 
+  Lightbulb, 
+  MessageSquare, 
+  Loader2, 
+  Link2, 
   QrCode, 
-  Users as UsersIcon, // Renamed to avoid conflict
-  FileText, // For content editing
-  Contact as ContactIcon, // Renamed to avoid conflict
+  Users as UsersIcon, 
+  FileText, 
+  Contact as ContactIcon,
+  ShieldCheck, // For Privacy Policy
+  ScrollText,  // For Terms and Conditions
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react'; // Import React hooks
-import { getContent } from '@/services/content'; // Import content service
-import type { SiteLinks } from '@/services/content'; // Import type
-import { useAuth } from '@/hooks/use-auth'; // Keep useAuth for login state etc.
-import { toast } from '@/hooks/use-toast'; // For feedback placeholder
+import React, { useEffect, useState } from 'react'; 
+import { getContent } from '@/services/content'; 
+import type { SiteLinks } from '@/services/content'; 
+import { useAuth } from '@/hooks/use-auth'; 
+import { toast } from '@/hooks/use-toast'; 
 
 interface SidebarContentProps {
   isLoggedIn: boolean;
@@ -72,7 +74,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
    };
 
    const handleFeedbackClick = () => {
-       // TODO: Implement feedback mechanism (e.g., open modal, link to form)
        toast({
            title: "Feedback",
            description: "Feedback feature coming soon! Thanks for your interest.",
@@ -106,7 +107,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Link>
           </Button>
 
-        {isLoggedIn && !isAdmin && ( // Show profile only for logged-in non-admin users
+        {isLoggedIn && !isAdmin && ( 
           <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
             <Link href="/profile">
               <User className="mr-2 h-4 w-4" />
@@ -115,7 +116,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Button>
         )}
 
-        {isAdmin && ( // Admin-specific section
+        {isAdmin && ( 
           <>
             <Separator />
              <Label className="flex items-center text-sm font-medium text-muted-foreground mb-1 px-2 pt-2">
@@ -185,8 +186,19 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Link>
         </Button>
 
+        {/* Legal Links */}
+        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/terms-and-conditions">
+              <ScrollText className="mr-2 h-4 w-4" /> Terms & Conditions
+            </Link>
+        </Button>
+        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/privacy-policy">
+              <ShieldCheck className="mr-2 h-4 w-4" /> Privacy Policy
+            </Link>
+        </Button>
 
-         {/* Dynamic WhatsApp Community Link */}
+
         {loadingLinks ? (
              <Button variant="ghost" className="w-full justify-start" disabled>
                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Link...
@@ -198,10 +210,9 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
                   WhatsApp Community
                 </a>
             </Button>
-        ) : null /* Don't render if link is empty or not loaded */}
+        ) : null }
 
 
-         {/* Feedback Button */}
         <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
             <MessageSquare className="mr-2 h-4 w-4" />
             Feedback
@@ -209,7 +220,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
         <Separator />
 
-        {/* Settings Section */}
         <div className="px-2 py-1">
              <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2">
                  <Settings className="mr-2 h-4 w-4" /> Settings
@@ -217,12 +227,12 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
                  <div className="flex items-center space-x-2">
                  {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                 <Label htmlFor="theme-switch-mobile" className="text-sm"> {/* Unique ID for mobile switch */}
+                 <Label htmlFor="theme-switch-mobile" className="text-sm"> 
                     {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                  </Label>
                  </div>
                 <Switch
-                    id="theme-switch-mobile" // Unique ID
+                    id="theme-switch-mobile" 
                     checked={theme === 'dark'}
                     onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
                     aria-label="Toggle theme"
@@ -234,7 +244,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
       </nav>
 
-      {/* Logout button at the bottom */}
       {isLoggedIn && (
         <div className="mt-auto pb-4 px-2">
           <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
@@ -243,7 +252,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Button>
         </div>
       )}
-       {/* Show Login/Register only if not logged in AND no auth error */}
        {!isLoggedIn && !authError && (
            <div className="mt-auto pb-4 px-2 space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
