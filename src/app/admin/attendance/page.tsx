@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -7,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { QrCode, CheckCircle, XCircle, Loader2, CameraOff, Video } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, Loader2, CameraOff, Video, FileDown } from 'lucide-react'; // Added FileDown icon
 import { useToast } from '@/hooks/use-toast';
+import { saveAttendanceRecord } from '@/services/attendance'; // Importing saveAttendanceRecord
 // We would need a QR scanner library. For this example, we'll simulate scanning.
 // Popular libraries: react-qr-reader, html5-qrcode
 // For now, we'll use a simple text input to simulate scanning QR data.
@@ -31,6 +31,10 @@ export default function AdminAttendancePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  // Keep track of scanned order IDs
+  const [scannedOrderIds, setScannedOrderIds] = useState<Set<string>>(new Set());
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]); // To store attendance records
 
 
   // Placeholder for starting camera scan
@@ -98,6 +102,16 @@ export default function AdminAttendancePage() {
       toast({ title: "No Data", description: "No QR data to verify.", variant: "destructive" });
       return;
     }
+
+    const orderId = parsedData.orderId;
+    if (scannedOrderIds.has(orderId)) {
+        toast({ title: "Already Scanned", description: "This ticket has already been used.", variant: "destructive" });
+        setScanResult({ type: 'error', message: `Order ID: ${orderId} has already been scanned.` });
+        setScannedData(''); // Clear input after processing for next scan
+        setParsedData(null);
+        return;
+    }
+
     setIsLoading(true);
     setScanResult(null);
 
@@ -111,18 +125,22 @@ export default function AdminAttendancePage() {
     // 5. Return success or error.
     
     console.log("Verifying attendance for:", parsedData);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+    // await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
-    // Example: Simulate a successful verification and marking
-    // This is just a placeholder. Replace with actual server-side logic.
-    const isSuccessfullyVerified = Math.random() > 0.2; // Simulate 80% success rate
+    // Call saveAttendanceRecord instead of simulated logic
+    const result = await saveAttendanceRecord(parsedData.orderId, parsedData.eventId, parsedData.userId, scannedData);
 
-    if (isSuccessfullyVerified) {
-      setScanResult({ type: 'success', message: `Attendance marked for Order ID: ${parsedData.orderId}. Welcome!` });
-      toast({ title: "Attendance Marked", description: `User ${parsedData.userId} for event ${parsedData.eventId} marked present.`});
+
+    if (result.success) {
+        setScannedOrderIds(prev => new Set(prev.add(orderId)));
+        setScanResult({ type: 'success', message: `Attendance marked for Order ID: ${orderId}. Welcome!` });
+        toast({ title: "Attendance Marked", description: `User ${parsedData.userId} for event ${parsedData.eventId} marked present.` });
+        // Add the attendance record to the local state
+        setAttendanceRecords(prev => [...prev, parsedData]);
+
     } else {
-      setScanResult({ type: 'error', message: `Verification failed for Order ID: ${parsedData.orderId}. Ticket might be invalid or already used.` });
-      toast({ title: "Verification Failed", description: "Could not mark attendance. Please check the ticket or try again.", variant: "destructive"});
+      setScanResult({ type: 'error', message: `Verification failed for Order ID: ${orderId}. Ticket might be invalid or already used.` });
+      toast({ title: "Verification Failed", description: result.message || "Could not mark attendance. Please check the ticket or try again.", variant: "destructive"});
     }
     // --- END SIMULATED BACKEND LOGIC ---
     
@@ -169,6 +187,36 @@ export default function AdminAttendancePage() {
         // getCameraPermission(); // Call this when you want to initialize camera, e.g., on a button click
         // For now, we assume permission is checked/granted when "Start Scan" is clicked.
     }, []);
+
+  const downloadAttendanceData = () => {
+        if (attendanceRecords.length === 0) {
+            toast({ title: "No Data", description: "No attendance records to download.", variant: "destructive" });
+            return;
+        }
+
+        const csvRows = [];
+        const headers = Object.keys(attendanceRecords[0]);
+        csvRows.push(headers.join(','));
+
+        for (const record of attendanceRecords) {
+            const values = headers.map(header => {
+                const value = record[header];
+                return typeof value === 'string' ? `"${value}"` : value; // Escape strings with quotes
+            });
+            csvRows.push(values.join(','));
+        }
+
+        const csvData = csvRows.join('\n');
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_data.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
 
   return (
@@ -234,7 +282,7 @@ export default function AdminAttendancePage() {
                 <p><strong>Order ID:</strong> {parsedData.orderId}</p>
                 <p><strong>Event ID:</strong> {parsedData.eventId}</p>
                 <p><strong>User ID:</strong> {parsedData.userId}</p>
-                <Button onClick={verifyAndMarkAttendance} disabled={isLoading} className="mt-4 w-full">
+                <Button onClick={verifyAndMarkAttendance} disabled={isLoading || scannedOrderIds.has(parsedData.orderId)} className="mt-4 w-full">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Verify and Mark Attendance
                 </Button>
@@ -249,9 +297,12 @@ export default function AdminAttendancePage() {
               <AlertDescription>{scanResult.message}</AlertDescription>
             </Alert>
           )}
-
+        <Button onClick={downloadAttendanceData} variant="secondary" disabled={attendanceRecords.length === 0}>
+            <FileDown className="mr-2 h-4 w-4"/> Download Attendance Data
+        </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+
