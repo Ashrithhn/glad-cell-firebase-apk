@@ -8,77 +8,103 @@ body {
 
 @layer base {
   :root {
-    /* Light Theme Variables (Modern Blue/Gray with Vibrant Orange Accent) */
-    --background: 210 20% 98%; /* Very light cool gray */
-    --foreground: 210 10% 23%; /* Dark cool gray */
+    /* Light Theme Variables (Instagram-inspired: Light, Clean, Vibrant Accents) */
+    --background: 0 0% 100%; /* White */
+    --foreground: 240 10% 3.9%; /* Near Black */
+
     --card: 0 0% 100%; /* White */
-    --card-foreground: 210 10% 23%;
+    --card-foreground: 240 10% 3.9%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
-    --primary: 221 83% 53%; /* Vibrant Blue */
-    --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 210 20% 94%; /* Light cool gray */
-    --secondary-foreground: 210 10% 23%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 210 10% 45%; /* Medium cool gray */
-    --accent: 25 95% 53%; /* Vibrant Orange */
-    --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 72% 51%; /* Red */
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 88%; /* Lighter cool gray Border */
-    --input: 210 20% 88%;
-    --ring: 221 83% 53%; /* Vibrant Blue */
-    --chart-1: 221 70% 60%;
-    --chart-2: 180 60% 55%;
-    --chart-3: 25 80% 60%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 210 20% 96%; /* Slightly off-white for sidebar */
-    --sidebar-foreground: 210 10% 23%;
-    --sidebar-primary: 221 83% 53%; /* Primary blue for sidebar active items */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 95% 90%; /* Lighter Orange for sidebar hover */
-    --sidebar-accent-foreground: 25 95% 30%; /* Darker orange for text on sidebar accent */
-    --sidebar-border: 210 20% 85%;
-    --sidebar-ring: 221 83% 53%;
-    --radius: 0.75rem; /* Slightly larger radius for modern feel */
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 262 80% 58%; /* Vibrant Purple/Pink (Instagram-like) */
+    --primary-foreground: 0 0% 98%; /* Light text on primary */
+
+    --secondary: 240 4.8% 95.9%; /* Light Gray */
+    --secondary-foreground: 240 10% 3.9%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%; /* Mid Gray */
+
+    --accent: 38 92% 50%; /* Vibrant Orange/Yellow (Instagram-like) */
+    --accent-foreground: 240 10% 3.9%; /* Dark text on accent */
+
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%; /* Light Gray Border */
+    --input: 240 5.9% 90%;
+    --ring: 262 80% 58%; /* Primary color for rings */
+
+    --radius: 0.5rem; /* Standard radius */
+
+    /* Chart colors - can be vibrant like Instagram stories */
+    --chart-1: 262 80% 60%; /* Primary-like */
+    --chart-2: 38 92% 55%;  /* Accent-like */
+    --chart-3: 180 70% 50%; /* Teal */
+    --chart-4: 330 85% 60%; /* Pink */
+    --chart-5: 210 90% 55%; /* Bright Blue */
+
+    /* Sidebar - can be clean white or light gray */
+    --sidebar-background: 0 0% 98%; /* Very Light Gray or White */
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-primary: 262 80% 58%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 38 92% 90%; /* Lighter Accent for hover */
+    --sidebar-accent-foreground: 38 92% 30%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 262 80% 58%;
   }
 
   .dark {
-    /* Dark Theme Variables (Deep Blue/Gray with Vibrant Orange Accent) */
-    --background: 222 47% 11%; /* Deep dark blue */
-    --foreground: 210 20% 95%; /* Light cool gray text */
-    --card: 222 47% 14%; /* Slightly lighter deep blue */
-    --card-foreground: 210 20% 95%;
-    --popover: 222 47% 10%; /* Darker popover */
-    --popover-foreground: 210 20% 95%;
-    --primary: 217 91% 60%; /* Brighter Blue for dark mode */
-    --primary-foreground: 222 47% 11%; /* Dark text on primary */
-    --secondary: 222 47% 18%; /* Darker gray-blue */
-    --secondary-foreground: 210 20% 95%;
-    --muted: 222 47% 18%;
-    --muted-foreground: 210 10% 60%; /* Lighter gray-blue text */
-    --accent: 25 95% 58%; /* Vibrant Orange */
-    --accent-foreground: 222 47% 11%; /* Dark text on accent */
-    --destructive: 0 63% 51%; /* Vibrant Red */
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 47% 20%; /* Adjusted border */
-    --input: 222 47% 18%; /* Adjusted input */
-    --ring: 217 91% 60%; /* Ring matches primary */
-    --chart-1: 217 80% 70%; /* Brighter chart colors */
-    --chart-2: 180 70% 65%;
-    --chart-3: 25 90% 65%;
-    --chart-4: 280 75% 70%;
-    --chart-5: 340 85% 65%;
-    --sidebar-background: 222 47% 13%; /* Slightly lighter sidebar */
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 25 95% 35%; /* Darker vibrant orange for sidebar accent bg */
-    --sidebar-accent-foreground: 25 95% 95%; /* Light text */
-    --sidebar-border: 222 47% 20%;
-    --sidebar-ring: 217 91% 60%;
+    /* Dark Theme Variables (Instagram Dark Mode-inspired: Deep, Vibrant Accents) */
+    --background: 240 10% 3.9%; /* Near Black */
+    --foreground: 0 0% 98%; /* Light Gray Text */
+
+    --card: 240 5% 8%; /* Very Dark Gray */
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 262 80% 62%; /* Brighter Purple/Pink for dark mode */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%; /* Dark Gray */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%; /* Mid Gray */
+
+    --accent: 38 92% 55%; /* Vibrant Orange/Yellow */
+    --accent-foreground: 240 10% 3.9%;
+
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 262 80% 62%;
+
     /* --radius remains the same */
+
+    /* Chart colors - vibrant for dark mode */
+    --chart-1: 262 80% 65%;
+    --chart-2: 38 92% 60%;
+    --chart-3: 180 70% 55%;
+    --chart-4: 330 85% 65%;
+    --chart-5: 210 90% 60%;
+
+    /* Sidebar Dark */
+    --sidebar-background: 240 4% 10%; /* Slightly Lighter Dark */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 262 80% 62%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 38 92% 25%; /* Darker Accent for hover bg */
+    --sidebar-accent-foreground: 38 92% 85%; /* Lighter text on accent */
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 262 80% 62%;
   }
 }
 
@@ -100,8 +126,50 @@ body {
 
 /* Add a subtle pattern or texture for the home page - example with very light dots */
 .home-page-texture {
-    /* background-image: radial-gradient(hsl(var(--muted)) 1px, transparent 1px);
-    background-size: 16px 16px; */
-    /* Or a subtle linear gradient */
+    /* Example: subtle gradient or texture */
+    /* background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--secondary) / 0.5)); */
     @apply bg-gradient-to-b from-background to-muted/10;
+}
+
+
+/* Global Loading Spinner Styles */
+.global-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: hsl(var(--background) / 0.8); /* Semi-transparent background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Ensure it's on top */
+  backdrop-filter: blur(4px);
+}
+
+.global-loader-spinner {
+  border: 4px solid hsl(var(--muted));
+  border-top: 4px solid hsl(var(--primary));
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Initial Page Loader (Welcome Screen) */
+.initial-page-loader {
+  position: fixed;
+  inset: 0;
+  background-color: hsl(var(--background)); /* Match welcome page background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000; /* Highest z-index */
+}
+
+.initial-page-loader .global-loader-spinner {
+  /* Use accent color for initial loader if desired */
+   border-top: 4px solid hsl(var(--accent));
 }

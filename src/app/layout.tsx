@@ -6,12 +6,13 @@ import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/layout/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
-import { WelcomeHandler } from '@/components/layout/welcome-handler'; // Import WelcomeHandler
-import { GlobalStyles } from '@/components/layout/global-styles'; // Import the new GlobalStyles component
+import { AuthProvider } from '@/hooks/use-auth';
+import { WelcomeHandler } from '@/components/layout/welcome-handler';
+import { GlobalStyles } from '@/components/layout/global-styles';
+import { GlobalLoadingIndicator } from '@/components/layout/global-loading-indicator'; // Import loader
 
 // Initialize Inter font with subsets
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
@@ -26,16 +27,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('antialiased', inter.className)}> {/* Apply Inter font */}
+      <body className={cn('antialiased font-sans', inter.variable)}> {/* Apply Inter font */}
          <ThemeProvider
             attribute="class"
-            defaultTheme="light"
+            defaultTheme="light" // Changed default theme to light
             enableSystem
             disableTransitionOnChange
           >
             <AuthProvider>
                 <WelcomeHandler>
-                    <GlobalStyles /> {/* Add the GlobalStyles component here */}
+                    <GlobalStyles />
+                    <GlobalLoadingIndicator /> {/* Add Global Loading Indicator here */}
                     <div className="flex flex-col min-h-screen">
                       <Header />
                       <main className="flex-grow container mx-auto py-8 px-4">

@@ -27,29 +27,48 @@ export function WelcomeHandler({ children }: WelcomeHandlerProps) {
         } else {
            console.log('[WelcomeHandler] Welcome seen, showing main content.');
            setShowWelcome(false);
-           // If somehow user lands on /welcome after seeing it, redirect them
            if (pathname === '/welcome') {
                console.log('[WelcomeHandler] Redirecting from /welcome to /');
                router.replace('/');
            }
         }
-        setIsCheckComplete(true);
+        // Add a small delay to allow initial styles to apply and prevent flash
+        // This is a common trick for smoother transitions with client-side logic.
+        setTimeout(() => setIsCheckComplete(true), 50);
       }
   }, [pathname, router]);
 
 
   if (!isCheckComplete) {
-    // Optional: Return a full-screen loader matching the welcome screen background
-     return <div className="fixed inset-0 bg-black flex items-center justify-center"> {/* Loading state */}
-                {/* Optional: Add a spinner */}
-            </div>;
+    // Use the styled initial page loader
+     return <div className="initial-page-loader"><div className="global-loader-spinner"></div></div>;
   }
 
-  if (showWelcome) {
-    // Render the WelcomePage component directly instead of redirecting
-    return <WelcomePage />;
+  if (showWelcome && pathname !== '/welcome') {
+    // If we determined to show welcome, but somehow the URL is not /welcome yet,
+    // redirect to /welcome. This case might happen due to race conditions or async nature.
+    // It's important for the WelcomePage to be rendered at its designated route.
+    if (isClient) { // Ensure router.replace is called client-side
+        router.replace('/welcome');
+        return <div className="initial-page-loader"><div className="global-loader-spinner"></div></div>; // Show loader during redirect
+    }
   }
 
-  // Render the main application children if welcome screen is not needed
+  if (pathname === '/welcome') {
+    if (showWelcome) {
+        return <WelcomePage />;
+    } else {
+        // If welcome has been seen, and user tries to access /welcome directly, redirect them.
+        if (isClient) {
+            router.replace('/');
+            return <div className="initial-page-loader"><div className="global-loader-spinner"></div></div>;
+        }
+    }
+  }
+
+  // Render the main application children if welcome screen is not needed or already handled
   return <>{children}</>;
 }
+
+// Helper to check if running on client (useEffect cannot be called conditionally)
+const isClient = typeof window !== 'undefined';
