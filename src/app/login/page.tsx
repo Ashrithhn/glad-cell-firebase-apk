@@ -12,11 +12,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, ShieldAlert } from 'lucide-react';
 import { GoogleSignInButton } from '@/components/features/auth/google-signin-button'; // Import Google Sign-In button
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, userId, isAdmin, loading, authError, login: authLogin } = useAuth(); // Use auth context, include authError and login
   const isLoggedIn = !loading && (!!userId || isAdmin);
+  const { toast } = useToast(); // Initialize toast
 
   useEffect(() => {
     if (!loading) {
