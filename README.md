@@ -63,7 +63,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
     **🔴 IMPORTANT: Firebase `auth/configuration-not-found` Error 🔴**
 
-    If you encounter a `FirebaseError: Firebase: Error (auth/configuration-not-found)` when trying to **register or log in**, it means you haven't enabled the necessary sign-in method (like Email/Password) in your Firebase project.
+    If you encounter a `FirebaseError: Firebase: Error (auth/configuration-not-found)` when trying to **register or log in with Email/Password**, it means you haven't enabled the Email/Password sign-in method in your Firebase project.
 
     **How to Fix:**
     1.  Go to the [Firebase Console](https://console.firebase.google.com/).
@@ -74,6 +74,23 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     6.  Click the pencil icon (Edit) and **enable** the provider.
     7.  Click **Save**.
     8.  **Restart your Next.js development server (`npm run dev`)** if it was running.
+
+    **🔴 IMPORTANT: Firebase `auth/unauthorized-domain` Error (Especially with Google Sign-In) 🔴**
+
+    If you encounter a `FirebaseError: Firebase: Error (auth/unauthorized-domain)` when trying to use a sign-in provider (commonly Google Sign-In), it means the domain your application is running on (e.g., `localhost`, or your deployed domain like `your-app.vercel.app`) has not been added to the list of authorized domains in your Firebase project.
+
+    **How to Fix:**
+    1.  Go to the [Firebase Console](https://console.firebase.google.com/).
+    2.  Select your project.
+    3.  In the left-hand menu, navigate to **Authentication**.
+    4.  Click the **Sign-in method** tab.
+    5.  Scroll down to the **Authorized domains** section.
+    6.  Click the **Add domain** button.
+    7.  Enter the domain your application is currently running on.
+        *   For local development, this is usually `localhost`.
+        *   For deployed applications, use your actual domain (e.g., `your-app-name.vercel.app`, `www.yourdomain.com`).
+    8.  Click **Add**.
+    9.  It might take a few minutes for the changes to propagate. You might also need to clear your browser cache or restart your development server.
 
 3.  **Run the Development Server:**
     ```bash
@@ -95,12 +112,18 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 ## Key Features Implemented
 
 *   Student Registration & Login (Firebase Auth & Firestore)
+    *   Email/Password
+    *   Google Sign-In
 *   Admin Login (Placeholder - Use Firebase Custom Claims for production)
 *   Event Participation with Razorpay Payment Gateway
-*   Basic Profile Page
+*   Profile Page with Profile Picture Upload
 *   Idea Showcase (Placeholder Data)
-*   About & Contact Pages
+*   About & Contact Pages (Admin-editable)
 *   Dark/Light Theme Toggle
+*   Welcome Carousel
+*   Admin Dashboard for:
+    *   Managing Programs/Events (Add, View, Delete)
+    *   Editing Site Content (About, Contact, Links)
 
 ## Admin Credentials (Development Only)
 
