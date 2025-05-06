@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -70,6 +69,24 @@ export function GlobalStyles() {
         :root {
           --header-height: 4rem; /* Default, adjust if header height changes */
         }
+
+        /* Idea flash animation for the lightbulb */
+        @keyframes idea-flash {
+          0%, 100% { 
+            opacity: 1; 
+            transform: scale(1); 
+            text-shadow: 0 0 5px hsl(var(--primary) / 0.5); /* Subtle glow */
+          }
+          50% { 
+            opacity: 0.8; 
+            transform: scale(1.1); 
+            text-shadow: 0 0 15px hsl(var(--primary) / 0.7); /* Brighter glow */
+          }
+        }
+        .idea-flash-animation {
+          animation: idea-flash 2s ease-in-out infinite;
+        }
+        
      `}</style>
   );
 }

@@ -1,10 +1,9 @@
-
 'use client'; // Required for using hooks
 
 import React from 'react'; // Import React for Fragment
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, LogOut, Menu, User as UserIcon, BarChart, Building2, Home, Settings, MessageCircle, Info, HelpCircle } from 'lucide-react'; // Added icons
+import { Lightbulb, LogOut, Menu, User as UserIcon, BarChart, Building2, Home, Settings, MessageCircle, Info, HelpCircle, ShieldAlert } from 'lucide-react'; // Added icons
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -19,6 +18,7 @@ import { useAuth } from '@/hooks/use-auth'; // Import useAuth hook
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils'; // Import cn
 
 export function Header() {
   const pathname = usePathname();
@@ -28,12 +28,6 @@ export function Header() {
 
   // Combine user and admin login status
   const isLoggedIn = !!userId || isAdmin;
-
-  // Hide header on specific pages - Removed welcome page
-  // const hiddenPaths = ['/welcome'];
-  // if (hiddenPaths.includes(pathname)) {
-  //   return null;
-  // }
 
   const handleLogout = async () => {
     try {
@@ -76,17 +70,19 @@ export function Header() {
     );
   }
 
-  // Removed the problematic if (authError) block that caused the syntax error
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <Lightbulb className="h-6 w-6 text-primary" />
+          <Lightbulb className={cn(
+              "h-6 w-6",
+              isLoggedIn ? "text-yellow-400 idea-flash-animation" : "text-primary"
+            )} />
           <span className="font-bold text-lg text-primary">GLAD CELL</span>
         </Link>
 
-        {/* Desktop Navigation - Removed Login/Register */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1 md:gap-2 flex-wrap justify-end">
           <Button variant="ghost" asChild size="sm">
             <Link href="/">Home</Link>
@@ -103,25 +99,34 @@ export function Header() {
           <Button variant="ghost" asChild size="sm">
             <Link href="/contact">Contact</Link>
           </Button>
-          {isAdmin && ( // Show Admin Dashboard link if admin
+          {isAdmin && (
             <Button variant="ghost" asChild size="sm">
                  <Link href="/admin/dashboard">
                      <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
                  </Link>
             </Button>
           )}
-           {isLoggedIn && !isAdmin && ( // Show Profile for logged in regular users
+           {isLoggedIn && !isAdmin && (
              <Button variant="ghost" asChild size="sm">
                   <Link href="/profile">
                       <UserIcon className="mr-2 h-4 w-4"/> Profile
                   </Link>
              </Button>
            )}
-          {isLoggedIn ? ( // Show Logout only if logged in (user or admin)
+          {isLoggedIn ? (
              <Button variant="outline" size="sm" onClick={handleLogout}>
                <LogOut className="mr-2 h-4 w-4" /> Logout
              </Button>
-          ) : null /* Hide Login/Register buttons here */ }
+          ) : (
+             <>
+                 <Button variant="outline" asChild size="sm">
+                     <Link href="/login">Login</Link>
+                 </Button>
+                 <Button variant="default" asChild size="sm">
+                     <Link href="/register">Register</Link>
+                 </Button>
+             </>
+          )}
         </nav>
 
         {/* Mobile Navigation Toggle */}
@@ -137,11 +142,14 @@ export function Header() {
               <SheetHeader>
                 <SheetTitle>
                   <Link href="/" className="flex items-center gap-2" onClick={() => setIsSheetOpen(false)}>
-                     <Lightbulb className="h-6 w-6 text-primary" />
+                     <Lightbulb className={cn(
+                        "h-6 w-6",
+                        isLoggedIn ? "text-yellow-400 idea-flash-animation" : "text-primary"
+                        )} />
                      <span className="font-bold text-lg text-primary">GLAD CELL</span>
                   </Link>
                 </SheetTitle>
-                 {authError && ( // Show error in Sheet if Firebase fails
+                 {authError && (
                    <Alert variant="destructive" className="mt-4 text-left">
                        <AlertCircle className="h-4 w-4" />
                        <AlertTitle>Error</AlertTitle>
@@ -151,13 +159,12 @@ export function Header() {
                    </Alert>
                  )}
               </SheetHeader>
-              {/* Pass necessary props to SidebarContent */}
               <SidebarContent
                 isLoggedIn={isLoggedIn}
                 isAdmin={isAdmin}
                 handleLogout={handleLogout}
                 closeSheet={() => setIsSheetOpen(false)}
-                authError={authError} // Pass authError to disable login/register in sidebar
+                authError={authError}
               />
             </SheetContent>
           </Sheet>
