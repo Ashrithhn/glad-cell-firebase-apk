@@ -5,8 +5,9 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut as firebaseSignOut, // Rename to avoid conflict
+    sendPasswordResetEmail, // Import Firebase function
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp, collection, query, where, limit } from 'firebase/firestore';
 import { auth, db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined auth, db, and error
 
 /**
@@ -58,7 +59,7 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     if (error.code === 'auth/email-already-in-use') {
       message = 'This email address is already registered.';
     } else if (error.code === 'auth/weak-password') {
-      message = 'Password is too weak. It should be at least 8 characters.';
+      message = 'Password is too weak. It should be at least 8 characters long.';
     } else if (error.code === 'auth/invalid-api-key') {
         message = 'Invalid Firebase configuration (API Key). Please contact support.';
     } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
@@ -231,4 +232,52 @@ export async function loginAdmin(credentials: any): Promise<{ success: boolean; 
      console.warn('[Server Action] Admin login failed (placeholder): Invalid credentials.');
      return { success: false, message: 'Invalid admin credentials.' };
   }
+}
+
+/**
+ * Sends a password reset email to the given email address.
+ */
+export async function sendPasswordReset(email: string): Promise<{ success: boolean; message?: string }> {
+    console.log('[Server Action] sendPasswordReset invoked for email:', email);
+
+    if (initializationError) {
+        const errorMessage = `Password reset service unavailable: Firebase initialization error - ${initializationError.message}.`;
+        console.error(`[Server Action Error] sendPasswordReset: ${errorMessage}`);
+        return { success: false, message: errorMessage };
+    }
+    if (!auth) {
+        const errorMessage = 'Password reset service unavailable: Firebase Auth instance missing.';
+        console.error(`[Server Action Error] sendPasswordReset: ${errorMessage}`);
+        return { success: false, message: errorMessage };
+    }
+
+    try {
+        // Check if the email exists in Firebase Auth (optional, but good UX)
+        // Firebase's sendPasswordResetEmail doesn't error if email doesn't exist for security reasons.
+        // If you want to explicitly check, you'd need a different approach (e.g., custom backend or Firestore check).
+        // For now, we'll rely on Firebase's default behavior.
+
+        await sendPasswordResetEmail(auth, email);
+        console.log('[Server Action] Password reset email sent to:', email);
+        return { success: true, message: 'If an account exists for this email, a password reset link has been sent.' };
+    } catch (error: any) {
+        console.error('[Server Action Error] Error sending password reset email:', error.code, error.message);
+        let message = 'Failed to send password reset email. Please try again.';
+        if (error.code === 'auth/invalid-email') {
+            message = 'Invalid email address format.';
+        } else if (error.code === 'auth/user-not-found') {
+            // Note: Firebase usually doesn't throw this for sendPasswordResetEmail for security.
+            // It will resolve successfully to prevent email enumeration.
+            // The message is for internal logging or if behavior changes.
+            message = 'No user found with this email address.';
+        } else if (error.code === 'auth/missing-ios-bundle-id' || error.code === 'auth/missing-continue-uri') {
+            message = 'Password reset configuration error. Please contact support.';
+        }
+         else if (error.code) {
+            message = `Password reset failed: ${error.code}`;
+        } else {
+            message = `Password reset failed: ${error.message || 'An unknown error occurred.'}`;
+        }
+        return { success: false, message };
+    }
 }

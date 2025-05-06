@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { AlertCircle, ShieldAlert, KeyRound } from 'lucide-react'; // Added KeyRound
 import { GoogleSignInButton } from '@/components/features/auth/google-signin-button'; // Import Google Sign-In button
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast'; // Import useToast
@@ -95,7 +95,13 @@ export default function LoginPage() {
           )}
           <LoginForm />
 
-          <div className="relative my-6">
+          <div className="text-sm text-right">
+            <Link href="/forgot-password" className="text-muted-foreground hover:text-primary hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+
+          <div className="relative my-4"> {/* Reduced margin for separator */}
             <Separator />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
               OR
@@ -108,7 +114,7 @@ export default function LoginPage() {
             disabled={!!authError}
           />
 
-           <div className="text-center mt-4">
+           <div className="text-center mt-6"> {/* Increased margin for admin login */}
              <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
                <ShieldAlert className="h-4 w-4" />
                Admin Login
