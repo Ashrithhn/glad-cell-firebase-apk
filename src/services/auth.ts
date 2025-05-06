@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -6,7 +5,7 @@ import {
     signInWithEmailAndPassword,
     signOut as firebaseSignOut, // Rename to avoid conflict
     sendPasswordResetEmail,
-    sendEmailVerification, // Import sendEmailVerification
+    // sendEmailVerification, // Removed
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db, initializationError } from '@/lib/firebase/config';
@@ -47,9 +46,9 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     const user = userCredential.user;
     console.log('[Server Action] Firebase Auth user created:', user.uid);
 
-    // Send email verification
-    await sendEmailVerification(user);
-    console.log('[Server Action] Verification email sent to:', user.email);
+    // Email verification step removed
+    // await sendEmailVerification(user);
+    // console.log('[Server Action] Verification email sent to:', user.email);
 
 
     const userDocRef = doc(db, 'users', user.uid);
@@ -65,11 +64,11 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
       pincode: pincode,
       createdAt: serverTimestamp() as Timestamp,
       authProvider: 'email/password', // Track auth provider
-      emailVerified: user.emailVerified, // Store initial verification status
+      emailVerified: false, // Set to false as verification is skipped
     });
     console.log('[Server Action] User profile stored in Firestore for UID:', user.uid);
 
-    return { success: true, userId: user.uid, message: 'Registration successful! A verification email has been sent. Please check your inbox to verify your account.' };
+    return { success: true, userId: user.uid, message: 'Registration successful!' }; // Updated message
   } catch (error: any) {
     console.error('[Server Action Error] Firebase Registration Error:', error.code, error.message);
     let message = 'Registration failed. Please try again.';
@@ -115,12 +114,10 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
     const user = userCredential.user;
     console.log('[Server Action] Firebase Login Successful:', user.uid);
 
-    // Check if email is verified before allowing full login success for email/password users
-    if (user.providerData.some(provider => provider.providerId === 'password') && !user.emailVerified) {
-        // Optionally sign them out again or just return a specific message
-        // await firebaseSignOut(auth); // Optional: Force sign out until verified
-        return { success: false, userId: user.uid, message: 'Login failed: Please verify your email address. Check your inbox for the verification link.' };
-    }
+    // Email verification check removed
+    // if (user.providerData.some(provider => provider.providerId === 'password') && !user.emailVerified) {
+        // return { success: false, userId: user.uid, message: 'Login failed: Please verify your email address. Check your inbox for the verification link.' };
+    // }
 
     return { success: true, userId: user.uid };
   } catch (error: any) {

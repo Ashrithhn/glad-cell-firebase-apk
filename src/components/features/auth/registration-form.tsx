@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -49,11 +48,11 @@ export function RegistrationForm() {
     defaultValues: {
       name: '',
       branch: '',
-      semester: '' as any, // Keep as any to avoid direct number assignment issues
+      semester: undefined, // Initialize as undefined to avoid controlled/uncontrolled warning
       registrationNumber: '',
       email: '',
-      collegeName: '',
-      city: '',
+      collegeName: '', // No longer prefilled
+      city: '', // No longer prefilled
       pincode: '',
       password: '',
     },
@@ -73,11 +72,11 @@ export function RegistrationForm() {
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: result.message || 'A verification email has been sent. Please check your inbox.',
+          description: result.message || 'Your account has been created.', // Updated message
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });
-        router.push('/login'); // Redirect to login after successful registration and email sent
+        router.push('/login'); // Redirect to login after successful registration
       } else {
         // Throw error with the specific message from the service
         throw new Error(result.message || 'Registration failed.');

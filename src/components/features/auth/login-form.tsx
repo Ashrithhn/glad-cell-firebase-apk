@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -64,14 +63,14 @@ export function LoginForm() {
 
         router.push('/'); // Redirect to home page
         router.refresh(); // Refresh to update header, etc.
-      } else if (result.message?.includes('Please verify your email address')) {
-         // Specific handling for email verification required message
-         toast({
-          title: 'Email Verification Required',
-          description: result.message,
-          variant: 'destructive', // Or 'default' depending on desired appearance
-          duration: 9000, // Longer duration for important messages
-        });
+      // Email verification specific message removed
+      // } else if (result.message?.includes('Please verify your email address')) {
+      //    toast({
+      //     title: 'Email Verification Required',
+      //     description: result.message,
+      //     variant: 'destructive', 
+      //     duration: 9000, 
+      //   });
       } else {
         throw new Error(result.message || 'Invalid email or password.');
       }
