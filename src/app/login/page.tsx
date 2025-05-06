@@ -14,7 +14,7 @@ import { AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const { user, userId, isAdmin, loading, authError } = useAuth(); // Use auth context, include authError
-  const isLoggedIn = !authLoading && (!!userId || isAdmin); // Consider logged in only if loading is complete
+  const isLoggedIn = !loading && (!!userId || isAdmin); // Consider logged in only if loading is complete
 
   useEffect(() => {
     // Redirect if user is already logged in and auth check is complete
@@ -27,7 +27,7 @@ export default function LoginPage() {
   // Show loading skeleton while checking auth status or if logged in (and no error)
   if (loading || (isLoggedIn && !authError)) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-background px-4">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
             <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
@@ -46,8 +46,8 @@ export default function LoginPage() {
 
   // Render login form if not loading and not logged in
   return (
-    <div className="flex justify-center items-center min-h-screen bg-background px-4">
-      <Card className="w-full max-w-md shadow-lg border-primary/20"> {/* Added subtle border */}
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
+      <Card className="w-full max-w-md shadow-lg border-primary/20 backdrop-blur-sm bg-card/80"> {/* Added backdrop blur and slight transparency */}
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-3xl font-bold text-primary tracking-tight">Welcome Back!</CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -55,13 +55,7 @@ export default function LoginPage() {
             <Link href="/register" className="font-medium text-primary hover:underline">
               Register here
             </Link>
-            {/* Admin Login link removed - access via /admin/login directly */}
-             {/*
-             <br/>
-             <Link href="/admin/login" className="text-sm text-muted-foreground hover:underline mt-2 inline-block">
-               Admin Login
-             </Link>
-             */}
+             {/* Admin Login link removed - access via /admin/login directly */}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-4"> {/* Added space-y */}
@@ -80,3 +74,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
