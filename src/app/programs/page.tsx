@@ -76,12 +76,8 @@ export default function ProgramsPage() {
          });
      }
      else {
-         toast({
-             title: "Login Required",
-             description: "Please log in or register to participate.",
-             variant: "destructive",
-         });
-         router.push('/login'); // Redirect to login page
+         // Directly redirect to login page without showing a toast
+         router.push('/login');
      }
   };
 
@@ -182,8 +178,6 @@ export default function ProgramsPage() {
 
 
               {/* Participation Button Section */}
-              {/* Conditionally render Participate button only if fee > 0 ? Adapt as needed */}
-              {/* For now, show Participate button for all */}
                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
                    {authLoading ? (
                         <Skeleton className="h-10 w-40" /> // Show skeleton while loading auth state
@@ -191,13 +185,14 @@ export default function ProgramsPage() {
                         <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
                             <UserCheck className="mr-2 h-4 w-4" /> Participate Now
                         </Button>
-                    ) : (
+                    ) : ( // This covers both !isLoggedIn and isAdmin cases
                        <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
-                            <LogIn className="mr-2 h-4 w-4" /> Login to Participate
+                            <LogIn className="mr-2 h-4 w-4" /> 
+                            {isAdmin ? "Admin View" : "Login to Participate"}
                        </Button>
                    )}
                    <p className="text-sm text-muted-foreground italic flex-1">
-                    Click to register your participation. Requires login and payment completion (if applicable). Admins cannot participate.
+                    {isLoggedIn && !isAdmin ? "Click to register your participation. Requires payment completion (if applicable)." : isAdmin ? "Admins cannot participate." : "Please login to participate."}
                   </p>
                </div>
 
