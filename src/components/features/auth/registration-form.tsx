@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -18,12 +17,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { registerUser } from '@/services/auth'; // Updated service
+import { registerUser } from '@/services/auth';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { useAuth } from '@/hooks/use-auth';
 
-// Define the validation schema using Zod
-// Updated validation schema based on user request
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }).max(100),
   branch: z.string().min(1, { message: 'Branch is required.' }).max(100),
@@ -33,7 +30,7 @@ const formSchema = z.object({
   collegeName: z.string().min(1, { message: 'College name is required.' }).max(150),
   city: z.string().min(1, { message: 'City is required.' }).max(100),
   pincode: z.string().regex(/^\d{6}$/, { message: 'Pincode must be 6 digits.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }), // Use min length 8 for Firebase
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -41,14 +38,14 @@ type FormData = z.infer<typeof formSchema>;
 export function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
-  const { authError } = useAuth(); // Get authError from useAuth
+  const { authError } = useAuth();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       branch: '',
-      semester: '' as any, // Keep initial value compatible with coercion
+      semester: '' as any,
       registrationNumber: '',
       email: '',
       collegeName: 'Government Engineering College Mosalehosahalli',
@@ -63,33 +60,28 @@ export function RegistrationForm() {
     console.log('[Client] Registration Data:', values);
 
     try {
-      // Prevent submission if Firebase isn't configured
       if (authError) {
           throw new Error(`Cannot register: ${authError.message}`);
       }
-      // Call Firebase registration service
       const result = await registerUser(values);
       console.log('[Client] Registration Result:', result);
 
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: 'Your account has been created. Please log in.', // Update message
+          description: 'Your account has been created. Please log in.',
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });
-        // Redirect to login page after successful registration
         router.push('/login');
       } else {
-        // Throw error with the specific message from the service to be caught below
+        // Throw error with the specific message from the service
         throw new Error(result.message || 'Registration failed.');
       }
     } catch (error) {
-      console.error('[Client] Registration Error:', error);
-      // Display the specific error message from the catch block in the toast
+      console.error('Registration Error:', error);
       toast({
         title: 'Registration Failed',
-        // Ensure the specific error from the server action (or the authError) is shown
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
@@ -98,15 +90,12 @@ export function RegistrationForm() {
     }
   }
 
-  // Disable the entire form if there's an auth error
   const isDisabled = isSubmitting || !!authError;
 
   return (
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-          {/* Wrap fields in a fieldset to disable them all at once */}
           <fieldset disabled={isDisabled} className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {/* Column 1 */}
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -115,7 +104,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your full name" {...field} suppressHydrationWarning/>
+                        <Input placeholder="Enter your full name" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -128,7 +117,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Email Address</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
+                        <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -141,7 +130,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Unique Registration Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your USN or Reg No." {...field} suppressHydrationWarning/>
+                        <Input placeholder="Enter your USN or Reg No." {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -154,7 +143,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Create a password (min. 8 chars)" {...field} suppressHydrationWarning/>
+                        <Input type="password" placeholder="Create a password (min. 8 chars)" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -162,7 +151,6 @@ export function RegistrationForm() {
                 />
               </div>
 
-              {/* Column 2 */}
               <div className="space-y-4">
                  <FormField
                   control={form.control}
@@ -171,7 +159,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Branch</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Computer Science" {...field} suppressHydrationWarning/>
+                        <Input placeholder="e.g., Computer Science" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -184,8 +172,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Semester</FormLabel>
                       <FormControl>
-                        {/* Ensure type="number" and value handling */}
-                        <Input type="number" min="1" max="8" placeholder="Enter current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning/>
+                        <Input type="number" min="1" max="8" placeholder="Enter current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -198,7 +185,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>College Name</FormLabel>
                       <FormControl>
-                        <Input {...field} suppressHydrationWarning/>
+                        <Input {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -212,7 +199,7 @@ export function RegistrationForm() {
                       <FormItem>
                         <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your city" {...field} suppressHydrationWarning/>
+                          <Input placeholder="Enter your city" {...field} suppressHydrationWarning />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -225,7 +212,7 @@ export function RegistrationForm() {
                       <FormItem>
                         <FormLabel>Pincode</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter 6-digit pincode" {...field} suppressHydrationWarning/>
+                          <Input placeholder="Enter 6-digit pincode" {...field} suppressHydrationWarning />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -235,7 +222,6 @@ export function RegistrationForm() {
               </div>
            </fieldset>
 
-          {/* Submit Button - Spanning both columns */}
           <div className="md:col-span-2 mt-4">
             <Button type="submit" className="w-full" disabled={isDisabled} suppressHydrationWarning>
               {isSubmitting ? (
@@ -251,4 +237,3 @@ export function RegistrationForm() {
       </Form>
   );
 }
-

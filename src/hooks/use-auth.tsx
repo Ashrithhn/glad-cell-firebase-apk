@@ -1,20 +1,35 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth, initializationError } from '@/lib/firebase/config'; // Import potentially undefined auth and initializationError
-import { logoutUser as serverLogout } from '@/services/auth'; // Import server-side logout
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'; // Renamed User to FirebaseUser
+import { auth, initializationError } from '@/lib/firebase/config';
+import { logoutUser as serverLogout } from '@/services/auth';
+import { doc, getDoc, onSnapshot, Timestamp } from 'firebase/firestore'; // Added onSnapshot
+import { db } from '@/lib/firebase/config'; // Import db
+
+// Define a more detailed User type for our context
+interface UserProfile {
+  uid: string;
+  email?: string | null;
+  name?: string | null;
+  photoURL?: string | null;
+  branch?: string | null;
+  semester?: number | string | null;
+  registrationNumber?: string | null;
+  // Add other fields from your Firestore 'users' collection
+}
+
 
 interface AuthContextType {
-  user: User | null;
+  user: FirebaseUser | null; // Firebase auth user object
+  userProfile: UserProfile | null; // User profile data from Firestore
   userId: string | null;
   loading: boolean;
-  isAdmin: boolean; // Added isAdmin state
-  login: (uid: string) => Promise<void>; // Simulate login state update
+  isAdmin: boolean;
+  login: (uid: string) => Promise<void>;
   logout: () => Promise<void>;
-  authError: Error | null; // Expose potential Firebase initialization error
+  authError: Error | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,150 +39,148 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false); // Initialize admin state
-  const [authError, setAuthError] = useState<Error | null>(initializationError); // Track Firebase init error
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authError, setAuthError] = useState<Error | null>(initializationError);
 
   useEffect(() => {
-    setAuthError(initializationError); // Update error state if config re-evaluates
+    setAuthError(initializationError);
 
-    let unsubscribe: (() => void) | undefined = undefined;
+    let unsubscribeAuth: (() => void) | undefined = undefined;
+    let unsubscribeFirestore: (() => void) | undefined = undefined;
 
-    // Only attempt to subscribe if auth instance exists AND initialization didn't fail
     if (auth && !initializationError) {
-        console.log('[useAuth] Auth instance available, subscribing to auth state changes.');
-        unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('[useAuth] Subscribing to auth state changes.');
+      unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         setUser(currentUser);
         setUserId(currentUser?.uid || null);
+        setIsAdmin(localStorage.getItem('isAdminLoggedIn') === 'true');
 
-        // Placeholder: Check if user is admin (replace with actual logic, e.g., Custom Claims)
-        // For demo, check if a local storage flag is set (insecure, use Custom Claims in production)
-        if (typeof window !== 'undefined') {
-            const adminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
-            setIsAdmin(adminLoggedIn); // Update admin state based on localStorage flag
-            if (currentUser && !adminLoggedIn) {
-                localStorage.removeItem('isAdminLoggedIn'); // Clean up if user logs in normally
-            }
+        if (currentUser) {
+          // User is logged in, fetch/listen to their profile from Firestore
+          if (db) {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                const profile: UserProfile = {
+                    uid: currentUser.uid,
+                    email: data.email || currentUser.email,
+                    name: data.name || currentUser.displayName,
+                    photoURL: data.photoURL || currentUser.photoURL,
+                    branch: data.branch,
+                    semester: data.semester,
+                    registrationNumber: data.registrationNumber,
+                    // Map other fields
+                };
+                setUserProfile(profile);
+              } else {
+                // Profile might not exist yet if it's a new Google Sign-In
+                // or if Firestore write failed/is delayed.
+                setUserProfile({
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    name: currentUser.displayName,
+                    photoURL: currentUser.photoURL,
+                }); // Basic profile from auth
+                console.warn(`[useAuth] User profile not found in Firestore for UID: ${currentUser.uid}. Using auth data as fallback.`);
+              }
+              setLoading(false);
+            }, (error) => {
+                console.error("[useAuth] Error fetching user profile from Firestore:", error);
+                setUserProfile(null); // Clear profile on error
+                setLoading(false);
+            });
+          } else {
+             console.warn("[useAuth] Firestore instance (db) is not available. Cannot fetch user profile.");
+             setUserProfile(null);
+             setLoading(false);
+          }
+        } else {
+          // User is logged out
+          setUserProfile(null);
+          setLoading(false);
         }
-
-        setLoading(false);
-        // console.log('Auth State Changed:', currentUser?.uid || 'Logged out');
-
-        // Dispatch authChange event for components using older localStorage method (like Header)
         if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('authChange'));
+          window.dispatchEvent(new Event('authChange'));
         }
-        });
-    } else if (initializationError) {
-        // Use console.warn instead of console.error for a less severe log level
-        console.warn(`[useAuth] Firebase initialization failed: ${initializationError.message}. Cannot subscribe to auth state changes.`);
-        setLoading(false); // Stop loading as auth is unavailable
+      });
     } else {
-        console.warn('[useAuth] Firebase auth instance is missing and no initialization error recorded. Check Firebase config.');
-        setLoading(false); // Stop loading if auth is not available
+      console.error(`[useAuth] Firebase initialization failed: ${initializationError?.message}. Cannot subscribe to auth state changes.`);
+      setLoading(false);
     }
 
-    // Listen for admin login changes (from localStorage for demo)
     const handleStorageChange = () => {
-        if (typeof window !== 'undefined') {
-            const adminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
-            setIsAdmin(adminLoggedIn);
-            // Ensure regular user state is cleared if admin logs in
-            if (adminLoggedIn && user) {
-                setUser(null);
-                setUserId(null);
-            }
+      if (typeof window !== 'undefined') {
+        const adminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+        setIsAdmin(adminLoggedIn);
+        if (adminLoggedIn && user) {
+          setUser(null);
+          setUserId(null);
+          setUserProfile(null);
         }
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // Also trigger on our custom event for immediate feedback
     window.addEventListener('authChange', handleStorageChange);
 
-
-    // Cleanup subscription on unmount
     return () => {
-        if (unsubscribe) {
-            // console.log('[useAuth] Unsubscribing from auth state changes.');
-            unsubscribe();
-        }
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('authChange', handleStorageChange);
-    }
-  }, [user]); // Re-run effect if user state changes explicitly
+      if (unsubscribeAuth) unsubscribeAuth();
+      if (unsubscribeFirestore) unsubscribeFirestore();
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authChange', handleStorageChange);
+    };
+  }, [user]); // Re-run on external user object change too
 
-  // Simulate client-side state update after successful server login
   const login = async (uid: string) => {
     if (authError) {
-        console.error("[useAuth Login] Cannot login, Firebase auth error:", authError.message);
-        return;
+      console.error("[useAuth Login] Cannot login, Firebase auth error:", authError.message);
+      return;
     }
-    // The actual Firebase login happens server-side (or via Firebase client SDK).
-    // This function primarily updates the context state based on the server response.
-    // For this hook, onAuthStateChanged handles the actual user object update.
-    setUserId(uid);
-    // Simulate admin check after login
-     if (typeof window !== 'undefined') {
-         const adminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
-         setIsAdmin(adminLoggedIn);
-         if(adminLoggedIn){
-             // If logging in as admin, clear Firebase user state
-             setUser(null);
-             setUserId(null); // Keep userId null for admin for this demo setup
-         } else {
-            // If regular user login, ensure admin flag is false
-            setIsAdmin(false);
-            localStorage.removeItem('isAdminLoggedIn');
-         }
-         window.dispatchEvent(new Event('authChange')); // Notify header etc.
-     }
-    // No need to setUser here, onAuthStateChanged does it.
-    console.log('Auth Context Login: User ID set to', uid);
+    setUserId(uid); // onAuthStateChanged will handle the rest (setUser, fetch profile)
+    console.log('Auth Context Login: User ID set for state update', uid);
+    // Admin check logic is now within the onAuthStateChanged effect based on localStorage
+    // to ensure consistency if admin logs in through a different mechanism.
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('authChange')); // Trigger UI updates if needed
+    }
   };
 
   const logout = async () => {
     setLoading(true);
-    // Only attempt logout if auth instance is available and initialized correctly
     if (auth && !authError) {
-        try {
-            await serverLogout(); // Call the server action to sign out from Firebase
-            console.log('Auth Context Logout initiated successfully.');
-        } catch (error) {
-            console.error('Error during server logout:', error);
-            // Handle logout error if necessary, e.g., show a toast
-        }
-    } else if (authError) {
-        console.warn(`[useAuth Logout] Cannot logout, Firebase auth error: ${authError.message}`); // Changed to warn
-        setLoading(false);
-    }
-     else {
-        console.warn('[useAuth Logout] Firebase auth instance is missing. Cannot perform logout.'); // Changed to warn
-        setLoading(false); // Stop loading if logout cannot be performed
+      try {
+        await serverLogout();
+      } catch (error) {
+        console.error('Error during server logout:', error);
+      }
+    } else {
+      console.warn(`[useAuth Logout] Cannot logout. Firebase auth error: ${authError?.message} or auth instance missing.`);
     }
 
-    // Clear admin flag on logout
     if (typeof window !== 'undefined') {
-        localStorage.removeItem('isAdminLoggedIn');
+      localStorage.removeItem('isAdminLoggedIn');
     }
-    // onAuthStateChanged will handle setting user and userId to null if auth exists and is working
-    // If auth doesn't exist or failed, we should manually clear state
+    // onAuthStateChanged handles setting user, userId, userProfile to null
+    // If auth failed initially, manually clear state
     if (!auth || authError) {
         setUser(null);
         setUserId(null);
+        setUserProfile(null);
         setLoading(false);
     }
     setIsAdmin(false);
-     // Dispatch event immediately for faster UI update
     if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('authChange'));
+      window.dispatchEvent(new Event('authChange'));
     }
-    // setLoading will be set to false by onAuthStateChanged if auth exists and works
   };
 
   return (
-    <AuthContext.Provider value={{ user, userId, loading, isAdmin, login, logout, authError }}>
+    <AuthContext.Provider value={{ user, userProfile, userId, loading, isAdmin, login, logout, authError }}>
       {children}
     </AuthContext.Provider>
   );
@@ -180,4 +193,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-

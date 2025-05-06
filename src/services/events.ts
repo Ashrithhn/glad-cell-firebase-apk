@@ -3,7 +3,7 @@
 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined db and error
-import type { User } from 'firebase/auth';
+// import type { User } from 'firebase/auth'; // User type from firebase/auth not directly used here
 
 /**
  * Represents the structure of event/program data stored in Firestore.
@@ -15,8 +15,8 @@ export interface EventData {
     description: string;
     venue: string;
     rules?: string;
-    startDate: Timestamp | string; // Store as Timestamp, handle ISO string input/output
-    endDate: Timestamp | string;   // Store as Timestamp, handle ISO string input/output
+    startDate: Timestamp | string; 
+    endDate: Timestamp | string;   
     registrationDeadline?: Timestamp | string | null;
     eventType: 'individual' | 'group';
     minTeamSize?: number | null;
@@ -25,13 +25,31 @@ export interface EventData {
     createdAt?: Timestamp | string;
 }
 
+// Define a more specific type for user profile data stored in Firestore
+// This should align with the UserProfile interface in useAuth.tsx
+interface UserProfileData {
+  uid: string;
+  email?: string | null;
+  name?: string | null;
+  photoURL?: string | null;
+  branch?: string | null;
+  semester?: number | string | null;
+  registrationNumber?: string | null;
+  collegeName?: string;
+  city?: string;
+  pincode?: string;
+  createdAt?: Timestamp | string;
+  updatedAt?: Timestamp | string;
+  lastLoginAt?: Timestamp | string;
+  authProvider?: string;
+}
+
 
 /**
  * Records event participation in Firestore.
- * Assumes the user performing the action is the one logged in via Firebase Auth on the client.
  */
 export async function participateInEvent(participationData: {
-    userId: string; // Firebase Auth User ID
+    userId: string; 
     eventId: string;
     eventName: string;
     name: string;
@@ -44,12 +62,10 @@ export async function participateInEvent(participationData: {
         orderId: string;
         paymentId: string;
         method: string;
-        // Add more fields as needed
     };
 }): Promise<{ success: boolean; message?: string }> {
   console.log('[Server Action] participateInEvent invoked for event:', participationData.eventId, 'by user:', participationData.userId);
 
-  // Check if Firestore service is available
   if (initializationError) {
       const errorMessage = `Participation service unavailable: Firebase initialization error - ${initializationError.message}.`;
       console.error(`[Server Action Error] participateInEvent: ${errorMessage}`);
@@ -64,7 +80,6 @@ export async function participateInEvent(participationData: {
   console.log('[Server Action] Attempting to record participation in Firestore for event:', participationData.eventId, 'by user:', participationData.userId);
 
   try {
-    // Optional: Check if user is already registered for this event
     console.log('[Server Action] Checking existing participation...');
     const participationQuery = query(
         collection(db, 'participations'),
@@ -80,10 +95,9 @@ export async function participateInEvent(participationData: {
     }
     console.log('[Server Action] No existing participation found. Proceeding to add...');
 
-    // Add a new document to the 'participations' collection
     const docData = {
         ...participationData,
-        participatedAt: serverTimestamp(), // Add a timestamp
+        participatedAt: serverTimestamp(), 
     };
     const docRef = await addDoc(collection(db, 'participations'), docData);
 
@@ -91,19 +105,17 @@ export async function participateInEvent(participationData: {
     return { success: true };
 
   } catch (error: any) {
-    console.error('[Server Action Error] Error recording participation in Firestore:', error.code, error.message, error.stack); // Log more details
+    console.error('[Server Action Error] Error recording participation in Firestore:', error.code, error.message, error.stack); 
     return { success: false, message: `Could not record participation due to a database error: ${error.message || 'Unknown error'}` };
   }
 }
 
 /**
  * Fetches user profile data from Firestore.
- * Assumes the user is authenticated on the client.
  */
- export async function getUserProfile(userId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+ export async function getUserProfile(userId: string): Promise<{ success: boolean; data?: UserProfileData; message?: string }> {
      console.log('[Server Action] getUserProfile invoked for user:', userId);
 
-     // Check if Firestore service is available
      if (initializationError) {
          const errorMessage = `Profile service unavailable: Firebase initialization error - ${initializationError.message}.`;
          console.error(`[Server Action Error] getUserProfile: ${errorMessage}`);
@@ -126,28 +138,35 @@ export async function participateInEvent(participationData: {
          const docSnap = await getDoc(userDocRef);
 
          if (docSnap.exists()) {
-             console.log('[Server Action] User profile found for:', userId); // Don't log data itself by default
-             const data = docSnap.data();
-
-             // Convert Timestamp to a serializable format (ISO string)
-             // before returning it from the Server Action
-             if (data.createdAt && data.createdAt instanceof Timestamp) {
-               data.createdAt = data.createdAt.toDate().toISOString();
+             console.log('[Server Action] User profile found for:', userId);
+             const rawData = docSnap.data();
+             
+             // Ensure data is not undefined before processing
+             if (!rawData) {
+                const notFoundMessage = `User profile data is undefined for user: ${userId}`;
+                console.warn(`[Server Action] getUserProfile: ${notFoundMessage}`);
+                return { success: false, message: notFoundMessage };
              }
-              // Convert other timestamps if they exist (though not currently defined in schema)
-              if (data.updatedAt && data.updatedAt instanceof Timestamp) {
-                  data.updatedAt = data.updatedAt.toDate().toISOString();
-              }
 
+             // Convert Timestamps to ISO strings to ensure serializability
+             const serializableData: UserProfileData = { ...rawData } as UserProfileData; // Assert type initially
 
-             return { success: true, data: data };
+             for (const key in serializableData) {
+                if (serializableData.hasOwnProperty(key)) {
+                    const value = (serializableData as any)[key];
+                    if (value instanceof Timestamp) {
+                        (serializableData as any)[key] = value.toDate().toISOString();
+                    }
+                }
+            }
+             return { success: true, data: serializableData };
          } else {
              const notFoundMessage = `User profile not found for user: ${userId}`;
              console.warn(`[Server Action] getUserProfile: ${notFoundMessage}`);
              return { success: false, message: notFoundMessage };
          }
      } catch (error: any) {
-         console.error('[Server Action Error] Error fetching user profile:', error.code, error.message, error.stack); // Log more details
+         console.error('[Server Action Error] Error fetching user profile:', error.code, error.message, error.stack);
          return { success: false, message: `Failed to fetch user profile: ${error.message || 'Unknown database error'}` };
      }
  }
@@ -155,7 +174,6 @@ export async function participateInEvent(participationData: {
 
 /**
  * Fetches all events/programs from the 'events' collection in Firestore, ordered by creation date.
- * Renamed from getPrograms.
  */
 export async function getEvents(): Promise<{ success: boolean; events?: EventData[]; message?: string }> {
     console.log('[Server Action] getEvents invoked.');
@@ -179,12 +197,10 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
         querySnapshot.forEach((doc) => {
             const data = doc.data();
 
-            // Convert Firestore Timestamps to ISO strings for client compatibility
             const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
                  if (timestamp instanceof Timestamp) {
                     return timestamp.toDate().toISOString();
                  }
-                 // If it's already a string or null/undefined, return as is (or null)
                  return typeof timestamp === 'string' ? timestamp : null;
             }
 
@@ -194,15 +210,15 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
                 description: data.description,
                 venue: data.venue,
                 rules: data.rules,
-                startDate: convertTimestamp(data.startDate)!, // Assuming startDate is required and valid
-                endDate: convertTimestamp(data.endDate)!,     // Assuming endDate is required and valid
+                startDate: convertTimestamp(data.startDate)!, 
+                endDate: convertTimestamp(data.endDate)!,     
                 registrationDeadline: convertTimestamp(data.registrationDeadline),
                 eventType: data.eventType,
                 minTeamSize: data.minTeamSize,
                 maxTeamSize: data.maxTeamSize,
                 fee: data.fee,
                 createdAt: convertTimestamp(data.createdAt),
-            });
+            } as EventData); // Added type assertion
         });
 
         console.log(`[Server Action] getEvents: Fetched ${events.length} items.`);

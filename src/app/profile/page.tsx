@@ -1,109 +1,61 @@
 
-'use client'; // Required for hooks
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, Mail, Phone, Building, Hash, MapPin, Loader2, Camera, Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from '@/hooks/use-auth'; // Import useAuth
-import { getUserProfile } from '@/services/events'; // Function to fetch profile
-import { updateProfilePicture } from '@/services/profile'; // Server action for upload
-import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import { Button } from '@/components/ui/button'; // For edit/upload button
-import { Input } from '@/components/ui/input'; // For file input
+import { useAuth } from '@/hooks/use-auth';
+import { updateProfilePicture } from '@/services/profile';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils'; // Import cn
 
-interface UserProfileData {
-  uid?: string; // Include UID
-  name?: string;
-  email?: string;
-  phone?: string;
-  branch?: string;
-  semester?: number | string; // Can be number or string from Firestore
-  registrationNumber?: string;
-  collegeName?: string;
-  city?: string;
-  pincode?: string;
-  photoURL?: string; // Add photoURL field
-}
+// UserProfile type is now imported/defined within useAuth, so no need to redefine here
 
 export default function ProfilePage() {
-  const { user, userId, loading: authLoading, logout } = useAuth();
+  const { user, userProfile, userId, loading: authLoading, logout } = useAuth(); // Use userProfile from useAuth
   const router = useRouter();
   const { toast } = useToast();
-  const [profileData, setProfileData] = useState<UserProfileData | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null); // For local errors like upload
 
   useEffect(() => {
     if (!authLoading && !userId) {
       router.replace('/login');
-      return;
     }
-
-    if (userId) {
-      const fetchProfile = async () => {
-        setProfileLoading(true);
-        setError(null);
-        try {
-          const result = await getUserProfile(userId);
-          if (result.success && result.data) {
-            setProfileData(result.data);
-          } else {
-             setError(result.message || 'Could not load profile.');
-             setProfileData({ email: user?.email || 'N/A', uid: userId }); // Fallback with UID
-          }
-        } catch (err) {
-          console.error("Error fetching profile:", err);
-          setError('An unexpected error occurred while fetching the profile.');
-          setProfileData({ email: user?.email || 'N/A', uid: userId }); // Fallback with UID
-        } finally {
-          setProfileLoading(false);
-        }
-      };
-      fetchProfile();
-    } else if (!authLoading) {
-        setProfileLoading(false);
-        setError("User not found.");
-    }
-  }, [userId, authLoading, user, router]);
+  }, [userId, authLoading, router]);
 
   const handleAvatarClick = () => {
-    fileInputRef.current?.click();
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && userId) {
       setIsUploading(true);
+      setError(null);
       try {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onloadend = async () => {
           const base64data = reader.result as string;
-
-          // Split the base64 string into MIME type and data
           const mimeType = base64data.substring(base64data.indexOf(':') + 1, base64data.indexOf(';'));
-          // Ensure base64 data part starts correctly
-          const base64StringOnly = base64data.substring(base64data.indexOf(',') + 1);
-
-          if (!base64StringOnly) {
-              throw new Error("Failed to extract base64 data from file.");
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+          if (!allowedTypes.includes(mimeType)) {
+            throw new Error(`Invalid file type. Please upload an image (${allowedTypes.join(', ')}).`);
           }
 
-           // Validate MIME type (optional but recommended)
-           const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-           if (!allowedTypes.includes(mimeType)) {
-               throw new Error(`Invalid file type. Please upload an image (${allowedTypes.join(', ')}).`);
-           }
-
-          const result = await updateProfilePicture(userId, base64data); // Send full data URI
+          const result = await updateProfilePicture(userId, base64data);
 
           if (result.success && result.photoURL) {
-            setProfileData((prev) => prev ? { ...prev, photoURL: result.photoURL } : { photoURL: result.photoURL, uid: userId });
+            // userProfile will update via onSnapshot listener in useAuth
             toast({
               title: "Profile Picture Updated",
               description: "Your new profile picture has been saved.",
@@ -112,12 +64,13 @@ export default function ProfilePage() {
             throw new Error(result.message || "Failed to upload profile picture.");
           }
         };
-        reader.onerror = (error) => {
-             console.error("FileReader error:", error);
-             throw new Error("Failed to read the selected file.");
+        reader.onerror = (readError) => {
+          console.error("FileReader error:", readError);
+          throw new Error("Failed to read the selected file.");
         }
       } catch (uploadError: any) {
         console.error("Upload Error:", uploadError);
+        setError(uploadError.message || "Could not update profile picture.");
         toast({
           title: "Upload Failed",
           description: uploadError.message || "Could not update profile picture.",
@@ -125,16 +78,14 @@ export default function ProfilePage() {
         });
       } finally {
         setIsUploading(false);
-        // Reset file input value to allow re-uploading the same file if needed
-         if (fileInputRef.current) {
-             fileInputRef.current.value = '';
-         }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     }
   };
 
-  // Loading state
-  if (authLoading || profileLoading) {
+  if (authLoading) {
     return (
       <div className="container mx-auto py-12 px-4 max-w-2xl">
         <Card className="shadow-lg">
@@ -163,32 +114,35 @@ export default function ProfilePage() {
     );
   }
 
-  // Error state
-  if (error) {
+  if (!userProfile && !authLoading) { // If not loading and still no profile (e.g., error or new user)
       return (
-          <div className="container mx-auto py-12 px-4 max-w-2xl text-center text-destructive">
-              <p>{error}</p>
+          <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
+              <p className="text-destructive mb-2">{error || 'Could not load profile information. The profile might not exist or there was an error.'}</p>
+              <p className="text-muted-foreground">UID: {userId || 'N/A'}</p>
               <Button onClick={() => router.push('/')} variant="link">Go Home</Button>
+              <Button onClick={logout} variant="outline" className="ml-2">Logout</Button>
           </div>
       );
   }
 
-  const initials = profileData?.name
-    ? profileData.name
+
+  const initials = userProfile?.name
+    ? userProfile.name
         .split(' ')
         .map((n) => n[0])
         .join('')
         .toUpperCase()
-    : '?';
+    : userProfile?.email?.charAt(0).toUpperCase() || '?';
 
-  // Render profile if data is available
   return (
     <div className="container mx-auto py-12 px-4 max-w-2xl">
+      {error && <p className="text-destructive mb-4 text-center">Upload Error: {error}</p>}
       <Card className="shadow-lg overflow-hidden">
         <CardHeader className="bg-muted/30 p-6 flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
-           <div className="relative group cursor-pointer" onClick={handleAvatarClick} title="Click to change picture">
+           <div className={cn("relative group", isUploading ? 'cursor-not-allowed' : 'cursor-pointer')} onClick={handleAvatarClick} title="Click to change picture">
              <Avatar className="h-24 w-24 border-4 border-background shadow-md">
-               <AvatarImage src={profileData?.photoURL || undefined} alt={profileData?.name || 'User Profile'} data-ai-hint="person portrait" />
+               {/* Use userProfile.photoURL from context */}
+               <AvatarImage src={userProfile?.photoURL || undefined} alt={userProfile?.name || 'User Profile'} data-ai-hint="person portrait" />
                <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
              </Avatar>
              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -199,80 +153,75 @@ export default function ProfilePage() {
                )}
              </div>
            </div>
-           {/* Hidden File Input */}
            <Input
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/png, image/jpeg, image/webp, image/gif" // Specify accepted image types
+              accept="image/png, image/jpeg, image/webp, image/gif"
               className="hidden"
               disabled={isUploading}
            />
           <div className="text-center sm:text-left">
              <CardTitle className="text-2xl font-bold text-primary">
-                {profileData?.name || 'User Profile'}
+                {userProfile?.name || userProfile?.email || 'User Profile'}
              </CardTitle>
             <CardDescription>
                View and manage your account information.
             </CardDescription>
-            {/* <Button size="sm" variant="outline" className="mt-2" disabled>
-              <Edit className="mr-2 h-4 w-4" /> Edit Profile (soon)
-            </Button> */}
           </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
-          {/* Basic Info */}
           <div className="flex items-center space-x-4">
             <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Email Address</h3>
-              <p className="font-semibold">{profileData?.email || 'N/A'}</p>
+              <p className="font-semibold">{userProfile?.email || 'N/A'}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Phone Number</h3>
-              <p className="font-semibold">{profileData?.phone || 'N/A'}</p>
+              {/* Assuming phone might not be in UserProfile for Google Sign-In initially */}
+              <p className="font-semibold">{ (userProfile as any)?.phone || 'N/A'}</p>
             </div>
           </div>
 
           <hr className="border-border" />
 
-          {/* Academic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="flex items-center space-x-4">
               <Building className="h-5 w-5 text-muted-foreground flex-shrink-0" />
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Branch</h3>
-                <p className="font-semibold">{profileData?.branch || 'N/A'}</p>
+                <p className="font-semibold">{userProfile?.branch || 'N/A'}</p>
               </div>
             </div>
              <div className="flex items-center space-x-4">
-                <User className="h-5 w-5 text-muted-foreground flex-shrink-0" /> {/* Placeholder icon */}
+                <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Semester</h3>
-                    <p className="font-semibold">{profileData?.semester || 'N/A'}</p>
+                    <p className="font-semibold">{userProfile?.semester || 'N/A'}</p>
                 </div>
             </div>
             <div className="flex items-center space-x-4 col-span-1 sm:col-span-2">
               <Hash className="h-5 w-5 text-muted-foreground flex-shrink-0" />
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Registration Number</h3>
-                <p className="font-semibold">{profileData?.registrationNumber || 'N/A'}</p>
+                <p className="font-semibold">{userProfile?.registrationNumber || 'N/A'}</p>
               </div>
             </div>
           </div>
 
            <hr className="border-border" />
 
-           {/* Location Info */}
            <div className="flex items-start space-x-4">
             <MapPin className="h-5 w-5 mt-1 text-muted-foreground flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
-              <p className="font-semibold">{profileData?.collegeName || 'N/A'},</p>
-              <p className="font-semibold">{profileData?.city || 'N/A'} - {profileData?.pincode || 'N/A'}</p>
+              {/* Assuming collegeName, city, pincode might not be in UserProfile for Google Sign-In initially */}
+              <p className="font-semibold">{(userProfile as any)?.collegeName || 'N/A'},</p>
+              <p className="font-semibold">{(userProfile as any)?.city || 'N/A'} - {(userProfile as any)?.pincode || 'N/A'}</p>
             </div>
           </div>
 

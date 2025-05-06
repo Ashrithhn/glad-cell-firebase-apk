@@ -9,22 +9,45 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ShieldAlert } from 'lucide-react'; // Added ShieldAlert for admin link
+import { AlertCircle, ShieldAlert } from 'lucide-react';
+import { GoogleSignInButton } from '@/components/features/auth/google-signin-button'; // Import Google Sign-In button
+import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, userId, isAdmin, loading, authError } = useAuth(); // Use auth context, include authError
-  const isLoggedIn = !loading && (!!userId || isAdmin); // Consider logged in only if loading is complete
+  const { user, userId, isAdmin, loading, authError, login: authLogin } = useAuth(); // Use auth context, include authError and login
+  const isLoggedIn = !loading && (!!userId || isAdmin);
 
   useEffect(() => {
-    // Redirect if user is already logged in and auth check is complete
-    if (isLoggedIn && !authError) { // Only redirect if no auth error and logged in
-      console.log('[Login Page] User already logged in, redirecting to /');
-      router.replace('/'); // Redirect to home page
+    if (!loading) {
+      if (isAdmin) {
+        router.replace('/admin/dashboard');
+      } else if (userId) {
+        router.replace('/');
+      }
     }
-  }, [isLoggedIn, router, authError]);
+  }, [loading, userId, isAdmin, router]);
 
-  // Show loading skeleton while checking auth status or if logged in (and no error)
+  const handleGoogleSuccess = async (uid: string) => {
+    await authLogin(uid); // Update auth context
+    toast({
+      title: 'Google Sign-In Successful!',
+      description: 'Welcome!',
+      variant: 'default',
+    });
+    router.push('/');
+    router.refresh();
+  };
+
+  const handleGoogleError = (errorMsg: string) => {
+    toast({
+      title: 'Google Sign-In Failed',
+      description: errorMsg,
+      variant: 'destructive',
+    });
+  };
+
+
   if (loading || (isLoggedIn && !authError)) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
@@ -38,17 +61,17 @@ export default function LoginPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
-             <Skeleton className="h-8 w-1/3 mx-auto mt-2" /> {/* Skeleton for admin link */}
+            <Skeleton className="h-10 w-full mt-2" /> {/* For Google button */}
+            <Skeleton className="h-8 w-1/3 mx-auto mt-2" />
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Render login form if not loading and not logged in
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
-      <Card className="w-full max-w-md shadow-lg border-primary/20 backdrop-blur-sm bg-card/80"> {/* Added backdrop blur and slight transparency */}
+      <Card className="w-full max-w-md shadow-lg border-primary/20 backdrop-blur-sm bg-card/80">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-3xl font-bold text-primary tracking-tight">Welcome Back!</CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -58,7 +81,7 @@ export default function LoginPage() {
             </Link>
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6 space-y-4"> {/* Added space-y */}
+        <CardContent className="p-6 space-y-4">
           {authError && (
             <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
@@ -69,7 +92,20 @@ export default function LoginPage() {
             </Alert>
           )}
           <LoginForm />
-           {/* Admin Login Link */}
+
+          <div className="relative my-6">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              OR
+            </span>
+          </div>
+
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            disabled={!!authError}
+          />
+
            <div className="text-center mt-4">
              <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
                <ShieldAlert className="h-4 w-4" />
@@ -81,4 +117,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
