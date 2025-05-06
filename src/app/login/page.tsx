@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ShieldAlert } from 'lucide-react'; // Added ShieldAlert for admin link
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,6 +38,7 @@ export default function LoginPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
+             <Skeleton className="h-8 w-1/3 mx-auto mt-2" /> {/* Skeleton for admin link */}
           </CardContent>
         </Card>
       </div>
@@ -55,7 +56,6 @@ export default function LoginPage() {
             <Link href="/register" className="font-medium text-primary hover:underline">
               Register here
             </Link>
-             {/* Admin Login link removed - access via /admin/login directly */}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-4"> {/* Added space-y */}
@@ -69,6 +69,13 @@ export default function LoginPage() {
             </Alert>
           )}
           <LoginForm />
+           {/* Admin Login Link */}
+           <div className="text-center mt-4">
+             <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
+               <ShieldAlert className="h-4 w-4" />
+               Admin Login
+             </Link>
+           </div>
         </CardContent>
       </Card>
     </div>
