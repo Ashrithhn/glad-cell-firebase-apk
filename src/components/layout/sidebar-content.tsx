@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -23,7 +22,9 @@ import {
   MessageSquare, // Added Feedback Icon
   Loader2, // For loading state
   Link2, // Generic link icon
-  QrCode // Added QrCode for attendance
+  QrCode, // Added QrCode for attendance
+  Users, // Added Users icon
+  FileDown // Added FileDown icon
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; // Import React hooks
 import { getContent } from '@/services/content'; // Import content service
@@ -107,27 +108,54 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Button>
         )}
 
-        {isAdmin && ( // Show Admin Dashboard link if admin
+        {isAdmin && ( // Admin-specific section
           <>
+            <Separator />
+             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2 px-2">
+               <Settings className="mr-2 h-4 w-4" /> Admin Tools
+             </Label>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                 <Link href="/admin/dashboard">
-                     <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
-                 </Link>
+              <Link href="/admin/dashboard">
+                <BarChart className="mr-2 h-4 w-4" /> Dashboard
+              </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                <Link href="/admin/attendance">
-                    <QrCode className="mr-2 h-4 w-4"/> Attendance Scanner
-                </Link>
+              <Link href="/admin/events">
+                <CalendarCheck className="mr-2 h-4 w-4" /> Manage Events
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/users">
+                <Users className="mr-2 h-4 w-4" /> Manage Users (Coming Soon)
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick} disabled>
+              {/* Placeholder for report generation */}
+               <Link href="#">
+                  <FileDown className="mr-2 h-4 w-4" /> Generate Report (Coming Soon)
+               </Link>
+            </Button>
+             <Separator />
+             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2 px-2">
+               <Settings className="mr-2 h-4 w-4" /> Content Management
+             </Label>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/about">
+                <Info className="mr-2 h-4 w-4" /> Edit About Us
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/contact">
+                <HelpCircle className="mr-2 h-4 w-4" /> Edit Contact Info
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/links">
+                <Link2 className="mr-2 h-4 w-4" /> Edit Site Links
+              </Link>
             </Button>
           </>
         )}
-
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/programs">
-            <CalendarCheck className="mr-2 h-4 w-4" />
-            Events
-          </Link>
-        </Button>
 
          {/* Dynamic WhatsApp Community Link */}
         {loadingLinks ? (
@@ -148,21 +176,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
         <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
             <MessageSquare className="mr-2 h-4 w-4" />
             Feedback
-        </Button>
-
-
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/about">
-            <Info className="mr-2 h-4 w-4" />
-            About Us
-          </Link>
-        </Button>
-
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/contact">
-            <HelpCircle className="mr-2 h-4 w-4" />
-            Contact & Help
-          </Link>
         </Button>
 
         <Separator />
