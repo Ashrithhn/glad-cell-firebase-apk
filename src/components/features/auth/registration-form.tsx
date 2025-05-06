@@ -48,8 +48,8 @@ export function RegistrationForm() {
       semester: '' as any,
       registrationNumber: '',
       email: '',
-      collegeName: 'Government Engineering College Mosalehosahalli',
-      city: 'Hassan',
+      collegeName: '', // Removed default value
+      city: '', // Removed default value
       pincode: '',
       password: '',
     },
@@ -185,7 +185,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>College Name</FormLabel>
                       <FormControl>
-                        <Input {...field} suppressHydrationWarning />
+                        <Input placeholder="Enter your college name" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
