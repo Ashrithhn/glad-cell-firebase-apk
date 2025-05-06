@@ -87,7 +87,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     5.  Scroll down to the **Authorized domains** section.
     6.  Click the **Add domain** button.
     7.  Enter the domain your application is currently running on.
-        *   For local development, this is usually `localhost`.
+        *   For local development, this is usually `localhost`. **Make sure `localhost` is added if you are testing locally.**
         *   For deployed applications, use your actual domain (e.g., `your-app-name.vercel.app`, `www.yourdomain.com`).
     8.  Click **Add**.
     9.  It might take a few minutes for the changes to propagate. You might also need to clear your browser cache or restart your development server.
@@ -131,3 +131,4 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 *   **Password:** `adminpass`
 
 **Warning:** These credentials are for development testing only. Implement proper role-based access control using Firebase Custom Claims before deploying to production.
+
