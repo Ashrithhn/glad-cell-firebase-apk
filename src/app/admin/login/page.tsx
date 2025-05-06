@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
   if (loading || (!loading && isLoggedIn)) {
     console.log('[Admin Login Page Render] Showing loading skeleton or redirect pending. Loading:', loading, 'IsLoggedIn:', isLoggedIn);
     return (
-        <div className="flex justify-center items-center min-h-screen bg-background px-4">
+        <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
           <Card className="w-full max-w-md shadow-lg">
             <CardHeader className="text-center">
               <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
   // Render admin login form if not loading and not logged in (user or admin)
   console.log('[Admin Login Page Render] Rendering AdminLoginForm.');
   return (
-    <div className="flex justify-center items-center min-h-screen bg-background px-4">
+    <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">Admin Login</CardTitle>

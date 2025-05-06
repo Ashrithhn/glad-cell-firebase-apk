@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
   if (loading || (isLoggedIn && !authError)) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-background px-4 py-12">
+      <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4 py-12">
         <Card className="w-full max-w-2xl shadow-lg">
           <CardHeader className="text-center">
              <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
@@ -85,8 +85,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-background px-4 py-12">
-      <Card className="w-full max-w-2xl shadow-lg">
+    <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4 py-12">
+      <Card className="w-full max-w-2xl shadow-lg border-primary/20 backdrop-blur-sm bg-card/80">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">Student Registration</CardTitle>
           <CardDescription>

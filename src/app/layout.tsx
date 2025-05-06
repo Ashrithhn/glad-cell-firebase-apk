@@ -1,5 +1,6 @@
 
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google'; // Import Inter font
 import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
@@ -7,6 +8,10 @@ import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
 import { WelcomeHandler } from '@/components/layout/welcome-handler'; // Import WelcomeHandler
+import { GlobalStyles } from '@/components/layout/global-styles'; // Import the new GlobalStyles component
+
+// Initialize Inter font with subsets
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'GLAD CELL - GEC Mosalehosahalli CSE Dept.',
@@ -21,23 +26,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('antialiased font-sans')}>
+      <body className={cn('antialiased', inter.className)}> {/* Apply Inter font */}
          <ThemeProvider
             attribute="class"
-            defaultTheme="light" // Set default to light as requested
+            defaultTheme="light"
             enableSystem
             disableTransitionOnChange
           >
-            {/* Wrap content with AuthProvider */}
             <AuthProvider>
-                 {/* WelcomeHandler decides whether to show welcome or main content */}
                 <WelcomeHandler>
+                    <GlobalStyles /> {/* Add the GlobalStyles component here */}
                     <div className="flex flex-col min-h-screen">
                       <Header />
                       <main className="flex-grow container mx-auto py-8 px-4">
                         {children}
                       </main>
-                      {/* Consider adding a Footer component here if needed */}
+                      {/* Footer can be added here */}
                     </div>
                     <Toaster />
                  </WelcomeHandler>

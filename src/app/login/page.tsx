@@ -52,7 +52,7 @@ export default function LoginPage() {
 
   if (loading || (isLoggedIn && !authError)) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
+      <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
             <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
@@ -72,7 +72,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-background via-muted/20 to-background px-4">
+    <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
       <Card className="w-full max-w-md shadow-lg border-primary/20 backdrop-blur-sm bg-card/80">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-3xl font-bold text-primary tracking-tight">Welcome Back!</CardTitle>
