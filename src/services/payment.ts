@@ -1,17 +1,18 @@
-
 'use server';
 
 import crypto from 'crypto';
 import QRCode from 'qrcode';
-import { participateInEvent } from './events';
+import { participateInEvent, getUserProfile, getEvents } from './events'; // Import getUserProfile and getEvents
+import type { EventData } from './events';
 import axios from 'axios';
 
 // Load environment variables
-// These names MUST match what's in your .env.local file
 const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
 const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
 const CASHFREE_ENV = process.env.CASHFREE_ENV || 'TEST'; // default to TEST
 const NEXT_PUBLIC_APP_BASE_URL = process.env.NEXT_PUBLIC_APP_BASE_URL || 'http://localhost:9002'; // Fallback for local dev
+
+const CASHFREE_API_VERSION = '2023-08-01'; // Use a recent, stable API version
 
 const CASHFREE_BASE_URL =
   CASHFREE_ENV === 'PROD'
@@ -22,24 +23,23 @@ const CASHFREE_BASE_URL =
  * Creates a Cashfree payment order.
  */
 export async function createCashfreeOrderAction(orderData: {
-  orderId: string;
+  orderId: string; // Should be unique from our system
   orderAmount: number; // Amount in base currency (e.g., Rupees)
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  eventId: string; // For constructing return URL metadata
-  userId: string; // For constructing return URL metadata
+  eventId: string; 
+  userId: string; 
 }): Promise<{
   success: boolean;
   paymentLink?: string;
   message?: string;
+  order_id?: string; // Return Cashfree's order_id if different or for confirmation
 }> {
-  console.log('[Cashfree] Attempting to create order.');
+  console.log('[Cashfree] Attempting to create order. Internal Order ID:', orderData.orderId);
   console.log('[Cashfree] Environment:', CASHFREE_ENV);
   console.log('[Cashfree] App ID Loaded:', !!CASHFREE_APP_ID ? 'Yes' : 'NO - MISSING!');
-  console.log('[Cashfree] Secret Key Loaded:', !!CASHFREE_SECRET_KEY ? 'Yes' : 'NO - MISSING!');
-  console.log('[Cashfree] API Base URL:', CASHFREE_BASE_URL);
-
+  // Do not log secret key value
 
   if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
     const errorMessage = 'Cashfree credentials (APP_ID or SECRET_KEY) are not configured on the server. Please check .env.local or server environment variables and restart the server.';
@@ -52,35 +52,40 @@ export async function createCashfreeOrderAction(orderData: {
 
   const HEADERS = {
     'x-client-id': CASHFREE_APP_ID,
-    'x-client-secret': CASHFREE_SECRET_KEY,
+    'x-secret-key': CASHFREE_SECRET_KEY, // Correct header for secret key
     'Content-Type': 'application/json',
-    'x-api-version': '2022-09-01', // Recommended API version
+    'x-api-version': CASHFREE_API_VERSION,
   };
 
+  // Construct the return URL. Cashfree will append parameters to this.
+  // Parameters like cf_order_id, cf_payment_id, cf_status will be appended by Cashfree.
+  const returnUrl = `${NEXT_PUBLIC_APP_BASE_URL}/payment/status?app_order_id=${orderData.orderId}&event_id=${orderData.eventId}&user_id=${orderData.userId}`;
+  console.log('[Cashfree] Return URL to be used:', returnUrl);
+
+  // Customer ID must be unique for each customer.
+  // Max length 50. Using combination of phone and userId.
+  const customerId = `cust_${orderData.userId}_${orderData.customerPhone}`.slice(0,50);
+
+
+  const payload = {
+    order_id: orderData.orderId, // Your unique order ID
+    order_amount: orderData.orderAmount,
+    order_currency: 'INR',
+    customer_details: {
+      customer_id: customerId, 
+      customer_name: orderData.customerName,
+      customer_email: orderData.customerEmail,
+      customer_phone: orderData.customerPhone,
+    },
+    order_meta: {
+      return_url: returnUrl,
+      // notify_url: `${NEXT_PUBLIC_APP_BASE_URL}/api/payment/cashfree-webhook`, // Recommended for production
+    },
+    order_note: `Payment for GLAD CELL Event: ${orderData.eventId}`, 
+  };
+  console.log('[Cashfree] Order Payload being sent:', JSON.stringify(payload, null, 2));
+
   try {
-    // Construct the return URL. This should point to a page in your app that handles Cashfree's response.
-    const returnUrl = `${NEXT_PUBLIC_APP_BASE_URL}/payment/status?order_id={order_id}&event_id=${orderData.eventId}&user_id=${orderData.userId}`;
-    console.log('[Cashfree] Return URL to be used:', returnUrl);
-
-
-    const payload = {
-      order_id: orderData.orderId,
-      order_amount: orderData.orderAmount,
-      order_currency: 'INR',
-      customer_details: {
-        customer_id: `${orderData.customerPhone}_${orderData.userId}`.slice(0, 50), // Ensure customer_id is <= 50 chars
-        customer_name: orderData.customerName,
-        customer_email: orderData.customerEmail,
-        customer_phone: orderData.customerPhone,
-      },
-      order_meta: {
-        return_url: returnUrl,
-        // notify_url: `${NEXT_PUBLIC_APP_BASE_URL}/api/payment/cashfree-webhook`, // Optional: For server-to-server notifications
-      },
-      order_note: `Payment for event: ${orderData.orderId}`, // Optional
-    };
-    console.log('[Cashfree] Order Payload being sent:', JSON.stringify(payload, null, 2));
-
     const response = await axios.post(`${CASHFREE_BASE_URL}/orders`, payload, {
       headers: HEADERS,
     });
@@ -88,17 +93,28 @@ export async function createCashfreeOrderAction(orderData: {
     console.log('[Cashfree] API Response Status:', response.status);
     console.log('[Cashfree] API Response Data:', JSON.stringify(response.data, null, 2));
 
+    if (response.data && response.data.payment_session_id && response.data.order_status === "ACTIVE") {
+      // For standard checkout, use payment_session_id to redirect
+      // The payment_link might be for seamless integration.
+      // Let's construct the standard checkout URL:
+      const paymentCheckoutUrl = `${CASHFREE_ENV === 'PROD' ? 'https://checkout.cashfree.com' : 'https://sandbox.cashfree.com/checkout'}/guest/checkout?payment_session_id=${response.data.payment_session_id}`;
 
-    if (response.data && response.data.payment_link) {
       return {
         success: true,
+        paymentLink: paymentCheckoutUrl, // Use this link for redirection
+        order_id: response.data.cf_order_id, // Cashfree's order ID
+      };
+    } else if (response.data && response.data.payment_link) { // Fallback for older API or specific link types
+       return {
+        success: true,
         paymentLink: response.data.payment_link,
+        order_id: response.data.cf_order_id || orderData.orderId,
       };
     } else {
       console.error('[Cashfree Order Error] Unexpected response structure from Cashfree:', response.data);
       return {
         success: false,
-        message: response.data?.message || 'Failed to create Cashfree payment link. Unexpected response.',
+        message: response.data?.message || 'Failed to create Cashfree payment session. Unexpected response.',
       };
     }
   } catch (error: any) {
@@ -107,15 +123,17 @@ export async function createCashfreeOrderAction(orderData: {
       console.error('Error Data:', JSON.stringify(error.response.data, null, 2));
       console.error('Error Status:', error.response.status);
       console.error('Error Headers:', JSON.stringify(error.response.headers, null, 2));
-       let detailedMessage = 'Error while creating payment order with Cashfree.';
+      let detailedMessage = `Error (${error.response.status}): `;
       if (error.response.data && error.response.data.message) {
-        detailedMessage = error.response.data.message;
+        detailedMessage += error.response.data.message;
         if (error.response.data.type) {
-             detailedMessage += ` (Type: ${error.response.data.type})`;
+             detailedMessage += ` (Type: ${error.response.data.type}, Code: ${error.response.data.code})`;
         }
          if (error.response.status === 401) {
             detailedMessage += " This often indicates an issue with your App ID or Secret Key. Please verify them in your .env.local file and ensure they match your Cashfree dashboard for the selected environment (PROD/TEST). Remember to restart your server after any .env.local changes.";
         }
+      } else {
+        detailedMessage += 'Error while creating payment order with Cashfree.';
       }
       return { success: false, message: detailedMessage };
     } else if (error.request) {
@@ -128,101 +146,93 @@ export async function createCashfreeOrderAction(orderData: {
   }
 }
 
+
 /**
- * Verifies Cashfree signature and records event participation.
- * This function would typically be called by a webhook handler or a redirect page.
+ * Processes a successful Cashfree payment.
+ * This should be called from the payment status page after Cashfree redirects back.
+ * It fetches necessary details, generates QR, and records participation.
  */
-export async function verifyCashfreeAndParticipateAction(verificationPayload: {
-  order_id: string;
-  participantDetails: {
-    userId: string;
-    eventId: string;
-    eventName: string;
-    name: string;
-    email: string;
-    phone: string;
-    branch: string;
-    semester: number;
-    registrationNumber: string;
-  };
-  transaction: {
-    txStatus: string;
-    orderAmount: number;
-    paymentMode: string;
-    referenceId?: string; 
-  };
-  signatureFromHeader?: string; 
+export async function processSuccessfulCashfreePayment(details: {
+  appOrderId: string; // Your internal order ID
+  cfOrderId: string; // Cashfree's order ID (from URL query params)
+  eventId: string;
+  userId: string;
+  cfPaymentId?: string; // Cashfree's payment ID (from URL query params)
 }): Promise<{ success: boolean; message?: string }> {
+  console.log('[Process Cashfree Payment] Received details:', details);
 
-  console.log("[Cashfree Verify] Received verification payload:", verificationPayload);
+  const { appOrderId, cfOrderId, eventId, userId, cfPaymentId } = details;
 
-  if (!CASHFREE_SECRET_KEY) {
-    console.error("[Cashfree Verify] Secret Key not configured on server.");
-    return { success: false, message: "Cashfree Secret Key not configured on server." };
-  }
+  try {
+    // 1. Fetch user profile
+    const profileResult = await getUserProfile(userId);
+    if (!profileResult.success || !profileResult.data) {
+      throw new Error("Failed to fetch user profile for participation.");
+    }
+    const userDetails = profileResult.data;
 
-  const { order_id, participantDetails, transaction, signatureFromHeader } = verificationPayload;
-  const { txStatus, orderAmount, paymentMode, referenceId } = transaction;
+    // 2. Fetch event details (ensure it's the correct event)
+    const eventsResult = await getEvents();
+    if (!eventsResult.success || !eventsResult.events) {
+      throw new Error("Failed to fetch event details for participation.");
+    }
+    const eventDetails = eventsResult.events.find((e: EventData) => e.id === eventId);
+    if (!eventDetails) {
+      throw new Error(`Event with ID ${eventId} not found.`);
+    }
 
-  // --- Signature Verification ---
-  // IMPORTANT: Implement actual Cashfree signature verification here based on their documentation.
-  // The following is a placeholder. Skipping real verification can lead to security vulnerabilities.
-  if (signatureFromHeader) {
-      console.warn("[Cashfree Verify] Signature received, but actual verification logic is a placeholder. IMPLEMENT FOR PRODUCTION!");
-      // Example structure (NEEDS ACTUAL IMPLEMENTATION):
-      // const dataToSign = ... // construct string from webhook payload as per Cashfree docs
-      // const expectedSignature = crypto.createHmac('sha256', CASHFREE_SECRET_KEY).update(dataToSign).digest('hex');
-      // if (signatureFromHeader !== expectedSignature) {
-      //   return { success: false, message: 'Payment signature mismatch.' };
-      // }
-  } else {
-      console.warn("[Cashfree Verify] No signature received in payload. Skipping signature check (Highly Insecure for Production).");
-  }
+    // 3. Generate QR Code
+    const qrDataString = JSON.stringify({
+      orderId: appOrderId, // Using our internal orderId for QR
+      eventId: eventId,
+      userId: userId,
+      timestamp: Date.now(),
+    });
 
+    let qrCodeDataUri = '';
+    try {
+      qrCodeDataUri = await QRCode.toDataURL(qrDataString);
+    } catch (qrError: any) {
+      console.warn('[Process Cashfree Payment] QR Code generation failed:', qrError.message);
+      // Continue without QR code if generation fails, log it.
+    }
 
-  if (txStatus !== 'SUCCESS') {
+    // 4. Record participation in Firestore
+    const participationResult = await participateInEvent({
+      userId: userId,
+      eventId: eventId,
+      eventName: eventDetails.name,
+      name: userDetails.name || '',
+      email: userDetails.email || '',
+      phone: (userDetails as any).phone || '', // Assuming phone is available
+      branch: userDetails.branch || '',
+      semester: parseInt(String(userDetails.semester), 10) || 0,
+      registrationNumber: userDetails.registrationNumber || '',
+      paymentDetails: {
+        orderId: appOrderId, // Your internal order ID
+        paymentId: cfPaymentId || cfOrderId, // Use cfPaymentId if available, else cfOrderId
+        method: 'Cashfree',
+      },
+      qrCodeDataUri: qrCodeDataUri || undefined,
+    });
+
+    if (participationResult.success) {
+      console.log('[Process Cashfree Payment] Participation recorded successfully for order:', appOrderId);
+      return { success: true, message: 'Payment successful and participation recorded.' };
+    } else {
+      console.error('[Process Cashfree Payment] Failed to record participation after successful payment for order:', appOrderId, 'Reason:', participationResult.message);
+      // This is a critical situation: payment was made, but participation recording failed.
+      // Implement retry logic or manual alert for admin.
+      return { 
+        success: false, 
+        message: `Payment was successful, but there was an issue recording your participation: ${participationResult.message}. Please contact support with Order ID: ${appOrderId}.`
+      };
+    }
+  } catch (error: any) {
+    console.error('[Process Cashfree Payment] Error:', error.message);
     return {
       success: false,
-      message: `Payment was not successful. Status: ${txStatus}`,
+      message: `An error occurred while processing your payment confirmation: ${error.message}. Please contact support with Order ID: ${appOrderId}.`,
     };
   }
-
-  // Generate QR Code
-  const qrDataString = JSON.stringify({
-    orderId: order_id,
-    eventId: participantDetails.eventId,
-    userId: participantDetails.userId,
-    timestamp: Date.now(),
-  });
-
-  let qrCodeDataUri = '';
-  try {
-    qrCodeDataUri = await QRCode.toDataURL(qrDataString);
-  } catch (error: any) {
-    console.warn('[Cashfree Verify] QR Code generation failed:', error.message);
-  }
-
-  // Store participation
-  const result = await participateInEvent({
-    userId: participantDetails.userId,
-    eventId: participantDetails.eventId,
-    eventName: participantDetails.eventName,
-    name: participantDetails.name,
-    email: participantDetails.email,
-    phone: participantDetails.phone,
-    branch: participantDetails.branch,
-    semester: participantDetails.semester,
-    registrationNumber: participantDetails.registrationNumber,
-    paymentDetails: {
-      orderId: order_id,
-      paymentId: referenceId || 'N/A', 
-      method: `Cashfree - ${paymentMode}`,
-    },
-    qrCodeDataUri: qrCodeDataUri || undefined,
-  });
-
-  return result.success
-    ? { success: true, message: 'Participation successful and payment verified.' }
-    : { success: false, message: result.message || 'Participation failed after payment verification.' };
 }
-

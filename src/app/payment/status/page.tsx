@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -7,24 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
 import Link from 'next/link';
-import { verifyCashfreeAndParticipateAction } from '@/services/payment'; // Assuming you might call verification from client if needed, or server does it
+import { processSuccessfulCashfreePayment } from '@/services/payment'; // Updated import
 import { useToast } from '@/hooks/use-toast';
-import { getUserProfile } from '@/services/events'; // To get participant details if needed
-import type { EventData } from '@/services/events';
-import { getEvents } from '@/services/events';
 
-
-interface ParticipantDetailsForVerification {
-    userId: string;
-    eventId: string;
-    eventName: string;
-    name: string;
-    email: string;
-    phone: string;
-    branch: string;
-    semester: number;
-    registrationNumber: string;
-}
 
 function PaymentStatusPageContents() {
   const searchParams = useSearchParams();
@@ -33,138 +17,124 @@ function PaymentStatusPageContents() {
 
   const [status, setStatus] = useState<'loading' | 'success' | 'failure' | 'pending' | 'error'>('loading');
   const [message, setMessage] = useState<string>('Processing your payment status...');
-  const [orderId, setOrderId] = useState<string | null>(null);
+  
+  // Store our app's order ID and event ID, and Cashfree's order ID
+  const [appOrderId, setAppOrderId] = useState<string | null>(null);
+  const [cfOrderId, setCfOrderId] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
 
   useEffect(() => {
-    const cf_order_id = searchParams.get('order_id');
-    const cf_event_id = searchParams.get('event_id'); // Passed from our app
-    const cf_user_id = searchParams.get('user_id'); // Passed from our app
+    // Extract parameters from the URL
+    const cf_order_id = searchParams.get('cf_order_id'); // Cashfree's order ID
+    const cf_payment_id = searchParams.get('cf_payment_id'); // Cashfree's payment ID
+    const cf_status = searchParams.get('cf_status'); // Cashfree's payment status
     
-    // Cashfree might also append its own parameters like cf_status, cf_payment_id, etc.
-    // For this example, we primarily rely on what we passed.
-    // A robust solution would involve calling a server endpoint to verify the payment with Cashfree's API.
+    // Parameters we passed to Cashfree and got back
+    const app_order_id_from_url = searchParams.get('app_order_id'); // Our internal order_id
+    const event_id_from_url = searchParams.get('event_id');
+    const user_id_from_url = searchParams.get('user_id');
 
-    setOrderId(cf_order_id);
-    setEventId(cf_event_id);
-    setUserId(cf_user_id);
-
-    if (cf_order_id && cf_event_id && cf_user_id) {
-      // Simulating verification. In a real app, you'd make a server call here
-      // to an endpoint that securely verifies the payment with Cashfree.
-      // That server endpoint would then call `verifyCashfreeAndParticipateAction`.
-
-      // For client-side simulation/display based on URL params:
-      // This is NOT secure for actual verification.
-      // We'll assume for this example the payment was successful if Cashfree redirected here
-      // with an order_id. A real implementation *must* verify server-side.
-
-      const verifyPayment = async () => {
-        try {
-            // 1. Fetch user profile
-            const profileResult = await getUserProfile(cf_user_id);
-            if (!profileResult.success || !profileResult.data) {
-                throw new Error("Failed to fetch user profile for verification.");
-            }
-            const userDetails = profileResult.data;
-
-            // 2. Fetch event details
-            const eventsResult = await getEvents(); // Fetch all events
-            if (!eventsResult.success || !eventsResult.events) {
-                 throw new Error("Failed to fetch event details for verification.");
-            }
-            const eventDetails = eventsResult.events.find(e => e.id === cf_event_id);
-            if (!eventDetails) {
-                throw new Error(`Event with ID ${cf_event_id} not found.`);
-            }
+    setAppOrderId(app_order_id_from_url);
+    setCfOrderId(cf_order_id);
+    setEventId(event_id_from_url);
+    setUserId(user_id_from_url);
+    
+    console.log("[Payment Status Page] URL Params:", {
+        cf_order_id, cf_payment_id, cf_status, app_order_id_from_url, event_id_from_url, user_id_from_url
+    });
 
 
-            const participantData: ParticipantDetailsForVerification = {
-                userId: cf_user_id,
-                eventId: cf_event_id,
-                eventName: eventDetails.name, // Get event name from fetched details
-                name: userDetails.name || '',
-                email: userDetails.email || '',
-                phone: (userDetails as any).phone || '',
-                branch: userDetails.branch || '',
-                semester: parseInt(String(userDetails.semester), 10) || 0,
-                registrationNumber: userDetails.registrationNumber || '',
-            };
-
-            // THIS IS WHERE YOU WOULD CALL YOUR SERVER-SIDE VERIFICATION ENDPOINT
-            // For now, we are directly calling the action, which is not ideal for client-side.
-            // The `verifyCashfreeAndParticipateAction` should ideally be called by a server endpoint
-            // that Cashfree's webhook or redirect hits, which then performs the signature check.
-            
-            // Let's assume the server has already verified and we're just confirming the order status
-            // from Cashfree's perspective (which is typically done via webhook)
-
-            // For a client-side confirmation, you might check parameters Cashfree appends, like 'cf_status'
-            const cf_status = searchParams.get('cf_status'); // Example parameter Cashfree might send
-
-            if (cf_status === 'SUCCESS' || cf_status === 'success') { // Adjust based on actual Cashfree response
-                setStatus('success');
-                setMessage(`Payment for Order ID: ${cf_order_id} was successful! Your participation for event "${eventDetails.name}" is confirmed.`);
-                toast({
-                    title: "Payment Successful!",
-                    description: "Your participation is confirmed.",
-                    variant: "default"
-                });
-                // Optionally, you could trigger the server-side `verifyCashfreeAndParticipateAction` here
-                // if it's designed to be idempotent and secure for such a call pattern.
-                // However, the primary verification should happen server-to-server via webhooks.
-            } else if (cf_status === 'FAILED' || cf_status === 'failure') {
-                setStatus('failure');
-                setMessage(`Payment for Order ID: ${cf_order_id} failed. Please try again or contact support.`);
-                 toast({
-                    title: "Payment Failed",
-                    description: "Please try again or contact support.",
-                    variant: "destructive"
-                });
-            } else if (cf_status === 'PENDING' || cf_status === 'pending') {
-                setStatus('pending');
-                setMessage(`Payment for Order ID: ${cf_order_id} is pending. We will update you once confirmed.`);
-                 toast({
-                    title: "Payment Pending",
-                    description: "We will update you once confirmed.",
-                    variant: "default"
-                });
-            }
-            else {
-                // If cf_status is not present or unrecognized, assume success for this example
-                // as Cashfree redirection implies user interaction.
-                // AGAIN: THIS IS NOT SECURE FOR PRODUCTION. SERVER-SIDE VERIFICATION IS KEY.
-                console.warn("Cashfree payment status parameter 'cf_status' not found or unrecognized in return URL. Assuming success for demo purposes. Implement server-side verification!");
-                setStatus('success');
-                setMessage(`Payment for Order ID: ${cf_order_id} processed. Your participation for event "${eventDetails.name}" is confirmed (pending final server verification).`);
-                 toast({
-                    title: "Payment Processed",
-                    description: "Your participation is confirmed (pending final server verification).",
-                    variant: "default"
-                });
-            }
-
-        } catch (error) {
-            console.error("Error processing payment status:", error);
-            setStatus('error');
-            setMessage(error instanceof Error ? error.message : "An error occurred while processing your payment. Please contact support.");
-             toast({
-                title: "Processing Error",
-                description: "An error occurred. Please contact support.",
-                variant: "destructive"
-            });
-        }
-      };
-
-      verifyPayment();
-
-    } else {
+    if (!app_order_id_from_url || !event_id_from_url || !user_id_from_url) {
       setStatus('error');
-      setMessage('Invalid payment return URL. Necessary information is missing.');
+      setMessage('Invalid payment return URL. Necessary information from our app is missing.');
+      toast({ title: "Error", description: "Invalid payment link.", variant: "destructive" });
+      return;
     }
-  }, [searchParams, router, toast]);
+    
+    if (!cf_order_id) {
+        setStatus('error');
+        setMessage('Cashfree order ID missing from return URL. Cannot confirm status.');
+        toast({ title: "Error", description: "Payment confirmation incomplete.", variant: "destructive" });
+        return;
+    }
+
+
+    const handlePaymentResult = async () => {
+      if (cf_status === 'SUCCESS') {
+        setStatus('loading'); // Show loading while processing participation
+        setMessage(`Payment for Order ID: ${app_order_id_from_url} successful! Confirming participation...`);
+        
+        const result = await processSuccessfulCashfreePayment({
+          appOrderId: app_order_id_from_url,
+          cfOrderId: cf_order_id,
+          eventId: event_id_from_url,
+          userId: user_id_from_url,
+          cfPaymentId: cf_payment_id || undefined,
+        });
+
+        if (result.success) {
+          setStatus('success');
+          setMessage(result.message || `Payment successful! Your participation for event is confirmed.`);
+          toast({
+            title: "Payment Successful!",
+            description: result.message || "Your participation is confirmed.",
+            variant: "default"
+          });
+        } else {
+          setStatus('error'); // Set to error if participation recording fails
+          setMessage(result.message || `Payment was successful, but participation recording failed for Order ID: ${app_order_id_from_url}. Please contact support.`);
+          toast({
+            title: "Participation Error",
+            description: result.message || "Error confirming participation.",
+            variant: "destructive"
+          });
+        }
+      } else if (cf_status === 'FAILED' || cf_status === 'CANCELLED' || cf_status === 'USER_DROPPED') {
+        setStatus('failure');
+        setMessage(`Payment for Order ID: ${app_order_id_from_url} ${cf_status?.toLowerCase()}. Please try again or contact support.`);
+        toast({
+          title: `Payment ${cf_status || 'Failed'}`,
+          description: "Please try again or contact support.",
+          variant: "destructive"
+        });
+      } else if (cf_status === 'PENDING') {
+        setStatus('pending');
+        setMessage(`Payment for Order ID: ${app_order_id_from_url} is pending. We will update you once confirmed.`);
+        toast({
+          title: "Payment Pending",
+          description: "We will update you once confirmed.",
+          variant: "default"
+        });
+      } else if (cf_status === 'FLAGGED') {
+        setStatus('pending'); // Or a specific 'flagged' status
+        setMessage(`Payment for Order ID: ${app_order_id_from_url} is under review. We will update you.`);
+        toast({
+            title: "Payment Under Review",
+            description: "Your payment is currently under review.",
+            variant: "default"
+        });
+      }
+      else {
+        // If cf_status is not present or unrecognized, it's an ambiguous state.
+        // This might happen if Cashfree redirects without a clear status (unlikely for standard flow).
+        // Or if some parameters are missing.
+        console.warn("Cashfree payment status parameter 'cf_status' not found, unrecognized, or key parameters missing from return URL. This is an ambiguous state.");
+        setStatus('error');
+        setMessage(`Payment status for Order ID: ${app_order_id_from_url} is unclear. Cashfree status: '${cf_status || 'N/A'}'. Please contact support if you believe your payment was successful.`);
+        toast({
+          title: "Payment Status Unclear",
+          description: "Please contact support to confirm your payment.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    handlePaymentResult();
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router, toast]); // Not adding internal state setters like setAppOrderId to deps to avoid re-triggering on their change.
 
   const renderIcon = () => {
     switch (status) {
@@ -190,7 +160,7 @@ function PaymentStatusPageContents() {
       case 'success':
         return "Payment Successful!";
       case 'failure':
-        return "Payment Failed";
+        return "Payment Failed / Cancelled";
       case 'pending':
         return "Payment Pending";
       case 'error':
@@ -213,13 +183,15 @@ function PaymentStatusPageContents() {
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
-          {orderId && <p className="text-sm text-muted-foreground mb-4">Order ID: {orderId}</p>}
+          {appOrderId && <p className="text-sm text-muted-foreground mb-1">Your Order ID: {appOrderId}</p>}
+          {cfOrderId && <p className="text-xs text-muted-foreground mb-4">Gateway Order ID: {cfOrderId}</p>}
+          
           {(status === 'success' || status === 'pending') && eventId && (
             <Button asChild className="mt-4">
               <Link href={`/profile`}>Go to My Tickets</Link>
             </Button>
           )}
-          {(status === 'failure' || status === 'error') && eventId && (
+          {(status === 'failure' || status === 'error' && status !== 'loading') && eventId && (
             <Button asChild className="mt-4" variant="outline">
               <Link href={`/programs`}>Retry / View Programs</Link>
             </Button>
@@ -238,7 +210,7 @@ function PaymentStatusPageContents() {
 
 export default function PaymentStatusPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>}>
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary"/> Processing...</div>}>
             <PaymentStatusPageContents />
         </Suspense>
     );

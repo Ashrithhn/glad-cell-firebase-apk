@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
@@ -35,10 +34,11 @@ interface UserProfileData {
   collegeName?: string;
   city?: string;
   pincode?: string;
-  createdAt?: Timestamp | string;
+  createdAt?: Timestamp | string; // Stored as Timestamp, can be string after serialization
   updatedAt?: Timestamp | string;
   lastLoginAt?: Timestamp | string;
   authProvider?: string;
+  emailVerified?: boolean;
 }
 
 
@@ -90,13 +90,21 @@ export async function participateInEvent(participationData: {
     if (!querySnapshot.empty) {
         const existingDocId = querySnapshot.docs[0].id;
         console.warn(`[Server Action] User ${participationData.userId} already registered for event ${participationData.eventId} (Doc ID: ${existingDocId})`);
+        // For Cashfree, allow re-entry if payment failed previously and is now successful.
+        // This logic might need refinement based on how retries are handled.
+        // For now, if a document exists, assume it's a duplicate attempt for a *successful* prior registration.
         return { success: false, message: 'You are already registered for this event.' };
     }
     console.log('[Server Action] No existing participation found. Proceeding to add...');
 
-    // Use orderId from paymentDetails if available, otherwise generate one or use eventId+userId combination.
-    // For Cashfree, the orderId used to create the payment link is a good candidate.
-    const docId = participationData.paymentDetails?.orderId || `${participationData.eventId}-${participationData.userId}-${Date.now()}`;
+    // Use orderId from paymentDetails as the document ID for participations. This makes it easy to find.
+    const docId = participationData.paymentDetails?.orderId;
+    if (!docId) {
+        console.error("[Server Action] No payment order ID provided for participation record. Cannot create document.");
+        return { success: false, message: "Cannot record participation without a payment order ID."};
+    }
+
+    const participationDocRef = doc(db, 'participations', docId); // Use payment orderId as doc ID
 
 
     const docData = {
@@ -104,8 +112,8 @@ export async function participateInEvent(participationData: {
         participatedAt: serverTimestamp(), 
         qrCodeDataUri: participationData.qrCodeDataUri || null, 
     };
-    // Use the specific docId for the document
-    await addDoc(collection(db, 'participations'), docData);
+    
+    await setDoc(participationDocRef, docData); // Use setDoc with specific ID
 
 
     console.log('[Server Action] Participation recorded in Firestore with ID:', docId);
@@ -153,11 +161,29 @@ export async function participateInEvent(participationData: {
                 console.warn(`[Server Action] getUserProfile: ${notFoundMessage}`);
                 return { success: false, message: notFoundMessage };
              }
+             
+             // Create a new object for serializableData to avoid modifying rawData directly
+             const serializableData: UserProfileData = { 
+                uid: rawData.uid,
+                email: rawData.email || null,
+                name: rawData.name || null,
+                photoURL: rawData.photoURL || null,
+                branch: rawData.branch || null,
+                semester: rawData.semester, // Keep as is, will be handled below
+                registrationNumber: rawData.registrationNumber || null,
+                collegeName: rawData.collegeName || null,
+                city: rawData.city || null,
+                pincode: rawData.pincode || null,
+                createdAt: rawData.createdAt,
+                updatedAt: rawData.updatedAt,
+                lastLoginAt: rawData.lastLoginAt,
+                authProvider: rawData.authProvider || null,
+                emailVerified: typeof rawData.emailVerified === 'boolean' ? rawData.emailVerified : false,
+             };
 
-             const serializableData: UserProfileData = { ...rawData } as UserProfileData; 
-
+             // Convert Timestamps to ISO strings for client component compatibility
              for (const key in serializableData) {
-                if (serializableData.hasOwnProperty(key)) {
+                if (Object.prototype.hasOwnProperty.call(serializableData, key)) {
                     const value = (serializableData as any)[key];
                     if (value instanceof Timestamp) {
                         (serializableData as any)[key] = value.toDate().toISOString();
@@ -199,7 +225,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
         const querySnapshot = await getDocs(eventsQuery);
 
         const events: EventData[] = [];
-        querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap to avoid conflict
+        querySnapshot.forEach((docSnap) => { 
             const data = docSnap.data();
 
             const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
@@ -210,7 +236,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
             }
 
             events.push({
-                id: docSnap.id, // Use docSnap.id here
+                id: docSnap.id, 
                 name: data.name,
                 description: data.description,
                 venue: data.venue,
@@ -261,7 +287,7 @@ export async function getParticipationData(userId: string): Promise<{ success: b
     const querySnapshot = await getDocs(participationsQuery);
 
     const participations: any[] = [];
-    querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap
+    querySnapshot.forEach((docSnap) => { 
       const data = docSnap.data();
       const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
         if (timestamp instanceof Timestamp) {
@@ -270,9 +296,11 @@ export async function getParticipationData(userId: string): Promise<{ success: b
         return typeof timestamp === 'string' ? timestamp : null;
       };
       participations.push({
-        id: docSnap.id, // Use docSnap.id
+        id: docSnap.id, 
         ...data,
         participatedAt: convertTimestamp(data.participatedAt),
+        // Convert other timestamp fields if they exist in participation docs
+        // e.g., paymentDetails.timestamp if it's a Firestore Timestamp
       });
     });
 

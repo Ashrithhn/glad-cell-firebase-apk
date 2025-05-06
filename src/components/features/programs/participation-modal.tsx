@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -26,8 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, AlertCircle } from 'lucide-react';
-// Updated import to use Cashfree actions
-import { createCashfreeOrderAction } from '@/services/payment';
+import { createCashfreeOrderAction } from '@/services/payment'; // Updated import
 import { useAuth } from '@/hooks/use-auth'; 
 import { getUserProfile } from '@/services/events'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; 
@@ -57,7 +55,6 @@ type FormData = z.infer<typeof formSchema>;
 
 export function ParticipationModal({ isOpen, onClose, eventDetails }: ParticipationModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isPaying, setIsPaying] = React.useState(false);
   const { user, userId, loading: authLoading, authError } = useAuth(); 
   const [isFetchingProfile, setIsFetchingProfile] = React.useState(false);
 
@@ -89,28 +86,31 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                           semester: isNaN(semesterValue) ? undefined : semesterValue,
                           registrationNumber: profileResult.data.registrationNumber || '',
                       });
-                  } else {
+                  } else { // Fallback if profile fetch fails but user is available
                       form.reset({
                           ...form.getValues(), 
                           email: user?.email || '',
+                          name: user?.displayName || '',
                       });
                   }
-              } catch (error) {
-                   form.reset({
+              } catch (error) { // Catch errors during profile fetch
+                   form.reset({ // Fallback with basic info
                        ...form.getValues(),
                        email: user?.email || '',
+                       name: user?.displayName || '',
                    });
               } finally {
                   setIsFetchingProfile(false);
               }
           } else if (!isOpen) {
-              form.reset(); 
+              form.reset(); // Reset form when closed
           } else if (authError) {
-              form.reset();
+              form.reset(); // Reset if auth error
           }
       };
       fetchAndPrefillProfile();
-  }, [isOpen, userId, user, authLoading, form, authError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, userId, user, authLoading, authError]); // form is not in deps to avoid loops with form.reset
 
 
   async function initiatePayment(values: FormData) {
@@ -123,13 +123,15 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
          return;
      }
 
-    setIsPaying(true);
     setIsSubmitting(true);
     console.log("[ParticipationModal] Initiating payment for event:", eventDetails.name, "Fee (Paisa):", eventDetails.fee);
 
+    // Generate a unique order ID from our system. Max 45 chars for Cashfree.
+    const appOrderId = `GLAD_${eventDetails.id.slice(0,10)}_${userId.slice(0,10)}_${Date.now()}`.slice(0, 45);
+
     try {
       const orderResult = await createCashfreeOrderAction({
-        orderId: `GLADCELL_${eventDetails.id}_${userId}_${Date.now()}`.slice(0, 45), 
+        orderId: appOrderId, 
         orderAmount: eventDetails.fee / 100, // Convert Paisa to Rupees for Cashfree
         customerName: values.name,
         customerEmail: values.email,
@@ -145,10 +147,9 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
       
       console.log("[ParticipationModal] Cashfree payment link received:", orderResult.paymentLink);
       if (typeof window !== 'undefined') {
-        window.location.href = orderResult.paymentLink;
+        window.location.href = orderResult.paymentLink; // Redirect to Cashfree
       } else {
         toast({title: "Redirection Error", description: "Could not redirect to payment page.", variant: "destructive"});
-        setIsPaying(false);
         setIsSubmitting(false);
       }
 
@@ -159,9 +160,10 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
         description: error instanceof Error ? error.message : 'Could not initiate payment with Cashfree.',
         variant: 'destructive',
       });
-      setIsPaying(false);
       setIsSubmitting(false);
     }
+    // No need to setIsSubmitting(false) here if redirecting, as component will unmount or page will change.
+    // However, if redirection fails, it should be set to false.
   }
 
   const handleOpenChange = (open: boolean) => {
@@ -173,8 +175,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
   const formattedFee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(eventDetails.fee / 100);
 
-  const isDisabled = authLoading || isFetchingProfile || isSubmitting || isPaying || !!authError;
-  const isPaymentDisabled = isDisabled;
+  const isDisabled = authLoading || isFetchingProfile || isSubmitting || !!authError;
 
   return (
     <>
@@ -296,12 +297,12 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline" disabled={isPaying} suppressHydrationWarning>
+                  <Button type="button" variant="outline" disabled={isSubmitting} suppressHydrationWarning>
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit" disabled={isPaymentDisabled} suppressHydrationWarning>
-                  {isPaying || isSubmitting ? ( 
+                <Button type="submit" disabled={isDisabled} suppressHydrationWarning>
+                  {isSubmitting ? ( 
                     <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing... </>
                   ) : isFetchingProfile ? (
                       <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Profile... </>
@@ -317,4 +318,3 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
     </>
   );
 }
-
