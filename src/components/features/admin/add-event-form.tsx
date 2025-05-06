@@ -403,7 +403,7 @@ export function AddEventForm() {
                    <FormItem>
                      <FormLabel>Min Team Size</FormLabel>
                      <FormControl>
-                       <Input type="number" min="1" placeholder="Minimum members per team" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} />
+                       <Input type="number" min="1" placeholder="Minimum members per team" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} />
                      </FormControl>
                      <FormMessage />
                    </FormItem>
@@ -416,7 +416,7 @@ export function AddEventForm() {
                    <FormItem>
                      <FormLabel>Max Team Size</FormLabel>
                      <FormControl>
-                       <Input type="number" min="1" placeholder="Maximum members per team" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} />
+                       <Input type="number" min="1" placeholder="Maximum members per team" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} />
                      </FormControl>
                      <FormMessage />
                    </FormItem>
@@ -433,7 +433,7 @@ export function AddEventForm() {
                 <FormLabel>Fee (INR)</FormLabel>
                  <FormControl>
                    {/* Use type="number" and step for currency */}
-                   <Input type="number" step="0.01" min="0" placeholder="Enter fee in Rupees (e.g., 100.00 or 0 for free)" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                   <Input type="number" step="0.01" min="0" placeholder="Enter fee in Rupees (e.g., 100.00 or 0 for free)" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                  </FormControl>
                  <FormDescription>
                    Enter 0 for free items. Processed in Paisa via Razorpay if applicable.
@@ -462,3 +462,5 @@ export function AddEventForm() {
     </Form>
   );
 }
+
+    
