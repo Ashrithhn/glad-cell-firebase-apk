@@ -26,7 +26,11 @@ const formSchema = z.object({
   branch: z.string().min(1, { message: 'Branch is required.' }).max(100),
   semester: z.coerce.number().min(1, { message: 'Semester must be between 1 and 8.' }).max(8, { message: 'Semester must be between 1 and 8.' }),
   registrationNumber: z.string().min(5, { message: 'Unique registration number is required and must be valid.' }).max(20),
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  email: z.string()
+    .email({ message: 'Please enter a valid email address.' })
+    .refine(email => email.endsWith('@gmail.com'), {
+      message: 'Only Gmail addresses (@gmail.com) are currently supported for registration.',
+    }),
   collegeName: z.string().min(1, { message: 'College name is required.' }).max(150),
   city: z.string().min(1, { message: 'City is required.' }).max(100),
   pincode: z.string().regex(/^\d{6}$/, { message: 'Pincode must be 6 digits.' }),
@@ -45,11 +49,11 @@ export function RegistrationForm() {
     defaultValues: {
       name: '',
       branch: '',
-      semester: '' as any,
+      semester: '' as any, // Keep as any to avoid direct number assignment issues
       registrationNumber: '',
       email: '',
-      collegeName: '', // Removed default value
-      city: '', // Removed default value
+      collegeName: '',
+      city: '',
       pincode: '',
       password: '',
     },
@@ -69,11 +73,11 @@ export function RegistrationForm() {
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: 'Your account has been created. Please log in.',
+          description: result.message || 'A verification email has been sent. Please check your inbox.',
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });
-        router.push('/login');
+        router.push('/login'); // Redirect to login after successful registration and email sent
       } else {
         // Throw error with the specific message from the service
         throw new Error(result.message || 'Registration failed.');
@@ -115,9 +119,9 @@ export function RegistrationForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel>Email Address (Gmail only)</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning />
+                        <Input type="email" placeholder="Enter your @gmail.com address" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -172,7 +176,7 @@ export function RegistrationForm() {
                     <FormItem>
                       <FormLabel>Semester</FormLabel>
                       <FormControl>
-                        <Input type="number" min="1" max="8" placeholder="Enter current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || '')} suppressHydrationWarning />
+                        <Input type="number" min="1" max="8" placeholder="Enter current semester (1-8)" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -237,3 +241,4 @@ export function RegistrationForm() {
       </Form>
   );
 }
+

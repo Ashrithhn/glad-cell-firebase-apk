@@ -64,6 +64,14 @@ export function LoginForm() {
 
         router.push('/'); // Redirect to home page
         router.refresh(); // Refresh to update header, etc.
+      } else if (result.message?.includes('Please verify your email address')) {
+         // Specific handling for email verification required message
+         toast({
+          title: 'Email Verification Required',
+          description: result.message,
+          variant: 'destructive', // Or 'default' depending on desired appearance
+          duration: 9000, // Longer duration for important messages
+        });
       } else {
         throw new Error(result.message || 'Invalid email or password.');
       }
@@ -127,3 +135,4 @@ export function LoginForm() {
     </Form>
   );
 }
+
