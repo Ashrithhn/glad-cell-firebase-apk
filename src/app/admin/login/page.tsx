@@ -14,6 +14,7 @@ export default function AdminLoginPage() {
   const isLoggedIn = !!userId || isAdmin; // Check if user or admin is logged in
 
   useEffect(() => {
+    console.log('[Admin Login Page Effect] Running. Loading:', loading, 'UserID:', userId, 'IsAdmin:', isAdmin);
     // Redirect only after loading is complete
     if (!loading) {
       if (isAdmin) {
@@ -23,7 +24,7 @@ export default function AdminLoginPage() {
         console.log('[Admin Login Page] Regular user logged in, redirecting to home');
         router.replace('/');
       } else {
-         console.log('[Admin Login Page] No user or admin logged in, showing form.');
+         console.log('[Admin Login Page] No user or admin logged in. Should show form.');
       }
     } else {
        console.log('[Admin Login Page] Auth loading, waiting...');
@@ -33,6 +34,7 @@ export default function AdminLoginPage() {
   // Show loading skeleton while checking auth status OR if redirection is pending
   // This ensures the form doesn't flash before redirection happens
   if (loading || (!loading && isLoggedIn)) {
+    console.log('[Admin Login Page Render] Showing loading skeleton or redirect pending. Loading:', loading, 'IsLoggedIn:', isLoggedIn);
     return (
         <div className="flex justify-center items-center min-h-screen bg-background px-4">
           <Card className="w-full max-w-md shadow-lg">
@@ -52,6 +54,7 @@ export default function AdminLoginPage() {
   }
 
   // Render admin login form if not loading and not logged in (user or admin)
+  console.log('[Admin Login Page Render] Rendering AdminLoginForm.');
   return (
     <div className="flex justify-center items-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-md shadow-lg">

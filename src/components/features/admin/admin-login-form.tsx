@@ -43,11 +43,11 @@ export function AdminLoginForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    // console.log('Admin Login Data:', values);
+    console.log('[Admin Login Form] Submitting credentials:', values.username);
 
     try {
       const result = await loginAdmin(values); // Still uses the placeholder service
-      // console.log('Admin Login Result:', result);
+      console.log('[Admin Login Form] Login attempt result:', result);
 
       if (result.success) {
          // Simulate setting admin authentication state (using localStorage for demo)
@@ -69,7 +69,7 @@ export function AdminLoginForm() {
         throw new Error(result.message || 'Invalid admin credentials.');
       }
     } catch (error) {
-      console.error('Admin Login Error:', error);
+      console.error('[Admin Login Form] Login Error:', error);
       toast({
         title: 'Admin Login Failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
