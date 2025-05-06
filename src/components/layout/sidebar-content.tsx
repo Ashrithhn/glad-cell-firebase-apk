@@ -22,7 +22,8 @@ import {
   Lightbulb, // Added Ideas Icon
   MessageSquare, // Added Feedback Icon
   Loader2, // For loading state
-  Link2 // Generic link icon
+  Link2, // Generic link icon
+  QrCode // Added QrCode for attendance
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; // Import React hooks
 import { getContent } from '@/services/content'; // Import content service
@@ -107,11 +108,18 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
         )}
 
         {isAdmin && ( // Show Admin Dashboard link if admin
+          <>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
                  <Link href="/admin/dashboard">
                      <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
                  </Link>
             </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                <Link href="/admin/attendance">
+                    <QrCode className="mr-2 h-4 w-4"/> Attendance Scanner
+                </Link>
+            </Button>
+          </>
         )}
 
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>

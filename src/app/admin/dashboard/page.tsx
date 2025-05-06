@@ -1,8 +1,9 @@
+
 // Placeholder Admin Dashboard Page
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut } from 'lucide-react'; // Added LogOut
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode } from 'lucide-react'; // Added QrCode icon
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth to handle logout for admin
 import { useRouter } from 'next/navigation'; // For redirecting after logout
 
@@ -75,6 +76,22 @@ export default function AdminDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+        
+        {/* Attendance Scanner Card */}
+        <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-accent/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl"><QrCode className="h-6 w-6 text-accent"/> Attendance Scanner</CardTitle>
+            <CardDescription>Scan QR codes on event tickets to mark participant attendance.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Button asChild variant="default" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+               <Link href="/admin/attendance">
+                 Open Scanner
+               </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
 
          {/* User Management Card - Placeholder */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">

@@ -8,6 +8,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { participateInEvent } from './events'; // Import the existing participation function
+import QRCode from 'qrcode'; // Import qrcode library
 
 // Ensure environment variables are set
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
@@ -81,6 +82,7 @@ export async function createRazorpayOrderAction(orderData: {
 
 /**
  * Verifies the Razorpay payment signature and records event participation if successful.
+ * Generates a QR code for the ticket.
  * @param verificationData - Data received from Razorpay handler and participant details.
  * @returns {Promise<{success: boolean, message?: string}>}
  */
@@ -141,6 +143,26 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
         if (isAuthentic) {
             console.log('[Server Action] Payment Signature Verified Successfully for order:', razorpay_order_id);
 
+            // Generate QR Code Data
+            // The QR code will simply encode the Razorpay Order ID for this example.
+            // In a real app, you might want to encode a unique participation ID or a more complex object.
+            const qrDataString = JSON.stringify({
+              orderId: razorpay_order_id,
+              eventId: participantDetails.eventId,
+              userId: userId,
+              timestamp: Date.now() // Optional: for uniqueness or expiry
+            });
+            let qrCodeDataUri = '';
+            try {
+              qrCodeDataUri = await QRCode.toDataURL(qrDataString);
+              console.log('[Server Action] QR Code generated for order:', razorpay_order_id);
+            } catch (qrError: any) {
+              console.error('[Server Action Error] Failed to generate QR Code:', qrError.message);
+              // Proceed without QR code if generation fails, but log it.
+              // Or return an error if QR code is critical. For now, proceed.
+            }
+
+
             // Payment is verified, now record participation
             const participationResult = await participateInEvent({
                 userId: userId, // Pass the verified userId
@@ -149,7 +171,8 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
                     orderId: razorpay_order_id,
                     paymentId: razorpay_payment_id,
                     method: 'Razorpay'
-                }
+                },
+                qrCodeDataUri: qrCodeDataUri, // Pass the generated QR code data URI
             });
 
             if (participationResult.success) {

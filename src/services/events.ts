@@ -47,6 +47,7 @@ interface UserProfileData {
 
 /**
  * Records event participation in Firestore.
+ * Includes qrCodeDataUri for the event ticket.
  */
 export async function participateInEvent(participationData: {
     userId: string; 
@@ -63,6 +64,7 @@ export async function participateInEvent(participationData: {
         paymentId: string;
         method: string;
     };
+    qrCodeDataUri?: string; // Added QR code data URI
 }): Promise<{ success: boolean; message?: string }> {
   console.log('[Server Action] participateInEvent invoked for event:', participationData.eventId, 'by user:', participationData.userId);
 
@@ -98,6 +100,7 @@ export async function participateInEvent(participationData: {
     const docData = {
         ...participationData,
         participatedAt: serverTimestamp(), 
+        qrCodeDataUri: participationData.qrCodeDataUri || null, // Store QR code or null
     };
     const docRef = await addDoc(collection(db, 'participations'), docData);
 
@@ -228,4 +231,53 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
         console.error('[Server Action Error] Error fetching events from Firestore:', error.code, error.message, error.stack);
         return { success: false, message: `Could not fetch items due to a database error: ${error.message || 'Unknown error'}` };
     }
+}
+
+/**
+ * Fetches participation data for a specific user.
+ */
+export async function getParticipationData(userId: string): Promise<{ success: boolean; participations?: any[]; message?: string }> {
+  console.log('[Server Action] getParticipationData invoked for user:', userId);
+
+  if (initializationError) {
+    const errorMessage = `Participation data service unavailable: Firebase initialization error - ${initializationError.message}.`;
+    console.error(`[Server Action Error] getParticipationData: ${errorMessage}`);
+    return { success: false, message: errorMessage };
+  }
+  if (!db) {
+    const errorMessage = 'Participation data service unavailable: Firestore service instance missing.';
+    console.error(`[Server Action Error] getParticipationData: ${errorMessage}`);
+    return { success: false, message: errorMessage };
+  }
+
+  if (!userId) {
+    return { success: false, message: 'User ID is required.' };
+  }
+
+  try {
+    const participationsQuery = query(collection(db, 'participations'), where('userId', '==', userId), orderBy('participatedAt', 'desc'));
+    const querySnapshot = await getDocs(participationsQuery);
+
+    const participations: any[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
+        if (timestamp instanceof Timestamp) {
+          return timestamp.toDate().toISOString();
+        }
+        return typeof timestamp === 'string' ? timestamp : null;
+      };
+      participations.push({
+        id: doc.id,
+        ...data,
+        participatedAt: convertTimestamp(data.participatedAt),
+      });
+    });
+
+    console.log(`[Server Action] getParticipationData: Fetched ${participations.length} participations for user ${userId}.`);
+    return { success: true, participations };
+  } catch (error: any) {
+    console.error('[Server Action Error] Error fetching participations from Firestore:', error.code, error.message, error.stack);
+    return { success: false, message: `Could not fetch participation data: ${error.message || 'Unknown error'}` };
+  }
 }

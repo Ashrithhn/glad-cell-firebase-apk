@@ -4,15 +4,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { User, Mail, Phone, Building, Hash, MapPin, Loader2, Camera, Edit } from 'lucide-react';
+import { User, Mail, Phone, Building, Hash, MapPin, Loader2, Camera, Edit, Ticket, QrCode } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/hooks/use-auth';
 import { updateProfilePicture } from '@/services/profile';
+import { getParticipationData } from '@/services/events'; // Import function to get participation data
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils'; // Import cn
+import Image from 'next/image'; // For displaying QR code
 
 // UserProfile type is now imported/defined within useAuth, so no need to redefine here
 
@@ -23,12 +25,40 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null); // For local errors like upload
+  const [participations, setParticipations] = useState<any[]>([]);
+  const [loadingParticipations, setLoadingParticipations] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !userId) {
       router.replace('/login');
+    } else if (userId) {
+      fetchParticipations(userId);
     }
   }, [userId, authLoading, router]);
+
+  const fetchParticipations = async (currentUserId: string) => {
+    setLoadingParticipations(true);
+    try {
+      const result = await getParticipationData(currentUserId);
+      if (result.success && result.participations) {
+        setParticipations(result.participations);
+      } else {
+        toast({
+          title: "Could not load tickets",
+          description: result.message || "Failed to fetch your event participation data.",
+          variant: "destructive"
+        });
+      }
+    } catch (e: any) {
+      toast({
+        title: "Error loading tickets",
+        description: e.message || "An unexpected error occurred.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingParticipations(false);
+    }
+  };
 
   const handleAvatarClick = () => {
     if (!isUploading) {
@@ -108,6 +138,18 @@ export default function ProfilePage() {
               </div>
                <hr/>
                <div className="flex items-start space-x-4"> <Skeleton className="h-5 w-5 rounded-full" /> <div className="space-y-1"><Skeleton className="h-5 w-48" /> <Skeleton className="h-5 w-32" /></div> </div>
+               
+               {/* Skeleton for Tickets section */}
+                <hr className="border-border" />
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <Skeleton className="h-40 rounded-md" />
+                        <Skeleton className="h-40 rounded-md" />
+                    </div>
+                </div>
+
           </CardContent>
         </Card>
       </div>
@@ -166,7 +208,7 @@ export default function ProfilePage() {
                 {userProfile?.name || userProfile?.email || 'User Profile'}
              </CardTitle>
             <CardDescription>
-               View and manage your account information.
+               View and manage your account information and event tickets.
             </CardDescription>
           </div>
         </CardHeader>
@@ -223,6 +265,43 @@ export default function ProfilePage() {
               <p className="font-semibold">{(userProfile as any)?.collegeName || 'N/A'},</p>
               <p className="font-semibold">{(userProfile as any)?.city || 'N/A'} - {(userProfile as any)?.pincode || 'N/A'}</p>
             </div>
+          </div>
+
+          {/* Event Tickets Section */}
+          <hr className="border-border" />
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-primary" /> Your Event Tickets
+            </h3>
+            {loadingParticipations ? (
+              <div className="flex items-center text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading tickets...
+              </div>
+            ) : participations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {participations.map((p) => (
+                  <Card key={p.id} className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-base">{p.eventName}</CardTitle>
+                      <CardDescription>Order ID: {p.paymentDetails?.orderId || 'N/A'}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center">
+                      {p.qrCodeDataUri ? (
+                        <Image src={p.qrCodeDataUri} alt={`QR Code for ${p.eventName}`} width={150} height={150} className="rounded-md border p-1"/>
+                      ) : (
+                        <div className="flex flex-col items-center text-muted-foreground">
+                          <QrCode className="h-12 w-12 mb-2"/>
+                          <p className="text-xs">QR Code not available</p>
+                        </div>
+                      )}
+                       <p className="text-xs text-muted-foreground mt-2">Show this QR at the event</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">You have not participated in any events yet.</p>
+            )}
           </div>
 
         </CardContent>
