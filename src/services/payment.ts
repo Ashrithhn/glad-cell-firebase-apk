@@ -34,12 +34,15 @@ export async function createCashfreeOrderAction(orderData: {
   paymentLink?: string;
   message?: string;
 }> {
-  console.log('[Cashfree] Creating order. App ID Loaded:', !!CASHFREE_APP_ID, 'Secret Key Loaded:', !!CASHFREE_SECRET_KEY, 'Env:', CASHFREE_ENV);
-  console.log('[Cashfree] Base URL for API:', CASHFREE_BASE_URL);
+  console.log('[Cashfree] Attempting to create order.');
+  console.log('[Cashfree] Environment:', CASHFREE_ENV);
+  console.log('[Cashfree] App ID Loaded:', !!CASHFREE_APP_ID ? 'Yes' : 'NO - MISSING!');
+  console.log('[Cashfree] Secret Key Loaded:', !!CASHFREE_SECRET_KEY ? 'Yes' : 'NO - MISSING!');
+  console.log('[Cashfree] API Base URL:', CASHFREE_BASE_URL);
 
 
   if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
-    const errorMessage = 'Cashfree credentials (APP_ID or SECRET_KEY) are not configured on the server. Please check .env.local or server environment variables.';
+    const errorMessage = 'Cashfree credentials (APP_ID or SECRET_KEY) are not configured on the server. Please check .env.local or server environment variables and restart the server.';
     console.error('[Cashfree Order Error]', errorMessage);
     return {
       success: false,
@@ -56,10 +59,8 @@ export async function createCashfreeOrderAction(orderData: {
 
   try {
     // Construct the return URL. This should point to a page in your app that handles Cashfree's response.
-    // Example: /payment/callback or /payment/status
-    // We'll pass necessary identifiers in the query parameters.
     const returnUrl = `${NEXT_PUBLIC_APP_BASE_URL}/payment/status?order_id={order_id}&event_id=${orderData.eventId}&user_id=${orderData.userId}`;
-    console.log('[Cashfree] Return URL:', returnUrl);
+    console.log('[Cashfree] Return URL to be used:', returnUrl);
 
 
     const payload = {
@@ -67,20 +68,18 @@ export async function createCashfreeOrderAction(orderData: {
       order_amount: orderData.orderAmount,
       order_currency: 'INR',
       customer_details: {
-        customer_id: `${orderData.customerPhone}_${orderData.userId}`, // Make customer_id unique
+        customer_id: `${orderData.customerPhone}_${orderData.userId}`.slice(0, 50), // Ensure customer_id is <= 50 chars
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
         customer_phone: orderData.customerPhone,
       },
       order_meta: {
-        // The return_url tells Cashfree where to redirect the user after payment.
-        // {order_id} will be replaced by Cashfree with the actual order ID.
         return_url: returnUrl,
         // notify_url: `${NEXT_PUBLIC_APP_BASE_URL}/api/payment/cashfree-webhook`, // Optional: For server-to-server notifications
       },
       order_note: `Payment for event: ${orderData.orderId}`, // Optional
     };
-    console.log('[Cashfree] Order Payload:', JSON.stringify(payload, null, 2));
+    console.log('[Cashfree] Order Payload being sent:', JSON.stringify(payload, null, 2));
 
     const response = await axios.post(`${CASHFREE_BASE_URL}/orders`, payload, {
       headers: HEADERS,
@@ -105,8 +104,6 @@ export async function createCashfreeOrderAction(orderData: {
   } catch (error: any) {
     console.error('[Cashfree Order Error] Axios request failed.');
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       console.error('Error Data:', JSON.stringify(error.response.data, null, 2));
       console.error('Error Status:', error.response.status);
       console.error('Error Headers:', JSON.stringify(error.response.headers, null, 2));
@@ -116,14 +113,15 @@ export async function createCashfreeOrderAction(orderData: {
         if (error.response.data.type) {
              detailedMessage += ` (Type: ${error.response.data.type})`;
         }
+         if (error.response.status === 401) {
+            detailedMessage += " This often indicates an issue with your App ID or Secret Key. Please verify them in your .env.local file and ensure they match your Cashfree dashboard for the selected environment (PROD/TEST). Remember to restart your server after any .env.local changes.";
+        }
       }
       return { success: false, message: detailedMessage };
     } else if (error.request) {
-      // The request was made but no response was received
       console.error('Error Request:', error.request);
       return { success: false, message: 'No response received from Cashfree server. Check network or Cashfree status.' };
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error('Error Message:', error.message);
       return { success: false, message: `Error setting up Cashfree request: ${error.message}` };
     }
@@ -136,10 +134,6 @@ export async function createCashfreeOrderAction(orderData: {
  */
 export async function verifyCashfreeAndParticipateAction(verificationPayload: {
   order_id: string;
-  // other fields from Cashfree webhook/redirect...
-  // For example, the participant details might be retrieved from your DB using order_id
-  // Or they might have been passed in the redirect URL's query parameters.
-  // For simplicity, assuming we get participantDetails somehow based on order_id
   participantDetails: {
     userId: string;
     eventId: string;
@@ -151,20 +145,19 @@ export async function verifyCashfreeAndParticipateAction(verificationPayload: {
     semester: number;
     registrationNumber: string;
   };
-  // Cashfree typically sends the entire POST body for signature verification.
-  // The signature itself is usually in the `x-cf-signature` header.
-  // This function needs to be adapted based on how Cashfree sends webhook data.
-  // Let's assume for now 'transaction' object is part of the payload from Cashfree.
   transaction: {
     txStatus: string;
     orderAmount: number;
     paymentMode: string;
-    referenceId?: string; // Cashfree's transaction ID
+    referenceId?: string; 
   };
-  signatureFromHeader: string; // This would be extracted from the 'x-cf-signature' header in a webhook
+  signatureFromHeader?: string; 
 }): Promise<{ success: boolean; message?: string }> {
 
+  console.log("[Cashfree Verify] Received verification payload:", verificationPayload);
+
   if (!CASHFREE_SECRET_KEY) {
+    console.error("[Cashfree Verify] Secret Key not configured on server.");
     return { success: false, message: "Cashfree Secret Key not configured on server." };
   }
 
@@ -172,28 +165,19 @@ export async function verifyCashfreeAndParticipateAction(verificationPayload: {
   const { txStatus, orderAmount, paymentMode, referenceId } = transaction;
 
   // --- Signature Verification ---
-  // The exact data to be signed can vary. Refer to Cashfree's documentation for webhooks.
-  // Typically, it's the timestamp from the header + the raw request body.
-  // For this example, we'll simulate a simplified signature check based on common fields.
-  // THIS IS A PLACEHOLDER AND NEEDS TO BE REPLACED WITH CASHFREE'S ACTUAL SIGNATURE VERIFICATION LOGIC.
-  // It's CRITICAL to implement this correctly for security.
-  // The following is a conceptual example of how you might prepare a string for HMAC:
-  // const dataToSign = `${order_id}${orderAmount}${referenceId}${txStatus}${paymentMode}`; // This is an example, check Cashfree docs!
-  // const expectedSignature = crypto
-  //   .createHmac('sha256', CASHFREE_SECRET_KEY)
-  //   .update(dataToSign)
-  //   .digest('base64');
-
-  // if (signatureFromHeader !== expectedSignature) {
-  //   console.error(`[Cashfree Verify] Signature mismatch. Expected: ${expectedSignature}, Got: ${signatureFromHeader}`);
-  //   return {
-  //     success: false,
-  //     message: 'Payment signature mismatch. Verification failed.',
-  //   };
-  // }
-  // IMPORTANT: Replace above placeholder with actual Cashfree signature verification logic.
-  // For now, we will proceed with a warning for development if the signature is not directly passed for verification.
-  console.warn("[Cashfree Verify] Placeholder for signature verification. Ensure this is implemented correctly for production!");
+  // IMPORTANT: Implement actual Cashfree signature verification here based on their documentation.
+  // The following is a placeholder. Skipping real verification can lead to security vulnerabilities.
+  if (signatureFromHeader) {
+      console.warn("[Cashfree Verify] Signature received, but actual verification logic is a placeholder. IMPLEMENT FOR PRODUCTION!");
+      // Example structure (NEEDS ACTUAL IMPLEMENTATION):
+      // const dataToSign = ... // construct string from webhook payload as per Cashfree docs
+      // const expectedSignature = crypto.createHmac('sha256', CASHFREE_SECRET_KEY).update(dataToSign).digest('hex');
+      // if (signatureFromHeader !== expectedSignature) {
+      //   return { success: false, message: 'Payment signature mismatch.' };
+      // }
+  } else {
+      console.warn("[Cashfree Verify] No signature received in payload. Skipping signature check (Highly Insecure for Production).");
+  }
 
 
   if (txStatus !== 'SUCCESS') {
@@ -216,7 +200,6 @@ export async function verifyCashfreeAndParticipateAction(verificationPayload: {
     qrCodeDataUri = await QRCode.toDataURL(qrDataString);
   } catch (error: any) {
     console.warn('[Cashfree Verify] QR Code generation failed:', error.message);
-    // Proceed without QR code if generation fails, but log it.
   }
 
   // Store participation
@@ -232,13 +215,14 @@ export async function verifyCashfreeAndParticipateAction(verificationPayload: {
     registrationNumber: participantDetails.registrationNumber,
     paymentDetails: {
       orderId: order_id,
-      paymentId: referenceId || 'N/A', // Cashfree's transaction ID
+      paymentId: referenceId || 'N/A', 
       method: `Cashfree - ${paymentMode}`,
     },
-    qrCodeDataUri: qrCodeDataUri || undefined, // Pass undefined if empty
+    qrCodeDataUri: qrCodeDataUri || undefined,
   });
 
   return result.success
     ? { success: true, message: 'Participation successful and payment verified.' }
     : { success: false, message: result.message || 'Participation failed after payment verification.' };
 }
+

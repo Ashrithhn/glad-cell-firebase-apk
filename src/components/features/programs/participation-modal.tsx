@@ -125,22 +125,25 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
     setIsPaying(true);
     setIsSubmitting(true);
+    console.log("[ParticipationModal] Initiating payment for event:", eventDetails.name, "Fee (Paisa):", eventDetails.fee);
 
     try {
       const orderResult = await createCashfreeOrderAction({
-        orderId: `GLADCELL_${eventDetails.id}_${userId}_${Date.now()}`.slice(0, 45), // Ensure orderId is <= 45 chars
-        orderAmount: eventDetails.fee / 100, 
+        orderId: `GLADCELL_${eventDetails.id}_${userId}_${Date.now()}`.slice(0, 45), 
+        orderAmount: eventDetails.fee / 100, // Convert Paisa to Rupees for Cashfree
         customerName: values.name,
         customerEmail: values.email,
         customerPhone: values.phone,
-        eventId: eventDetails.id, // Pass eventId for return URL metadata
-        userId: userId, // Pass userId for return URL metadata
+        eventId: eventDetails.id, 
+        userId: userId, 
       });
 
       if (!orderResult.success || !orderResult.paymentLink) {
+        console.error("[ParticipationModal] Cashfree order creation failed. Result:", orderResult);
         throw new Error(orderResult.message || 'Failed to create payment order with Cashfree.');
       }
-
+      
+      console.log("[ParticipationModal] Cashfree payment link received:", orderResult.paymentLink);
       if (typeof window !== 'undefined') {
         window.location.href = orderResult.paymentLink;
       } else {
@@ -150,7 +153,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
       }
 
     } catch (error) {
-      console.error('Cashfree Payment Initiation Error:', error);
+      console.error('[ParticipationModal] Cashfree Payment Initiation Error:', error);
       toast({
         title: 'Payment Failed',
         description: error instanceof Error ? error.message : 'Could not initiate payment with Cashfree.',
@@ -314,3 +317,4 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
     </>
   );
 }
+
