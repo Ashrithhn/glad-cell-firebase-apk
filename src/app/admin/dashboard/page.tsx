@@ -90,14 +90,14 @@ export default function AdminDashboardPage() {
         </Card>
 
 
-         {/* User Management Card - Placeholder */}
+         {/* User Management Card - Now Enabled */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><Users className="h-6 w-6 text-secondary-foreground"/> Manage Users</CardTitle>
-            <CardDescription>View and manage registered student accounts. (Feature coming soon)</CardDescription>
+            <CardDescription>View and manage registered student accounts.</CardDescription>
           </CardHeader>
           <CardContent>
-             <Button asChild variant="outline" className="w-full" disabled>
+             <Button asChild variant="outline" className="w-full">
                <Link href="/admin/users">
                  View Registered Users
                </Link>
@@ -105,14 +105,14 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Idea Management Card - Placeholder */}
+        {/* Idea Management Card - Now Enabled */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
              <CardTitle className="flex items-center gap-3 text-xl"><Lightbulb className="h-6 w-6 text-secondary-foreground"/> Manage Ideas</CardTitle>
-            <CardDescription>Review and manage submitted student ideas. (Feature coming soon)</CardDescription>
+            <CardDescription>Review and manage submitted student ideas.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full" disabled>
+            <Button asChild variant="outline" className="w-full">
                <Link href="/admin/ideas">
                  View Submitted Ideas
                </Link>
@@ -120,14 +120,14 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Site Settings Card (Optional) - Placeholder */}
+        {/* Site Settings Card (Optional) - Now Enabled */}
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><Settings className="h-6 w-6 text-secondary-foreground"/> Site Settings</CardTitle>
-            <CardDescription>Manage general site configurations. (Feature coming soon)</CardDescription>
+            <CardDescription>Manage general site configurations. (Placeholder)</CardDescription>
           </CardHeader>
           <CardContent>
-             <Button asChild variant="outline" className="w-full" disabled>
+             <Button asChild variant="outline" className="w-full">
                <Link href="/admin/settings">
                  Configure Settings
                </Link>

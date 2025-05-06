@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -11,7 +12,6 @@ import {
   CalendarCheck,
   MessageCircle, // Keep for WhatsApp
   Info,
-  HelpCircle,
   Settings,
   LogOut,
   Sun,
@@ -22,9 +22,10 @@ import {
   MessageSquare, // Added Feedback Icon
   Loader2, // For loading state
   Link2, // Generic link icon
-  QrCode, // Added QrCode for attendance
-  Users, // Added Users icon
-  FileDown // Added FileDown icon
+  QrCode, 
+  Users as UsersIcon, // Renamed to avoid conflict
+  FileText, // For content editing
+  Contact as ContactIcon, // Renamed to avoid conflict
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; // Import React hooks
 import { getContent } from '@/services/content'; // Import content service
@@ -98,6 +99,12 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
               Ideas
             </Link>
           </Button>
+          
+          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/programs">
+                <CalendarCheck className="mr-2 h-4 w-4" /> Our Programs
+            </Link>
+          </Button>
 
         {isLoggedIn && !isAdmin && ( // Show profile only for logged-in non-admin users
           <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
@@ -111,7 +118,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
         {isAdmin && ( // Admin-specific section
           <>
             <Separator />
-             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2 px-2">
+             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-1 px-2 pt-2">
                <Settings className="mr-2 h-4 w-4" /> Admin Tools
              </Label>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
@@ -124,20 +131,25 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
                 <CalendarCheck className="mr-2 h-4 w-4" /> Manage Events
               </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/users">
-                <Users className="mr-2 h-4 w-4" /> Manage Users (Coming Soon)
+                <UsersIcon className="mr-2 h-4 w-4" /> Manage Users
               </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick} disabled>
-              {/* Placeholder for report generation */}
-               <Link href="#">
-                  <FileDown className="mr-2 h-4 w-4" /> Generate Report (Coming Soon)
-               </Link>
+             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/ideas">
+                <Lightbulb className="mr-2 h-4 w-4" /> Manage Ideas
+              </Link>
             </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/attendance">
+                <QrCode className="mr-2 h-4 w-4" /> Attendance Scanner
+              </Link>
+            </Button>
+            
              <Separator />
-             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2 px-2">
-               <Settings className="mr-2 h-4 w-4" /> Content Management
+             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-1 px-2 pt-2">
+               <FileText className="mr-2 h-4 w-4" /> Content &amp; Settings
              </Label>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/about">
@@ -146,16 +158,33 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/contact">
-                <HelpCircle className="mr-2 h-4 w-4" /> Edit Contact Info
+                <ContactIcon className="mr-2 h-4 w-4"/> Edit Contact Info
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/links">
-                <Link2 className="mr-2 h-4 w-4" /> Edit Site Links
+                <Link2 className="mr-2 h-4 w-4" /> Manage Site Links
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/settings">
+                <Settings className="mr-2 h-4 w-4" /> Site Settings
               </Link>
             </Button>
           </>
         )}
+        <Separator/>
+        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/about">
+              <Info className="mr-2 h-4 w-4" /> About Us
+            </Link>
+        </Button>
+        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Link href="/contact">
+              <ContactIcon className="mr-2 h-4 w-4" /> Contact
+            </Link>
+        </Button>
+
 
          {/* Dynamic WhatsApp Community Link */}
         {loadingLinks ? (
