@@ -17,7 +17,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
 2.  **Set Up Environment Variables:**
 
-    This project uses Firebase for authentication and database services (Firestore), and Razorpay for payments. You need to configure environment variables for these services.
+    This project uses Firebase for authentication and database services (Firestore), and Cashfree for payments. You need to configure environment variables for these services.
 
     *   Create a file named `.env.local` in the **root directory** of the project (the same level as `package.json`).
     *   Add the following variables to the `.env.local` file, replacing the placeholder values with your actual keys:
@@ -38,13 +38,12 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         # DO NOT prefix with NEXT_PUBLIC_ if only used server-side.
         FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
 
-        # Razorpay Configuration (Get these from your Razorpay dashboard)
+        # Cashfree Configuration (Get these from your Cashfree dashboard)
         # These are used server-side, no NEXT_PUBLIC_ prefix needed.
-        RAZORPAY_KEY_ID=YOUR_RAZORPAY_KEY_ID
-        RAZORPAY_KEY_SECRET=YOUR_RAZORPAY_KEY_SECRET
-        # The Key ID is also exposed to the client-side via next.config.js
-        # Ensure this matches RAZORPAY_KEY_ID above.
-        NEXT_PUBLIC_RAZORPAY_KEY_ID=YOUR_RAZORPAY_KEY_ID
+        CASHFREE_APP_ID=YOUR_CASHFREE_APP_ID
+        CASHFREE_SECRET_KEY=YOUR_CASHFREE_SECRET_KEY
+        CASHFREE_ENV=TEST # or PROD
+        NEXT_PUBLIC_APP_BASE_URL=http://localhost:9002 # Your app's base URL
 
         # Google Generative AI (Optional - If using Genkit features)
         # GOOGLE_GENAI_API_KEY=YOUR_GOOGLE_AI_API_KEY
@@ -115,7 +114,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     *   Email/Password
     *   Google Sign-In
 *   Admin Login (Placeholder - Use Firebase Custom Claims for production)
-*   Event Participation with Razorpay Payment Gateway
+*   Event Participation with Cashfree Payment Gateway
 *   Profile Page with Profile Picture Upload
 *   Idea Showcase (Placeholder Data)
 *   About & Contact Pages (Admin-editable)
@@ -131,4 +130,3 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 *   **Password:** `adminpass`
 
 **Warning:** These credentials are for development testing only. Implement proper role-based access control using Firebase Custom Claims before deploying to production.
-
