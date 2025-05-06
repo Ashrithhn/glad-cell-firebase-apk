@@ -2,15 +2,14 @@
 'use server';
 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
-import { db, initializationError } from '@/lib/firebase/config'; // Import potentially undefined db and error
-// import type { User } from 'firebase/auth'; // User type from firebase/auth not directly used here
+import { db, initializationError } from '@/lib/firebase/config'; 
 
 /**
  * Represents the structure of event/program data stored in Firestore.
  * Matches the structure defined in services/admin.ts
  */
 export interface EventData {
-    id?: string; // Added during retrieval
+    id?: string; 
     name: string;
     description: string;
     venue: string;
@@ -25,8 +24,6 @@ export interface EventData {
     createdAt?: Timestamp | string;
 }
 
-// Define a more specific type for user profile data stored in Firestore
-// This should align with the UserProfile interface in useAuth.tsx
 interface UserProfileData {
   uid: string;
   email?: string | null;
@@ -64,7 +61,7 @@ export async function participateInEvent(participationData: {
         paymentId: string;
         method: string;
     };
-    qrCodeDataUri?: string; // Added QR code data URI
+    qrCodeDataUri?: string; 
 }): Promise<{ success: boolean; message?: string }> {
   console.log('[Server Action] participateInEvent invoked for event:', participationData.eventId, 'by user:', participationData.userId);
 
@@ -97,14 +94,21 @@ export async function participateInEvent(participationData: {
     }
     console.log('[Server Action] No existing participation found. Proceeding to add...');
 
+    // Use orderId from paymentDetails if available, otherwise generate one or use eventId+userId combination.
+    // For Cashfree, the orderId used to create the payment link is a good candidate.
+    const docId = participationData.paymentDetails?.orderId || `${participationData.eventId}-${participationData.userId}-${Date.now()}`;
+
+
     const docData = {
         ...participationData,
         participatedAt: serverTimestamp(), 
-        qrCodeDataUri: participationData.qrCodeDataUri || null, // Store QR code or null
+        qrCodeDataUri: participationData.qrCodeDataUri || null, 
     };
-    const docRef = await addDoc(collection(db, 'participations'), docData);
+    // Use the specific docId for the document
+    await addDoc(collection(db, 'participations'), docData);
 
-    console.log('[Server Action] Participation recorded in Firestore with ID:', docRef.id);
+
+    console.log('[Server Action] Participation recorded in Firestore with ID:', docId);
     return { success: true };
 
   } catch (error: any) {
@@ -144,15 +148,13 @@ export async function participateInEvent(participationData: {
              console.log('[Server Action] User profile found for:', userId);
              const rawData = docSnap.data();
              
-             // Ensure data is not undefined before processing
              if (!rawData) {
                 const notFoundMessage = `User profile data is undefined for user: ${userId}`;
                 console.warn(`[Server Action] getUserProfile: ${notFoundMessage}`);
                 return { success: false, message: notFoundMessage };
              }
 
-             // Convert Timestamps to ISO strings to ensure serializability
-             const serializableData: UserProfileData = { ...rawData } as UserProfileData; // Assert type initially
+             const serializableData: UserProfileData = { ...rawData } as UserProfileData; 
 
              for (const key in serializableData) {
                 if (serializableData.hasOwnProperty(key)) {
@@ -197,8 +199,8 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
         const querySnapshot = await getDocs(eventsQuery);
 
         const events: EventData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap to avoid conflict
+            const data = docSnap.data();
 
             const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
                  if (timestamp instanceof Timestamp) {
@@ -208,7 +210,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
             }
 
             events.push({
-                id: doc.id,
+                id: docSnap.id, // Use docSnap.id here
                 name: data.name,
                 description: data.description,
                 venue: data.venue,
@@ -221,7 +223,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
                 maxTeamSize: data.maxTeamSize,
                 fee: data.fee,
                 createdAt: convertTimestamp(data.createdAt),
-            } as EventData); // Added type assertion
+            } as EventData); 
         });
 
         console.log(`[Server Action] getEvents: Fetched ${events.length} items.`);
@@ -259,8 +261,8 @@ export async function getParticipationData(userId: string): Promise<{ success: b
     const querySnapshot = await getDocs(participationsQuery);
 
     const participations: any[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap
+      const data = docSnap.data();
       const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
         if (timestamp instanceof Timestamp) {
           return timestamp.toDate().toISOString();
@@ -268,7 +270,7 @@ export async function getParticipationData(userId: string): Promise<{ success: b
         return typeof timestamp === 'string' ? timestamp : null;
       };
       participations.push({
-        id: doc.id,
+        id: docSnap.id, // Use docSnap.id
         ...data,
         participatedAt: convertTimestamp(data.participatedAt),
       });

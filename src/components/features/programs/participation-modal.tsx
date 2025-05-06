@@ -2,7 +2,6 @@
 'use client';
 
 import * as React from 'react';
-// Script import for Razorpay is removed as we are switching to Cashfree
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -28,13 +27,10 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, AlertCircle } from 'lucide-react';
 // Updated import to use Cashfree actions
-import { createCashfreeOrderAction, verifyCashfreeAndParticipateAction } from '@/services/payment';
+import { createCashfreeOrderAction } from '@/services/payment';
 import { useAuth } from '@/hooks/use-auth'; 
 import { getUserProfile } from '@/services/events'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; 
-
-// Razorpay Key ID is no longer needed
-// const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
 interface ParticipationModalProps {
   isOpen: boolean;
@@ -42,7 +38,7 @@ interface ParticipationModalProps {
   eventDetails: {
     id: string;
     name: string;
-    date: string; // This should be a pre-formatted date string
+    date: string; 
     fee: number; // Fee in Paisa
   };
 }
@@ -58,18 +54,10 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// Razorpay global type declaration is removed
-// declare global {
-//     interface Window {
-//         Razorpay: any;
-//     }
-// }
 
 export function ParticipationModal({ isOpen, onClose, eventDetails }: ParticipationModalProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isPaying, setIsPaying] = React.useState(false);
-  // razorpayLoaded state is removed
-  // const [razorpayLoaded, setRazorpayLoaded] = React.useState(false);
   const { user, userId, loading: authLoading, authError } = useAuth(); 
   const [isFetchingProfile, setIsFetchingProfile] = React.useState(false);
 
@@ -80,7 +68,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
       email: '',
       phone: '',
       branch: '',
-      semester: undefined, // Initialize as undefined
+      semester: undefined, 
       registrationNumber: '',
     },
   });
@@ -96,7 +84,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                       form.reset({
                           name: profileResult.data.name || '',
                           email: profileResult.data.email || '',
-                          phone: (profileResult.data as any).phone || '', // Cast to any if phone is not in UserProfileData type
+                          phone: (profileResult.data as any).phone || '', 
                           branch: profileResult.data.branch || '',
                           semester: isNaN(semesterValue) ? undefined : semesterValue,
                           registrationNumber: profileResult.data.registrationNumber || '',
@@ -125,15 +113,6 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
   }, [isOpen, userId, user, authLoading, form, authError]);
 
 
-  // Razorpay script loading logic is removed. Cashfree redirects to their page.
-  // React.useEffect(() => {
-  //   if (isOpen && !authError) {
-  //     loadRazorpay();
-  //   }
-  //    return () => { ... };
-  // }, [isOpen, authError]);
-
-
   async function initiatePayment(values: FormData) {
      if (authError) {
          toast({ title: "Error", description: "Cannot proceed due to configuration error.", variant: "destructive" });
@@ -143,43 +122,32 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
          toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
          return;
      }
-    // Check for Cashfree App ID and Secret Key (typically done on server, but a client check can be added if they are NEXT_PUBLIC_)
-    // For now, assuming server-side validation handles missing Cashfree credentials.
 
     setIsPaying(true);
     setIsSubmitting(true);
 
     try {
-      // 1. Create Cashfree Order/Link
       const orderResult = await createCashfreeOrderAction({
-        orderId: `GLADCELL_${eventDetails.id}_${userId}_${Date.now()}`, // Unique order ID
-        orderAmount: eventDetails.fee / 100, // Cashfree expects amount in base currency units (Rupees)
+        orderId: `GLADCELL_${eventDetails.id}_${userId}_${Date.now()}`.slice(0, 45), // Ensure orderId is <= 45 chars
+        orderAmount: eventDetails.fee / 100, 
         customerName: values.name,
         customerEmail: values.email,
         customerPhone: values.phone,
+        eventId: eventDetails.id, // Pass eventId for return URL metadata
+        userId: userId, // Pass userId for return URL metadata
       });
 
       if (!orderResult.success || !orderResult.paymentLink) {
         throw new Error(orderResult.message || 'Failed to create payment order with Cashfree.');
       }
 
-      // 2. Redirect to Cashfree payment page
-      // Cashfree typically involves redirecting the user to their payment page.
-      // The verification would happen on a return URL.
       if (typeof window !== 'undefined') {
         window.location.href = orderResult.paymentLink;
       } else {
-        // This case should ideally not happen if the action is client-side.
-        // If it does, it indicates a problem with the environment.
         toast({title: "Redirection Error", description: "Could not redirect to payment page.", variant: "destructive"});
         setIsPaying(false);
         setIsSubmitting(false);
       }
-
-      // Note: The actual participation recording will happen after successful payment callback
-      // from Cashfree, which will hit a server-side endpoint using verifyCashfreeAndParticipateAction.
-      // The current modal flow won't directly call verifyPaymentAndParticipateAction.
-      // That action is for the webhook/return URL handler from Cashfree.
 
     } catch (error) {
       console.error('Cashfree Payment Initiation Error:', error);
@@ -203,7 +171,6 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
   const formattedFee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(eventDetails.fee / 100);
 
   const isDisabled = authLoading || isFetchingProfile || isSubmitting || isPaying || !!authError;
-  // isPaymentDisabled check simplified, as Cashfree SDK loading is not managed here.
   const isPaymentDisabled = isDisabled;
 
   return (
@@ -331,7 +298,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                   </Button>
                 </DialogClose>
                 <Button type="submit" disabled={isPaymentDisabled} suppressHydrationWarning>
-                  {isPaying || isSubmitting ? ( // Simplified loading state for Cashfree
+                  {isPaying || isSubmitting ? ( 
                     <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing... </>
                   ) : isFetchingProfile ? (
                       <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Profile... </>
