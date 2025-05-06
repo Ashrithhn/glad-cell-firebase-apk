@@ -14,20 +14,25 @@ export default function AdminLoginPage() {
   const isLoggedIn = !!userId || isAdmin; // Check if user or admin is logged in
 
   useEffect(() => {
-    // Redirect if already logged in (as user or admin) and auth check is complete
-    if (!loading && isLoggedIn) {
-       if (isAdmin) {
-           console.log('[Admin Login Page] Admin already logged in, redirecting to dashboard');
-           router.replace('/admin/dashboard');
-       } else {
-            console.log('[Admin Login Page] Regular user logged in, redirecting to home');
-            router.replace('/');
-       }
+    // Redirect only after loading is complete
+    if (!loading) {
+      if (isAdmin) {
+        console.log('[Admin Login Page] Admin already logged in, redirecting to dashboard');
+        router.replace('/admin/dashboard');
+      } else if (userId) { // Check specifically for a logged-in *user*
+        console.log('[Admin Login Page] Regular user logged in, redirecting to home');
+        router.replace('/');
+      } else {
+         console.log('[Admin Login Page] No user or admin logged in, showing form.');
+      }
+    } else {
+       console.log('[Admin Login Page] Auth loading, waiting...');
     }
-  }, [loading, isLoggedIn, isAdmin, router]);
+  }, [loading, userId, isAdmin, router]);
 
-  // Show loading skeleton while checking auth status or if logged in
-  if (loading || isLoggedIn) {
+  // Show loading skeleton while checking auth status OR if redirection is pending
+  // This ensures the form doesn't flash before redirection happens
+  if (loading || (!loading && isLoggedIn)) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-background px-4">
           <Card className="w-full max-w-md shadow-lg">
@@ -46,7 +51,7 @@ export default function AdminLoginPage() {
       );
   }
 
-  // Render admin login form if not loading and not logged in
+  // Render admin login form if not loading and not logged in (user or admin)
   return (
     <div className="flex justify-center items-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-md shadow-lg">
