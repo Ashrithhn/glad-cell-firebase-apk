@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc, getDoc } from 'firebase/firestore';
@@ -134,8 +133,20 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
     return { success: true, eventId: docRef.id };
 
   } catch (error: any) {
-    console.error('[Server Action Error - Admin] Error adding item to Firestore:', error.code, error.message, error.stack);
-    return { success: false, message: `Could not add item due to a database error: ${error.message || 'Unknown error'}` };
+    console.error('[Server Action Error - Admin] Error adding item:', error.code, error.message, error.stack);
+    let detailedMessage = `Could not add item: ${error.message || 'Unknown error'}`;
+    if (error.code === 'storage/unknown') {
+        detailedMessage = 'Failed to upload image to Firebase Storage. This often indicates a problem with your Storage security rules. Please ensure that authenticated users (admins) have write permission to the "eventImages/" path in your Firebase Storage rules. Original error: (storage/unknown)';
+    } else if (error.code === 'storage/unauthenticated') {
+        detailedMessage = 'Failed to upload image: User is not authenticated. Please ensure you are logged in as an admin. (storage/unauthenticated)';
+    } else if (error.code === 'storage/unauthorized') {
+        detailedMessage = 'Failed to upload image: User is not authorized to perform this action. Check Firebase Storage rules for the "eventImages/" path. (storage/unauthorized)';
+    } else if (error.code && error.code.startsWith('storage/')) {
+        detailedMessage = `Firebase Storage error: ${error.message} (Code: ${error.code})`;
+    } else if (error.code) {
+        detailedMessage = `Error adding item (Code: ${error.code}): ${error.message}`;
+    }
+    return { success: false, message: detailedMessage };
   }
 }
 
@@ -221,3 +232,4 @@ async function verifyAdminRole(): Promise<boolean> {
     // console.warn("verifyAdminRole: Placeholder function, returning false. Implement proper admin check!");
     return true; // Temporarily true for development ease
 }
+
