@@ -33,9 +33,10 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
         NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=YOUR_FIREBASE_MEASUREMENT_ID # Optional
 
-        # Firebase Realtime Database URL (Optional - ONLY for Server-Side use)
+        # Firebase Realtime Database URL (Optional - ONLY for Server-Side use if you intend to use Realtime Database)
         # Get this from Firebase Console > Realtime Database > Data tab
         # DO NOT prefix with NEXT_PUBLIC_ if only used server-side.
+        # This project primarily uses Firestore, so this might not be strictly needed.
         FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
 
         # Cashfree Configuration (Get these from your Cashfree dashboard)
@@ -116,13 +117,17 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 *   Admin Login (Placeholder - Use Firebase Custom Claims for production)
 *   Event Participation with Cashfree Payment Gateway
 *   Profile Page with Profile Picture Upload
-*   Idea Showcase (Placeholder Data)
+*   Idea Showcase (User-submitted and Admin-added)
 *   About & Contact Pages (Admin-editable)
 *   Dark/Light Theme Toggle
-*   Welcome Carousel
+*   Welcome Carousel (Initial visit only)
 *   Admin Dashboard for:
     *   Managing Programs/Events (Add, View, Delete)
-    *   Editing Site Content (About, Contact, Links)
+    *   Managing Users (View list - more actions planned)
+    *   Managing Ideas (Add, Edit, View, Delete, Change Status)
+    *   Managing Site Content (About, Contact, Privacy, Terms, Links, Homepage Images)
+    *   Attendance Scanner (QR Code based)
+    *   Site Settings (Basic placeholders, some functional like registration toggle)
 
 ## Admin Credentials (Development Only)
 
@@ -131,3 +136,33 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
 **Warning:** These credentials are for development testing only. Implement proper role-based access control using Firebase Custom Claims before deploying to production.
 
+## Troubleshooting
+
+### Firestore Index Required Error
+
+If you see an error in your Next.js terminal or browser console similar to:
+`FirebaseError: The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/YOUR_PROJECT_ID/firestore/indexes?create_composite=...`
+
+This means that a query in the application (often involving sorting or filtering on multiple fields) needs a composite index in Firestore that has not been created yet.
+
+**How to Fix:**
+1.  **Identify the Query:** The error message usually provides a link. **Copy this link and open it in your browser.**
+2.  **Create the Index:** The link will take you directly to the Firebase console page for creating the required index.
+    *   Review the suggested index fields and order.
+    *   Click the "Create Index" or "Save" button.
+3.  **Wait for Indexing:** Firestore will start building the index. This can take a few minutes, especially for large datasets (though for a new project, it's usually quick). You can monitor the status in the Firebase console under Firestore > Indexes.
+4.  **Restart Application (Optional but Recommended):** Once the index is built and active, it's a good idea to restart your Next.js development server.
+5.  **Retry the Operation:** Try accessing the page or performing the action that caused the error. It should now work.
+
+**Common Queries Requiring Indexes:**
+*   Fetching homepage images: `homepageImages` collection, ordered by `order` and `createdAt`.
+*   Other queries involving `orderBy()` on multiple fields or `where()` clauses on different fields than the `orderBy()` field.
+
+If the error persists or the link doesn't work, manually navigate to your Firebase project console:
+*   Go to **Firestore Database**.
+*   Click on the **Indexes** tab.
+*   Click **Add composite index**.
+*   Enter the **Collection ID** (e.g., `homepageImages`).
+*   Add the fields to index based on your query (e.g., `order` ASC, `createdAt` DESC).
+*   Save the index.
+```
