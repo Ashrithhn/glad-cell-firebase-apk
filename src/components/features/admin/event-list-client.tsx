@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -14,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Edit, Loader2, Calendar, MapPin, IndianRupee } from 'lucide-react'; // Added icons
+import { Trash2, Edit, Loader2, Calendar, MapPin, IndianRupee, Clock } from 'lucide-react'; // Added Clock icon
 import type { EventData } from '@/services/events'; // Import type
 import { deleteEvent } from '@/services/admin'; // Import delete action
 import { toast } from '@/hooks/use-toast';
@@ -67,18 +66,21 @@ export function EventListClient({ events }: EventListClientProps) {
           {events.map((event) => (
             <li key={event.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-md hover:bg-muted/50 gap-4">
               <div className='flex-1 min-w-0'> {/* Ensure content doesn't overflow */}
-                <p className="font-semibold text-lg truncate">{event.name}</p>
-                {/* Display core details concisely */}
+                <p className="font-semibold text-lg truncate text-primary">{event.name}</p>
                  <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                     <p className='flex items-center gap-1'><Calendar className="h-3 w-3"/>
-                        {event.startDate ? format(parseISO(event.startDate as string), 'MMM d, yyyy') : 'N/A'}
-                        {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate as string), 'MMM d, yyyy')}` : ''}
+                        {event.startDate ? format(parseISO(event.startDate), 'MMM d, yyyy') : 'N/A'}
+                        {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate), 'MMM d, yyyy')}` : ''}
                     </p>
                      <p className='flex items-center gap-1'><MapPin className="h-3 w-3"/> {event.venue || 'N/A'}</p>
                      <p className='flex items-center gap-1'><IndianRupee className="h-3 w-3"/> {formatFee(event.fee)}</p>
+                     {event.createdAt && (
+                        <p className='flex items-center gap-1 text-muted-foreground/80'>
+                            <Clock className="h-3 w-3"/>
+                            Created: {format(parseISO(event.createdAt), 'MMM d, yyyy, p')}
+                        </p>
+                     )}
                  </div>
-                 {/* Optional: Show description snippet */}
-                 {/* <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{event.description}</p> */}
               </div>
               <div className="flex-shrink-0 flex gap-2 pt-2 sm:pt-0">
                 {/* TODO: Add Edit functionality */}
@@ -129,4 +131,3 @@ export function EventListClient({ events }: EventListClientProps) {
     </>
   );
 }
-

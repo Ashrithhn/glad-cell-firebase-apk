@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc } from 'firebase/firestore';
@@ -8,30 +7,48 @@ import { revalidatePath } from 'next/cache'; // Import revalidatePath
 // TODO: Implement robust admin role checking here, e.g., using Firebase Custom Claims
 
 /**
- * Represents the structure of event data stored in Firestore.
- * Includes added fields: venue and registrationDeadline.
+ * Represents the structure of event data as it's stored in Firestore.
+ * Dates are Firestore Timestamps.
  */
-export interface EventData {
-    id?: string; // Added during retrieval
+interface EventForFirestore {
+    id?: string; // Added during retrieval, not stored
     name: string;
     description: string;
-    venue: string; // Added venue
+    venue: string;
     rules?: string;
-    startDate: Timestamp | string; // Store as Timestamp, handle ISO string input/output
-    endDate: Timestamp | string;   // Store as Timestamp, handle ISO string input/output
-    registrationDeadline?: Timestamp | string | null; // Added optional deadline
+    startDate: Timestamp;
+    endDate: Timestamp;
+    registrationDeadline?: Timestamp | null;
     eventType: 'individual' | 'group';
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
     fee: number; // Fee in Paisa
-    createdAt?: Timestamp | string; // Store as Timestamp, retrieve potentially as string
+    createdAt: Timestamp; // Firestore server timestamp
 }
 
 /**
- * Adds a new event document to the 'events' collection in Firestore.
- * Includes new fields: venue and registrationDeadline.
+ * Defines the expected input structure for the addEvent server action.
+ * Dates are expected as ISO strings. Fee is expected in Paisa.
  */
-export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | 'startDate' | 'endDate' | 'registrationDeadline'> & { startDate: string, endDate: string, registrationDeadline?: string }): Promise<{ success: boolean; eventId?: string; message?: string }> {
+interface AddEventInput {
+  name: string;
+  description: string;
+  venue: string;
+  rules?: string;
+  startDate: string; // ISO string
+  endDate: string;   // ISO string
+  registrationDeadline?: string; // Optional ISO string
+  eventType: 'individual' | 'group';
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  fee: number; // Fee in Paisa (form should convert from Rupees if necessary)
+}
+
+
+/**
+ * Adds a new event document to the 'events' collection in Firestore.
+ */
+export async function addEvent(eventData: AddEventInput): Promise<{ success: boolean; eventId?: string; message?: string }> {
   console.log('[Server Action - Admin] addEvent invoked.');
 
   if (initializationError) {
@@ -50,25 +67,27 @@ export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | '
   console.log('[Server Action - Admin] Attempting to add item to Firestore:', eventData.name);
 
   try {
-    // Prepare data for Firestore
-    const docData: Omit<EventData, 'id'> = {
-        ...eventData,
-        // Convert ISO date strings back to Firestore Timestamps
+    // Prepare data for Firestore, converting string dates to Timestamps
+    const docData: Omit<EventForFirestore, 'id'> = {
+        name: eventData.name,
+        description: eventData.description,
+        venue: eventData.venue,
+        rules: eventData.rules,
         startDate: Timestamp.fromDate(new Date(eventData.startDate)),
         endDate: Timestamp.fromDate(new Date(eventData.endDate)),
-        // Convert optional deadline ISO string to Timestamp or null
         registrationDeadline: eventData.registrationDeadline ? Timestamp.fromDate(new Date(eventData.registrationDeadline)) : null,
-        createdAt: serverTimestamp() as Timestamp, // Add creation timestamp
-        // Ensure team sizes are only included for group events, otherwise set to null
+        eventType: eventData.eventType,
         minTeamSize: eventData.eventType === 'group' ? eventData.minTeamSize : null,
         maxTeamSize: eventData.eventType === 'group' ? eventData.maxTeamSize : null,
+        fee: eventData.fee, // Assuming fee is already in Paisa from the form
+        createdAt: serverTimestamp() as Timestamp,
     };
 
-    // Remove optional fields if they are empty strings or undefined before saving
+    // Remove optional fields if they are undefined or empty strings before saving
     if (!docData.rules) delete docData.rules;
-    if (docData.minTeamSize === undefined) delete docData.minTeamSize;
-    if (docData.maxTeamSize === undefined) delete docData.maxTeamSize;
-    // No need to delete registrationDeadline if null, Firestore handles it
+    if (docData.minTeamSize === undefined) docData.minTeamSize = null; // Ensure null if not group or not provided
+    if (docData.maxTeamSize === undefined) docData.maxTeamSize = null; // Ensure null if not group or not provided
+
 
     const docRef = await addDoc(collection(db, 'events'), docData);
 
