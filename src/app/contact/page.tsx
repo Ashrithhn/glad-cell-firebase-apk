@@ -8,13 +8,20 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 // Fetch contact info on the server
 async function loadContactInfo(): Promise<{ contactInfo?: ContactInfo, error?: string }> {
     const result = await getContent('contact'); // Fetch 'contact' content block
-    if (result.success && typeof result.data === 'object' && result.data !== null) {
+    if (result.success && typeof result.data === 'object' && result.data !== null && result.data.hasOwnProperty('address')) {
+        // Check if data has 'address' to ensure it's likely a ContactInfo object
         return { contactInfo: result.data as ContactInfo };
     } else if (!result.success) {
         return { error: result.message || 'Failed to load contact info.' };
     }
-    // Return default empty structure if no content exists yet
-    return { contactInfo: { address: 'Address not set.', email: 'Email not set.', phone: 'Phone not set.' } };
+    // Return updated default structure if no content exists yet or if fetched data is not valid ContactInfo
+    return { 
+        contactInfo: { 
+            address: 'Government Engineering College Mosalehosahalli, Hassan, Karnataka', 
+            email: 'gladcell2019@gmail.com', 
+            phone: '7625026715, 8073682882, 9483901788' 
+        } 
+    };
 }
 
 
@@ -64,15 +71,14 @@ export default async function ContactPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <Phone className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="flex items-start space-x-4"> {/* Changed to items-start for multi-line phone numbers */}
+            <Phone className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
             <div>
               <h3 className="font-semibold">Phone</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground whitespace-pre-line"> {/* Use whitespace-pre-line to respect newlines in phone numbers */}
                  {contactInfo?.phone || 'N/A'}
               </p>
-              {/* You might want a separate field for availability */}
-              <p className="text-xs text-muted-foreground">(Availability may vary)</p>
+              <p className="text-xs text-muted-foreground mt-1">(Availability may vary)</p>
             </div>
           </div>
         </CardContent>
@@ -92,3 +98,4 @@ export default async function ContactPage() {
     </div>
   );
 }
+
