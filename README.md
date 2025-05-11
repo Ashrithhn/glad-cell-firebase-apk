@@ -155,14 +155,14 @@ This means that a query in the application (often involving sorting or filtering
 5.  **Retry the Operation:** Try accessing the page or performing the action that caused the error. It should now work.
 
 **Common Queries Requiring Indexes:**
-*   Fetching homepage images: `homepageImages` collection, ordered by `order` and `createdAt`.
+*   Fetching homepage images: `homepageImages` collection, ordered by `order` (ascending) and `createdAt` (descending).
+*   Fetching events: `events` collection, ordered by `createdAt` (descending).
 *   Other queries involving `orderBy()` on multiple fields or `where()` clauses on different fields than the `orderBy()` field.
 
 If the error persists or the link doesn't work, manually navigate to your Firebase project console:
 *   Go to **Firestore Database**.
 *   Click on the **Indexes** tab.
 *   Click **Add composite index**.
-*   Enter the **Collection ID** (e.g., `homepageImages`).
-*   Add the fields to index based on your query (e.g., `order` ASC, `createdAt` DESC).
+*   Enter the **Collection ID** (e.g., `homepageImages`, `events`).
+*   Add the fields to index based on your query (e.g., for homepage images: `order` ASC, `createdAt` DESC).
 *   Save the index.
-```
