@@ -3,7 +3,7 @@
 import React from 'react'; // Import React for Fragment
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, LogOut, Menu, User as UserIcon, BarChart, Building2, Home, Settings, MessageCircle, Info, HelpCircle, ShieldAlert } from 'lucide-react'; // Added icons
+import { Lightbulb, LogOut, Menu, User as UserIcon, BarChart, Building2, Settings, MessageCircle, Info, HelpCircle, ShieldAlert, Home } from 'lucide-react'; // Added icons
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -77,16 +77,18 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <Lightbulb className={cn(
               "h-6 w-6",
-              isLoggedIn ? "text-yellow-400 idea-flash-animation" : "text-primary"
+              isLoggedIn && !isAdmin ? "text-yellow-400 idea-flash-animation" : "text-primary" // Only flash for logged-in non-admins
             )} />
           <span className="font-bold text-lg text-primary">GLAD CELL</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1 md:gap-2 flex-wrap justify-end">
-          <Button variant="ghost" asChild size="sm">
-            <Link href="/">Home</Link>
-          </Button>
+          {!isAdmin && ( // Hide Home link for admins in desktop nav
+            <Button variant="ghost" asChild size="sm">
+              <Link href="/">Home</Link>
+            </Button>
+          )}
           <Button variant="ghost" asChild size="sm">
             <Link href="/ideas">Ideas</Link>
           </Button>
@@ -99,8 +101,9 @@ export function Header() {
           <Button variant="ghost" asChild size="sm">
             <Link href="/contact">Contact</Link>
           </Button>
+          
           {isAdmin && (
-            <Button variant="ghost" asChild size="sm">
+            <Button variant="default" asChild size="sm">
                  <Link href="/admin/dashboard">
                      <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
                  </Link>
@@ -138,13 +141,13 @@ export function Header() {
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="w-[300px] sm:w-[350px]">
               <SheetHeader>
                 <SheetTitle>
                   <Link href="/" className="flex items-center gap-2" onClick={() => setIsSheetOpen(false)}>
                      <Lightbulb className={cn(
                         "h-6 w-6",
-                        isLoggedIn ? "text-yellow-400 idea-flash-animation" : "text-primary"
+                        isLoggedIn && !isAdmin ? "text-yellow-400 idea-flash-animation" : "text-primary"
                         )} />
                      <span className="font-bold text-lg text-primary">GLAD CELL</span>
                   </Link>
