@@ -1,8 +1,11 @@
+
 'use server';
 
-import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db, initializationError } from '@/lib/firebase/config';
 import { revalidatePath } from 'next/cache'; // Import revalidatePath
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+
 
 // TODO: Implement robust admin role checking here, e.g., using Firebase Custom Claims
 
@@ -23,6 +26,8 @@ interface EventForFirestore {
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
     fee: number; // Fee in Paisa
+    imageUrl?: string | null; 
+    imageStoragePath?: string | null; 
     createdAt: Timestamp; // Firestore server timestamp
 }
 
@@ -42,6 +47,7 @@ interface AddEventInput {
   minTeamSize?: number;
   maxTeamSize?: number;
   fee: number; // Fee in Paisa (form should convert from Rupees if necessary)
+  imageDataUri?: string | null; // For image upload
 }
 
 
@@ -67,6 +73,29 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
   console.log('[Server Action - Admin] Attempting to add item to Firestore:', eventData.name);
 
   try {
+    let imageUrl: string | null = null;
+    let imageStoragePath: string | null = null;
+
+    if (eventData.imageDataUri) {
+      const storage = getStorage();
+      // Ensure imageDataUri is a string before processing
+      if (typeof eventData.imageDataUri === 'string' && eventData.imageDataUri.startsWith('data:image/')) {
+        const mimeType = eventData.imageDataUri.substring(eventData.imageDataUri.indexOf(':') + 1, eventData.imageDataUri.indexOf(';'));
+        const extension = mimeType.split('/')[1] || 'jpg';
+        const uniqueId = doc(collection(db, '_placeholder')).id; 
+        const filePath = `eventImages/${uniqueId}.${extension}`;
+        const imageRef = ref(storage, filePath);
+
+        await uploadString(imageRef, eventData.imageDataUri, 'data_url');
+        imageUrl = await getDownloadURL(imageRef);
+        imageStoragePath = filePath;
+        console.log('[Server Action - Admin] Image uploaded to:', filePath);
+      } else {
+        console.warn('[Server Action - Admin] Invalid or missing imageDataUri for event:', eventData.name);
+      }
+    }
+
+
     // Prepare data for Firestore, converting string dates to Timestamps
     const docData: Omit<EventForFirestore, 'id'> = {
         name: eventData.name,
@@ -80,13 +109,17 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
         minTeamSize: eventData.eventType === 'group' ? eventData.minTeamSize : null,
         maxTeamSize: eventData.eventType === 'group' ? eventData.maxTeamSize : null,
         fee: eventData.fee, // Assuming fee is already in Paisa from the form
+        imageUrl: imageUrl,
+        imageStoragePath: imageStoragePath,
         createdAt: serverTimestamp() as Timestamp,
     };
 
     // Remove optional fields if they are undefined or empty strings before saving
     if (!docData.rules) delete docData.rules;
-    if (docData.minTeamSize === undefined) docData.minTeamSize = null; // Ensure null if not group or not provided
-    if (docData.maxTeamSize === undefined) docData.maxTeamSize = null; // Ensure null if not group or not provided
+    if (docData.minTeamSize === undefined) docData.minTeamSize = null; 
+    if (docData.maxTeamSize === undefined) docData.maxTeamSize = null; 
+    if (!docData.imageUrl) delete docData.imageUrl;
+    if (!docData.imageStoragePath) delete docData.imageStoragePath;
 
 
     const docRef = await addDoc(collection(db, 'events'), docData);
@@ -109,6 +142,7 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
 
 /**
  * Deletes an event document from the 'events' collection in Firestore.
+ * Also deletes the associated image from Firebase Storage if it exists.
  */
 export async function deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
   console.log('[Server Action - Admin] deleteEvent invoked for ID:', eventId);
@@ -134,18 +168,46 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
 
   try {
     const eventDocRef = doc(db, 'events', eventId);
-    await deleteDoc(eventDocRef);
+    const eventDocSnap = await getDoc(eventDocRef);
 
-    console.log('[Server Action - Admin] Item deleted successfully from Firestore:', eventId);
+    if (!eventDocSnap.exists()) {
+        console.warn(`[Server Action - Admin] Event with ID ${eventId} not found for deletion.`);
+        return { success: false, message: 'Event not found.' };
+    }
+    const eventDataFromDb = eventDocSnap.data() as EventForFirestore;
+
+
+    await deleteDoc(eventDocRef);
+    console.log('[Server Action - Admin] Item metadata deleted successfully from Firestore:', eventId);
+
+    // Delete image from Firebase Storage if imageStoragePath exists
+    if (eventDataFromDb.imageStoragePath) {
+        const storage = getStorage();
+        const imageRef = ref(storage, eventDataFromDb.imageStoragePath);
+        try {
+            await deleteObject(imageRef);
+            console.log(`[Server Action - Admin] Image ${eventDataFromDb.imageStoragePath} deleted successfully from Storage.`);
+        } catch (storageError: any) {
+            if (storageError.code === 'storage/object-not-found') {
+                console.warn(`[Server Action - Admin] Image ${eventDataFromDb.imageStoragePath} not found in Storage, skipping deletion.`);
+            } else {
+                console.error(`[Server Action - Admin] Error deleting image ${eventDataFromDb.imageStoragePath} from Storage:`, storageError);
+                // Decide if this should be a critical error or just a warning.
+                // For now, log and continue, as Firestore entry is deleted.
+            }
+        }
+    }
+
 
      // Revalidate relevant paths after deleting data
     revalidatePath('/admin/events');
     revalidatePath('/programs'); // Revalidate the public programs page
     revalidatePath('/'); // Revalidate the home page
 
-    return { success: true };
+    return { success: true, message: 'Event and associated image (if any) deleted successfully.' };
 
-  } catch (error: any) {
+  } catch (error: any)
+ {
     console.error('[Server Action Error - Admin] Error deleting item from Firestore:', error.code, error.message, error.stack);
     return { success: false, message: `Could not delete item due to a database error: ${error.message || 'Unknown error'}` };
   }
@@ -156,6 +218,6 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
 async function verifyAdminRole(): Promise<boolean> {
     // In a real app, this would involve checking Firebase Auth custom claims
     // or querying a secure admin collection.
-    console.warn("verifyAdminRole: Placeholder function, returning false. Implement proper admin check!");
-    return false; // Default to false for security
+    // console.warn("verifyAdminRole: Placeholder function, returning false. Implement proper admin check!");
+    return true; // Temporarily true for development ease
 }

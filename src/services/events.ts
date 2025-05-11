@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, limit, doc, getDoc, Timestamp, orderBy } from 'firebase/firestore';
@@ -21,6 +22,8 @@ export interface EventData {
     maxTeamSize?: number | null;
     fee: number; // Fee in Paisa
     createdAt?: string | null; // Changed from Timestamp | string
+    imageUrl?: string | null; 
+    imageStoragePath?: string | null; 
 }
 
 interface UserProfileData {
@@ -243,6 +246,8 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
                 maxTeamSize: data.maxTeamSize,
                 fee: data.fee,
                 createdAt: convertTimestamp(data.createdAt),
+                imageUrl: data.imageUrl || null,
+                imageStoragePath: data.imageStoragePath || null,
             } as EventData); 
         });
 

@@ -1,18 +1,14 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin } from 'lucide-react';
 import { getEvents } from '@/services/events';
 import type { EventData } from '@/services/events';
-// Homepage images and section images are removed as per request
-// import { getHomepageImages } from '@/services/homepageContent';
-// import type { HomepageImage } from '@/services/homepageContent';
-// import { getContent } from '@/services/content';
-// import type { HomepageSectionImage } from '@/services/content';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
-// Image component from next/image is removed as images are no longer displayed
-// import Image from 'next/image';
+import NextImage from 'next/image';
+
 
 // Fetch events data on the server
 async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }> {
@@ -32,19 +28,10 @@ async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }>
     }
 }
 
-// Functions for loading homepage images and section images are removed as they are no longer displayed.
-// async function loadHomepageImagesData(): Promise<{ images?: HomepageImage[], error?: string }> { ... }
-// async function loadSectionImage(contentId: string): Promise<{ image?: HomepageSectionImage, error?: string }> { ... }
-
 
 export default async function Home() {
   const { event, error: eventError } = await loadLatestEvent();
-  // Removed fetching of homepageImages, exploreIdeasImage, latestEventImage
-  // const { images: homepageImages, error: imagesError } = await loadHomepageImagesData();
-  // const { image: exploreIdeasImage, error: exploreIdeasImageError } = await loadSectionImage('homepage_image_explore_ideas');
-  // const { image: latestEventImage, error: latestEventImageError } = await loadSectionImage('homepage_image_latest_event');
-
-
+  
   return (
     <div className="flex flex-col items-center justify-center space-y-12 home-page-texture min-h-[calc(100vh-var(--header-height,4rem))] py-8">
       <div className="text-center space-y-4 px-4">
@@ -57,11 +44,6 @@ export default async function Home() {
         </p>
       </div>
 
-      {/* Removed "Featured Highlights" section for homepageImages */}
-      {/* {imagesError && ( ... )} */}
-      {/* {homepageImages && homepageImages.length > 0 && ( ... )} */}
-
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl px-4">
         {/* Explore Ideas Card */}
         <Card className="transform hover:scale-105 transition-all duration-300 ease-in-out shadow-xl hover:shadow-2xl rounded-xl overflow-hidden bg-card/80 backdrop-blur-sm border-primary/10 animate-slide-in-left">
@@ -70,16 +52,6 @@ export default async function Home() {
             <Lightbulb className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Removed exploreIdeasImageError alert as image is removed */}
-            {/* Removed Image component for exploreIdeasImage */}
-            {/* <Image
-              src={exploreIdeasImage?.imageUrl || "https://picsum.photos/seed/ideas/600/300"}
-              alt={exploreIdeasImage?.altText || "Abstract representation of ideas"}
-              width={600}
-              height={300}
-              className="rounded-md mb-3 object-cover h-48 w-full"
-              data-ai-hint={exploreIdeasImage ? undefined : "innovation abstract"}
-            /> */}
             <p className="text-muted-foreground">
               Browse through the diverse collection of startup and ideathon concepts submitted by students across the college.
             </p>
@@ -105,18 +77,20 @@ export default async function Home() {
                      <AlertDescription>{eventError}</AlertDescription>
                  </Alert>
              )}
-             {/* Removed latestEventImageError alert as image is removed */}
-             {/* Removed Image component for latestEventImage */}
              {!eventError && event ? (
                  <div key={event.id} className='space-y-2'>
-                    {/* <Image
-                        src={latestEventImage?.imageUrl || "https://picsum.photos/seed/event/600/300"}
-                        alt={latestEventImage?.altText || "Representation of an event or program"}
-                        width={600}
-                        height={300}
-                        className="rounded-md mb-3 object-cover h-48 w-full"
-                        data-ai-hint={latestEventImage ? undefined : "conference event"}
-                    /> */}
+                    {event.imageUrl && (
+                      <div className="relative w-full h-40 md:h-48 mb-3 rounded-md overflow-hidden shadow-sm">
+                        <NextImage
+                          src={event.imageUrl}
+                          alt={event.name || 'Latest Event Image'}
+                          layout="fill"
+                          objectFit="cover"
+                          className="transition-transform duration-300 hover:scale-105"
+                          data-ai-hint="program poster"
+                        />
+                      </div>
+                    )}
                     <p className="font-medium text-primary text-lg">{event.name}</p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                          <CalendarCheck className="h-4 w-4 flex-shrink-0"/>
@@ -138,15 +112,10 @@ export default async function Home() {
                  </div>
              ) : !eventError ? (
                 <>
-                  {/* <Image
-                      src={latestEventImage?.imageUrl || "https://picsum.photos/seed/no-event/600/300"}
-                      alt={latestEventImage?.altText || "Placeholder for no events"}
-                      width={600}
-                      height={300}
-                      className="rounded-md mb-3 object-cover opacity-50 h-48 w-full"
-                      data-ai-hint={latestEventImage ? undefined : "empty calendar"}
-                  /> */}
                   <p className="text-muted-foreground italic">No upcoming programs or events announced yet.</p>
+                   <div className="relative w-full h-40 md:h-48 mb-3 rounded-md overflow-hidden shadow-sm bg-muted flex items-center justify-center">
+                        <CalendarCheck className="h-16 w-16 text-muted-foreground opacity-50" />
+                    </div>
                 </>
              ) : null }
              <Button variant="outline" asChild className='mt-4 w-full'>

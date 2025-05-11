@@ -5,15 +5,16 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Target, Lightbulb, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee } from 'lucide-react'; // Added icons
+import NextImage from 'next/image'; // For displaying image
 import { ParticipationModal } from '@/components/features/programs/participation-modal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { getEvents } from '@/services/events'; // Use the renamed service function
-import type { EventData } from '@/services/events'; // Use the renamed type
+import { getEvents } from '@/services/events'; 
+import type { EventData } from '@/services/events'; 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { format, parseISO } from 'date-fns'; // For formatting dates
+import { format, parseISO } from 'date-fns'; 
 
 
 // Define Event Details Separately (Example, could be fetched too)
@@ -42,7 +43,7 @@ export default function ProgramsPage() {
     async function loadEvents() {
       setLoadingEvents(true);
       setEventsError(null);
-      const result = await getEvents(); // Use the renamed service
+      const result = await getEvents(); 
       if (result.success && result.events) {
         setEvents(result.events);
       } else {
@@ -76,7 +77,6 @@ export default function ProgramsPage() {
          });
      }
      else {
-         // Directly redirect to login page without showing a toast
          router.push('/login');
      }
   };
@@ -97,8 +97,8 @@ export default function ProgramsPage() {
        {/* Loading State */}
        {loadingEvents && (
          <div className='space-y-6'>
-             <Skeleton className="h-64 w-full rounded-lg" />
-             <Skeleton className="h-48 w-full rounded-lg" />
+             <Skeleton className="h-72 w-full rounded-lg" /> {/* Increased height for image */}
+             <Skeleton className="h-56 w-full rounded-lg" /> {/* Increased height for image */}
          </div>
        )}
 
@@ -115,20 +115,30 @@ export default function ProgramsPage() {
       {!loadingEvents && !eventsError && events.length > 0 && (
         events.map((event) => (
           <Card key={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="border-b bg-muted/30">
+            {event.imageUrl && (
+              <div className="relative w-full h-56 sm:h-64 md:h-72"> {/* Responsive height */}
+                <NextImage
+                  src={event.imageUrl}
+                  alt={event.name || 'Event Image'}
+                  layout="fill"
+                  objectFit="cover"
+                  className="transition-transform duration-300 hover:scale-105"
+                  data-ai-hint="event program"
+                />
+              </div>
+            )}
+            <CardHeader className={`border-b bg-muted/30 ${event.imageUrl ? 'pt-4' : ''}`}>
               <CardTitle className="text-2xl text-primary flex items-center gap-2">
-                 {/* Use different icons based on type if available, default to GraduationCap/CalendarCheck */}
-                 {event.eventType ? <CalendarCheck className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
+                 {event.eventType === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
                  {event.name}
               </CardTitle>
-              <CardDescription className="pt-1 line-clamp-3"> {/* Limit description lines */}
+              <CardDescription className="pt-1 line-clamp-3"> 
                 {event.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    {/* Start & End Date */}
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <CalendarCheck className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>
@@ -137,19 +147,16 @@ export default function ProgramsPage() {
                         </span>
                     </div>
 
-                    {/* Venue */}
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>{event.venue || 'N/A'}</span>
                     </div>
 
-                     {/* Fee */}
                      <div className="flex items-center gap-2 text-muted-foreground">
                         <IndianRupee className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>{formatFee(event.fee)}</span>
                     </div>
 
-                     {/* Registration Deadline */}
                      {event.registrationDeadline && (
                          <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4 text-destructive flex-shrink-0" />
@@ -157,19 +164,16 @@ export default function ProgramsPage() {
                         </div>
                      )}
 
-                     {/* Participation Type & Team Size */}
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <Users className="h-4 w-4 text-primary flex-shrink-0" />
-                         <span>{event.eventType === 'group' ? `Group (${event.minTeamSize}-${event.maxTeamSize} members)` : 'Individual'}</span>
+                         <span>{event.eventType === 'group' ? `Team (${event.minTeamSize || 'N/A'}-${event.maxTeamSize || 'N/A'} members)` : 'Individual'}</span>
                       </div>
                 </div>
 
 
-              {/* Display Rules/Guidelines if available */}
               {event.rules && (
                 <div className="space-y-2 pt-4 border-t">
                   <h3 className="text-base font-semibold flex items-center gap-2"><Target className="h-5 w-5 text-primary"/> Rules/Guidelines</h3>
-                  {/* Split rules by newline and display as list */}
                    <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm pl-2">
                      {event.rules.split('\n').map((rule, index) => rule.trim() && <li key={index}>{rule.trim()}</li>)}
                    </ul>
@@ -177,15 +181,14 @@ export default function ProgramsPage() {
               )}
 
 
-              {/* Participation Button Section */}
                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
                    {authLoading ? (
-                        <Skeleton className="h-10 w-40" /> // Show skeleton while loading auth state
+                        <Skeleton className="h-10 w-40" /> 
                    ) : isLoggedIn && !isAdmin ? (
                         <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
                             <UserCheck className="mr-2 h-4 w-4" /> Participate Now
                         </Button>
-                    ) : ( // This covers both !isLoggedIn and isAdmin cases
+                    ) : ( 
                        <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
                             <LogIn className="mr-2 h-4 w-4" /> 
                             {isAdmin ? "Admin View" : "Login to Participate"}
@@ -214,11 +217,11 @@ export default function ProgramsPage() {
        {selectedEvent && (
          <ParticipationModal
             isOpen={isModalOpen}
-            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}} // Clear selected event on close
-            eventDetails={{ // Pass the details of the selected event
+            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}} 
+            eventDetails={{ 
                 id: selectedEvent.id || 'unknown-event',
                 name: selectedEvent.name,
-                date: selectedEvent.startDate as string, // Pass formatted or raw date string
+                date: selectedEvent.startDate as string, 
                 fee: selectedEvent.fee
             }}
          />

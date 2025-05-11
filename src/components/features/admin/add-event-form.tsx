@@ -26,26 +26,33 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon, Loader2, MapPin } from "lucide-react" // Added MapPin
+import { CalendarIcon, Loader2, MapPin, FileImage } from "lucide-react" 
+import NextImage from 'next/image'; // For image preview
 
 import { toast } from '@/hooks/use-toast';
-import { addEvent } from '@/services/admin'; // Updated service import path
+import { addEvent } from '@/services/admin'; 
+import type { AddEventInput } from '@/services/admin'; // Import type for addEvent
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth'; // For admin check
+import { useAuth } from '@/hooks/use-auth'; 
 
-// Define the validation schema using Zod, adding venue and registrationDeadline
+// Define the validation schema using Zod
 const formSchema = z.object({
   name: z.string().min(3, { message: 'Name must be at least 3 characters.' }).max(150),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }).max(1000),
-  venue: z.string().min(3, { message: 'Venue/Location must be at least 3 characters.'}).max(150), // Added venue
+  venue: z.string().min(3, { message: 'Venue/Location must be at least 3 characters.'}).max(150), 
   rules: z.string().optional(),
   startDate: z.date({ required_error: "A start date is required." }),
   endDate: z.date({ required_error: "An end date is required." }),
-  registrationDeadline: z.date().optional(), // Added optional registration deadline
+  registrationDeadline: z.date().optional(), 
   eventType: z.enum(['individual', 'group'], { required_error: "You must select an event type." }),
   minTeamSize: z.coerce.number().min(1).optional(),
   maxTeamSize: z.coerce.number().min(1).optional(),
-  fee: z.coerce.number().min(0, { message: 'Fee cannot be negative.' }).default(0), // Fee in paisa
+  fee: z.coerce.number().min(0, { message: 'Fee cannot be negative.' }).default(0), // Fee in rupees
+  eventImage: z.custom<File | null>((val) => val === null || val instanceof File, {
+    message: "Invalid image file. Please select a PNG, JPG, GIF or WEBP file.",
+  }).optional().nullable()
+    .refine(file => file ? file.size <= 5 * 1024 * 1024 : true, `File size should be less than 5MB.`)
+    .refine(file => file ? ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type) : true, `Only .png, .jpg, .jpeg, .gif, .webp formats are supported.`),
 }).refine(data => {
     // If group event, require team sizes
     if (data.eventType === 'group' && (!data.minTeamSize || !data.maxTeamSize)) {
@@ -54,7 +61,7 @@ const formSchema = z.object({
     return true;
   }, {
     message: 'Minimum and maximum team size are required for group events.',
-    path: ['minTeamSize'],
+    path: ['minTeamSize'], // You can also set path to ['maxTeamSize']
   }).refine(data => {
       // Ensure min <= max if both are provided for group events
       if (data.eventType === 'group' && data.minTeamSize && data.maxTeamSize) {
@@ -86,49 +93,104 @@ type FormData = z.infer<typeof formSchema>;
 
 export function AddEventForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const router = useRouter();
-  const { isAdmin, loading: authLoading } = useAuth(); // Use auth context for admin check
+  const { isAdmin, loading: authLoading } = useAuth(); 
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
-      venue: '', // Added venue default
+      venue: '', 
       rules: '',
       startDate: undefined,
       endDate: undefined,
-      registrationDeadline: undefined, // Added deadline default
+      registrationDeadline: undefined, 
       eventType: undefined,
       minTeamSize: undefined,
       maxTeamSize: undefined,
       fee: 0,
+      eventImage: null,
     },
   });
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type and size here before setting state and preview
+      if (!['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type)) {
+          toast({ title: "Invalid File Type", description: "Please select a PNG, JPG, GIF or WEBP image.", variant: "destructive" });
+          form.setValue('eventImage', null); // Reset field
+          setImagePreview(null);
+          if (event.target) event.target.value = ''; // Clear file input
+          return;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          toast({ title: "File Too Large", description: "Image size should be less than 5MB.", variant: "destructive" });
+          form.setValue('eventImage', null);
+          setImagePreview(null);
+           if (event.target) event.target.value = '';
+          return;
+      }
+      form.setValue('eventImage', file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      form.setValue('eventImage', null);
+      setImagePreview(null);
+    }
+  };
+
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
     console.log('[Admin Add Event] Form Data:', values);
 
-     // Basic check if user is admin (enhance with server-side check)
     if (!isAdmin) {
         toast({ title: "Unauthorized", description: "You do not have permission to add items.", variant: "destructive" });
         setIsSubmitting(false);
         return;
     }
 
+    let imageDataUriToSend: string | null = null;
+    if (values.eventImage) {
+      try {
+        imageDataUriToSend = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = (error) => reject(new Error("Failed to read image file."));
+          reader.readAsDataURL(values.eventImage!);
+        });
+      } catch (error) {
+        console.error("Image read error:", error);
+        toast({ title: "Image Read Error", description: "Could not process the selected image file.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+
     try {
-      // Format fee to be in smallest currency unit (paisa) before sending
-      const dataToSend = {
-        ...values,
-        fee: Math.round(values.fee * 100), // Convert rupees to paisa
-        // Convert dates to ISO strings for Firestore compatibility
+      const dataToSend: AddEventInput = {
+        name: values.name,
+        description: values.description,
+        venue: values.venue,
+        rules: values.rules,
         startDate: values.startDate.toISOString(),
         endDate: values.endDate.toISOString(),
-        registrationDeadline: values.registrationDeadline?.toISOString(), // Optional deadline
+        registrationDeadline: values.registrationDeadline?.toISOString(),
+        eventType: values.eventType,
+        minTeamSize: values.minTeamSize,
+        maxTeamSize: values.maxTeamSize,
+        fee: Math.round(values.fee * 100), // Convert rupees to paisa
+        imageDataUri: imageDataUriToSend,
       };
 
-      const result = await addEvent(dataToSend); // Call the server action
+      const result = await addEvent(dataToSend); 
 
       if (result.success) {
         toast({
@@ -136,9 +198,10 @@ export function AddEventForm() {
           description: `"${values.name}" has been created.`,
           variant: 'default',
         });
-        form.reset(); // Clear the form
-        router.push('/admin/events'); // Redirect to the events list
-        router.refresh(); // Force refresh data on the target page
+        form.reset(); 
+        setImagePreview(null); 
+        router.push('/admin/events'); 
+        router.refresh(); 
       } else {
         throw new Error(result.message || 'Failed to add item.');
       }
@@ -161,7 +224,6 @@ export function AddEventForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Wrap fields in fieldset for easy disabling */}
         <fieldset disabled={isDisabled} className="space-y-6">
           <FormField
             control={form.control}
@@ -393,7 +455,6 @@ export function AddEventForm() {
              )}
            />
 
-           {/* Conditional Fields for Group Events */}
            {eventType === 'group' && (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md bg-muted/50">
                 <FormField
@@ -425,6 +486,32 @@ export function AddEventForm() {
              </div>
            )}
 
+          <FormField
+            control={form.control}
+            name="eventImage"
+            render={({ field }) => ( 
+              <FormItem>
+                <FormLabel className="flex items-center gap-1"><FileImage className="h-4 w-4" /> Event Image (Optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp, image/gif"
+                    onChange={handleImageChange} 
+                    className="border-dashed border-2 p-2 hover:border-primary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                  />
+                </FormControl>
+                {imagePreview && (
+                  <div className="mt-2 border rounded-md p-2 inline-block bg-muted/50">
+                    <NextImage src={imagePreview} alt="Event image preview" width={200} height={120} className="object-cover rounded-md" data-ai-hint="event poster"/>
+                  </div>
+                )}
+                <FormDescription>Upload an image for the event/program (Max 5MB: PNG, JPG, GIF, WEBP).</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+
            <FormField
             control={form.control}
             name="fee"
@@ -432,11 +519,10 @@ export function AddEventForm() {
               <FormItem>
                 <FormLabel>Fee (INR)</FormLabel>
                  <FormControl>
-                   {/* Use type="number" and step for currency */}
                    <Input type="number" step="0.01" min="0" placeholder="Enter fee in Rupees (e.g., 100.00 or 0 for free)" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                  </FormControl>
                  <FormDescription>
-                   Enter 0 for free items. Processed in Paisa via Razorpay if applicable.
+                   Enter 0 for free items. Payment gateway will handle this amount.
                  </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -445,7 +531,6 @@ export function AddEventForm() {
 
         </fieldset>
 
-        {/* Submit Button */}
         <div className="pt-4">
           <Button type="submit" className="w-full sm:w-auto" disabled={isDisabled}>
             {isSubmitting ? (
@@ -462,5 +547,3 @@ export function AddEventForm() {
     </Form>
   );
 }
-
-    

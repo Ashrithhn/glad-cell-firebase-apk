@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -180,16 +181,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/homepage-images">
                 <ImageIcon className="mr-2 h-4 w-4" /> Manage Carousel Images
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/edit-explore-ideas-image">
-                <ImageIcon className="mr-2 h-4 w-4" /> "Explore Ideas" Img
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/edit-latest-event-image">
-                <ImageIcon className="mr-2 h-4 w-4" /> "Latest Event" Img
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
