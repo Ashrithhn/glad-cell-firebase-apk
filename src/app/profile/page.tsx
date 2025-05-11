@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -19,7 +18,7 @@ import Image from 'next/image'; // For displaying QR code
 // UserProfile type is now imported/defined within useAuth, so no need to redefine here
 
 export default function ProfilePage() {
-  const { user, userProfile, userId, loading: authLoading, logout } = useAuth(); // Use userProfile from useAuth
+  const { user, userProfile, userId, loading: authLoading, logout, authError } = useAuth(); // Use userProfile from useAuth
   const router = useRouter();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -31,16 +30,20 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!authLoading && !userId) {
       router.replace('/login');
-    } else if (userId) {
+    } else if (userId && !authLoading && userProfile) { // Check userProfile before fetching
       fetchParticipations(userId);
     }
-  }, [userId, authLoading, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoading, userProfile, router]); // Add userProfile to dependency array
 
   const fetchParticipations = async (currentUserId: string) => {
+    // Only fetch if userProfile is actually loaded. This check is now implicitly handled by useEffect dependency.
+    if (!userProfile) return; 
+
     setLoadingParticipations(true);
     try {
       const result = await getParticipationData(currentUserId);
-      if (result.success && result.participations) {
+      if (result.success && result.participations) { // Check if participations is not undefined
         setParticipations(result.participations);
       } else {
         toast({
@@ -48,6 +51,7 @@ export default function ProfilePage() {
           description: result.message || "Failed to fetch your event participation data.",
           variant: "destructive"
         });
+        setParticipations([]); // Set to empty array on failure
       }
     } catch (e: any) {
       toast({
@@ -55,6 +59,7 @@ export default function ProfilePage() {
         description: e.message || "An unexpected error occurred.",
         variant: "destructive"
       });
+      setParticipations([]); // Set to empty array on error
     } finally {
       setLoadingParticipations(false);
     }
@@ -156,15 +161,32 @@ export default function ProfilePage() {
     );
   }
 
-  if (!userProfile && !authLoading) { // If not loading and still no profile (e.g., error or new user)
+  // If auth has finished loading but there's an issue
+  if (!authLoading && userId) { // User is logged in
+    if (authError) { // Firebase initialization error
+      return (
+        <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
+          <p className="text-destructive mb-2">
+            Firebase Initialization Error: {authError.message}. Profile cannot be displayed.
+          </p>
+          <p className="text-muted-foreground">UID: {userId}</p>
+          <Button onClick={() => router.push('/')} variant="link">Go Home</Button>
+          <Button onClick={logout} variant="outline" className="ml-2">Logout</Button>
+        </div>
+      );
+    }
+    if (!userProfile) { // Profile specifically could not be loaded from Firestore
       return (
           <div className="container mx-auto py-12 px-4 max-w-2xl text-center">
-              <p className="text-destructive mb-2">{error || 'Could not load profile information. The profile might not exist or there was an error.'}</p>
-              <p className="text-muted-foreground">UID: {userId || 'N/A'}</p>
+              <p className="text-destructive mb-2">
+                Could not load your profile information. This might be due to a temporary issue, or the profile data is incomplete. Please try again later or contact support.
+              </p>
+              <p className="text-muted-foreground">UID: {userId}</p>
               <Button onClick={() => router.push('/')} variant="link">Go Home</Button>
               <Button onClick={logout} variant="outline" className="ml-2">Logout</Button>
           </div>
       );
+    }
   }
 
 
