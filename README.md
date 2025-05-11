@@ -130,3 +130,4 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 *   **Password:** `adminpass`
 
 **Warning:** These credentials are for development testing only. Implement proper role-based access control using Firebase Custom Claims before deploying to production.
+
