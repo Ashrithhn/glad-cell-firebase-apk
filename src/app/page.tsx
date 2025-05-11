@@ -16,7 +16,13 @@ import Image from 'next/image';
 async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }> {
     const result = await getEvents();
     if (result.success && result.events && result.events.length > 0) {
-        return { event: result.events.sort((a,b) => parseISO(b.createdAt as string).getTime() - parseISO(a.createdAt as string).getTime())[0] };
+        // Sort events: Handle potential null createdAt values, treat null as older
+        const sortedEvents = result.events.sort((a, b) => {
+            const dateA = a.createdAt ? parseISO(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? parseISO(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        });
+        return { event: sortedEvents[0] };
     } else if (!result.success) {
         return { error: result.message || 'Failed to load events.' };
     } else {
@@ -50,7 +56,7 @@ export default async function Home() {
   const { event, error: eventError } = await loadLatestEvent();
   const { images: homepageImages, error: imagesError } = await loadHomepageImagesData();
   const { image: exploreIdeasImage, error: exploreIdeasImageError } = await loadSectionImage('homepage_image_explore_ideas');
-  const { image: latestEventImage, error: latestEventImageError } await loadSectionImage('homepage_image_latest_event');
+  const { image: latestEventImage, error: latestEventImageError } = await loadSectionImage('homepage_image_latest_event');
 
 
   return (
@@ -113,7 +119,7 @@ export default async function Home() {
               alt={exploreIdeasImage?.altText || "Abstract representation of ideas"} 
               width={600} 
               height={300} 
-              className="rounded-md mb-3 object-cover h-48 w-full" // Added fixed height
+              className="rounded-md mb-3 object-cover h-48 w-full" 
               data-ai-hint={exploreIdeasImage ? undefined : "innovation abstract"}
             />
             <p className="text-muted-foreground">
@@ -151,14 +157,14 @@ export default async function Home() {
                         alt={latestEventImage?.altText || "Representation of an event or program"} 
                         width={600} 
                         height={300} 
-                        className="rounded-md mb-3 object-cover h-48 w-full" // Added fixed height
+                        className="rounded-md mb-3 object-cover h-48 w-full"
                         data-ai-hint={latestEventImage ? undefined : "conference event"}
                     />
                     <p className="font-medium text-primary text-lg">{event.name}</p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                          <CalendarCheck className="h-4 w-4 flex-shrink-0"/>
-                         {event.startDate ? format(parseISO(event.startDate as string), 'MMM d, yyyy') : 'N/A'}
-                         {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate as string), 'MMM d, yyyy')}` : ''}
+                         {event.startDate && typeof event.startDate === 'string' ? format(parseISO(event.startDate), 'MMM d, yyyy') : 'N/A'}
+                         {event.endDate && typeof event.endDate === 'string' && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate), 'MMM d, yyyy')}` : ''}
                      </p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <MapPin className="h-4 w-4 flex-shrink-0" />
@@ -180,7 +186,7 @@ export default async function Home() {
                       alt={latestEventImage?.altText || "Placeholder for no events"} 
                       width={600} 
                       height={300} 
-                      className="rounded-md mb-3 object-cover opacity-50 h-48 w-full" // Added fixed height
+                      className="rounded-md mb-3 object-cover opacity-50 h-48 w-full"
                       data-ai-hint={latestEventImage ? undefined : "empty calendar"}
                   />
                   <p className="text-muted-foreground italic">No upcoming programs or events announced yet.</p>

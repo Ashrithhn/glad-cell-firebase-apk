@@ -13,14 +13,14 @@ export interface EventData {
     description: string;
     venue: string;
     rules?: string;
-    startDate: Timestamp | string; 
-    endDate: Timestamp | string;   
-    registrationDeadline?: Timestamp | string | null;
+    startDate: string | null; 
+    endDate: string | null;   
+    registrationDeadline?: Timestamp | string | null; // Keep as is, or convert to string | null if consistently done
     eventType: 'individual' | 'group';
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
     fee: number; // Fee in Paisa
-    createdAt?: Timestamp | string;
+    createdAt?: string | null; // Changed from Timestamp | string
 }
 
 interface UserProfileData {
@@ -90,21 +90,17 @@ export async function participateInEvent(participationData: {
     if (!querySnapshot.empty) {
         const existingDocId = querySnapshot.docs[0].id;
         console.warn(`[Server Action] User ${participationData.userId} already registered for event ${participationData.eventId} (Doc ID: ${existingDocId})`);
-        // For Cashfree, allow re-entry if payment failed previously and is now successful.
-        // This logic might need refinement based on how retries are handled.
-        // For now, if a document exists, assume it's a duplicate attempt for a *successful* prior registration.
         return { success: false, message: 'You are already registered for this event.' };
     }
     console.log('[Server Action] No existing participation found. Proceeding to add...');
 
-    // Use orderId from paymentDetails as the document ID for participations. This makes it easy to find.
     const docId = participationData.paymentDetails?.orderId;
     if (!docId) {
         console.error("[Server Action] No payment order ID provided for participation record. Cannot create document.");
         return { success: false, message: "Cannot record participation without a payment order ID."};
     }
 
-    const participationDocRef = doc(db, 'participations', docId); // Use payment orderId as doc ID
+    const participationDocRef = doc(db, 'participations', docId); 
 
 
     const docData = {
@@ -113,7 +109,7 @@ export async function participateInEvent(participationData: {
         qrCodeDataUri: participationData.qrCodeDataUri || null, 
     };
     
-    await setDoc(participationDocRef, docData); // Use setDoc with specific ID
+    await setDoc(participationDocRef, docData); 
 
 
     console.log('[Server Action] Participation recorded in Firestore with ID:', docId);
@@ -162,14 +158,13 @@ export async function participateInEvent(participationData: {
                 return { success: false, message: notFoundMessage };
              }
              
-             // Create a new object for serializableData to avoid modifying rawData directly
              const serializableData: UserProfileData = { 
                 uid: rawData.uid,
                 email: rawData.email || null,
                 name: rawData.name || null,
                 photoURL: rawData.photoURL || null,
                 branch: rawData.branch || null,
-                semester: rawData.semester, // Keep as is, will be handled below
+                semester: rawData.semester, 
                 registrationNumber: rawData.registrationNumber || null,
                 collegeName: rawData.collegeName || null,
                 city: rawData.city || null,
@@ -181,7 +176,6 @@ export async function participateInEvent(participationData: {
                 emailVerified: typeof rawData.emailVerified === 'boolean' ? rawData.emailVerified : false,
              };
 
-             // Convert Timestamps to ISO strings for client component compatibility
              for (const key in serializableData) {
                 if (Object.prototype.hasOwnProperty.call(serializableData, key)) {
                     const value = (serializableData as any)[key];
@@ -241,9 +235,9 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
                 description: data.description,
                 venue: data.venue,
                 rules: data.rules,
-                startDate: convertTimestamp(data.startDate)!, 
-                endDate: convertTimestamp(data.endDate)!,     
-                registrationDeadline: convertTimestamp(data.registrationDeadline),
+                startDate: convertTimestamp(data.startDate), 
+                endDate: convertTimestamp(data.endDate),     
+                registrationDeadline: convertTimestamp(data.registrationDeadline), // Keep as string | null if converted
                 eventType: data.eventType,
                 minTeamSize: data.minTeamSize,
                 maxTeamSize: data.maxTeamSize,
@@ -299,8 +293,6 @@ export async function getParticipationData(userId: string): Promise<{ success: b
         id: docSnap.id, 
         ...data,
         participatedAt: convertTimestamp(data.participatedAt),
-        // Convert other timestamp fields if they exist in participation docs
-        // e.g., paymentDetails.timestamp if it's a Firestore Timestamp
       });
     });
 
