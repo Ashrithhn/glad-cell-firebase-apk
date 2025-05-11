@@ -1,8 +1,26 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ScrollText } from 'lucide-react';
+import { ScrollText, AlertCircle } from 'lucide-react';
+import { getContent } from '@/services/content'; // Import service to fetch content
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-export default function TermsAndConditionsPage() {
+// Fetch terms and conditions content on the server
+async function loadTermsContent(): Promise<{ content?: string, error?: string }> {
+    const result = await getContent('terms-and-conditions'); // Fetch 'terms-and-conditions' content block
+    if (result.success && typeof result.data === 'string') {
+        return { content: result.data };
+    } else if (!result.success) {
+        return { error: result.message || 'Failed to load terms and conditions.' };
+    }
+    return { content: 'Default Terms and Conditions. Please update via admin panel.' }; // Default content
+}
+
+
+export default async function TermsAndConditionsPage() {
+  const { content, error } = await loadTermsContent();
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
@@ -12,74 +30,36 @@ export default function TermsAndConditionsPage() {
         </p>
       </div>
 
-      {/* 
-        IMPORTANT: 
-        The content below is a SAMPLE placeholder. 
-        You MUST replace this with your own comprehensive Terms and Conditions 
-        tailored to the GLAD CELL application and its services.
-        Consult with legal counsel if necessary.
-      */}
+       {error && (
+         <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Content</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+         </Alert>
+      )}
 
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <ScrollText className="h-5 w-5" /> Interpretation and Definitions
+            <ScrollText className="h-5 w-5" /> Terms of Service
           </CardTitle>
         </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground space-y-3">
-          <section>
-            <h2 className="text-lg font-semibold">Interpretation</h2>
-            <p>
-              The words of which the initial letter is capitalized have meanings defined under the following conditions.
-              The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.
-            </p>
-          </section>
-          <section>
-            <h2 className="text-lg font-semibold">Definitions</h2>
-            <p>For the purposes of these Terms and Conditions:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>
-                <strong>Application</strong> means the software program provided by the GLAD CELL downloaded by You on any electronic device, named GLAD CELL App.
-              </li>
-              <li>
-                <strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Agreement) refers to GLAD CELL, Department of Computer Science and Engineering, Government Engineering College Mosalehosahalli.
-              </li>
-              <li>
-                <strong>Service</strong> refers to the Application.
-              </li>
-              <li>
-                <strong>Terms and Conditions</strong> (also referred as "Terms") mean these Terms and Conditions that form the entire agreement between You and the Company regarding the use of the Service.
-              </li>
-              <li>
-                <strong>You</strong> means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
-              </li>
-            </ul>
-          </section>
+        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
         </CardContent>
       </Card>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl">Acknowledgment</CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-          <p>
-            These are the Terms and Conditions governing the use of this Service and the agreement that operates between You and the Company.
-            These Terms and Conditions set out the rights and obligations of all users regarding the use of the Service.
-          </p>
-          <p>
-            Your access to and use of the Service is conditioned on Your acceptance of and compliance with these Terms and Conditions.
-            These Terms and Conditions apply to all visitors, users and others who access or use the Service.
-          </p>
-          <p>
-            By accessing or using the Service You agree to be bound by these Terms and Conditions. If You disagree with any part of these Terms and Conditions then You may not access the Service.
-          </p>
-          {/* Add more sections as needed: User Accounts, Content, Termination, Limitation of Liability, Governing Law, Changes to These Terms, Contact Us etc. */}
-          <p className="mt-4 font-semibold text-destructive bg-destructive/10 p-3 rounded-md">
-            [DEVELOPER NOTE: This is a sample Terms and Conditions page. Replace this with your own comprehensive policy tailored to GLAD CELL. Consult legal counsel if necessary.]
-          </p>
-        </CardContent>
-      </Card>
+       {/* Note for admin to update content */}
+       {content === 'Default Terms and Conditions. Please update via admin panel.' && !error && (
+          <Alert variant="default" className="mt-6 bg-primary/10 border-primary/20 text-primary">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Content Note</AlertTitle>
+            <AlertDescription>
+              This is default content. Please update the Terms and Conditions from the admin panel.
+            </AlertDescription>
+          </Alert>
+       )}
     </div>
   );
 }
+

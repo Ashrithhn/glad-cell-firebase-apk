@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode } from 'lucide-react'; // Added QrCode icon
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText } from 'lucide-react'; // Added QrCode, ShieldCheck, ScrollText icons
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth to handle logout for admin
 import { useRouter } from 'next/navigation'; // For redirecting after logout
 
@@ -23,7 +23,6 @@ export default function AdminDashboardPage() {
     <div className="container mx-auto py-12 px-4">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-3xl md:text-4xl font-bold text-primary tracking-tight">Admin Dashboard</h1>
-         {/* Logout button can be added here - would require this to be a client component or use a separate client component for it */}
          <Button variant="outline" onClick={handleAdminLogout}><LogOut className="mr-2 h-4 w-4"/> Logout</Button>
       </div>
 
@@ -53,7 +52,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><FileText className="h-6 w-6 text-primary"/> Site Content</CardTitle>
-            <CardDescription>Edit text content for "About Us", "Contact", and manage site links.</CardDescription>
+            <CardDescription>Edit text content for "About Us", "Contact", legal pages, and manage site links.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -64,6 +63,16 @@ export default function AdminDashboardPage() {
              <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/contact">
                  <Contact className="mr-2 h-4 w-4"/> Edit Contact Info
+               </Link>
+            </Button>
+             <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/privacy">
+                 <ShieldCheck className="mr-2 h-4 w-4"/> Edit Privacy Policy
+               </Link>
+            </Button>
+             <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/terms">
+                 <ScrollText className="mr-2 h-4 w-4"/> Edit Terms & Conditions
                </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start text-left">

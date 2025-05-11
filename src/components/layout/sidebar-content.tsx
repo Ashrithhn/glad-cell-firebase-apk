@@ -163,6 +163,16 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/privacy">
+                <ShieldCheck className="mr-2 h-4 w-4"/> Edit Privacy Policy
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/terms">
+                <ScrollText className="mr-2 h-4 w-4"/> Edit Terms & Conditions
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/links">
                 <Link2 className="mr-2 h-4 w-4" /> Manage Site Links
               </Link>
@@ -218,50 +228,47 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             Feedback
         </Button>
 
-        <Separator />
-
-        <div className="px-2 py-1">
-             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2">
-                 <Settings className="mr-2 h-4 w-4" /> Settings
-             </Label>
-            <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
-                 <div className="flex items-center space-x-2">
-                 {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                 <Label htmlFor="theme-switch-mobile" className="text-sm"> 
-                    {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                 </Label>
-                 </div>
-                <Switch
-                    id="theme-switch-mobile" 
-                    checked={theme === 'dark'}
-                    onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-                    aria-label="Toggle theme"
-                />
-            </div>
-        </div>
-
          <Separator />
 
       </nav>
 
-      {isLoggedIn && (
-        <div className="mt-auto pb-4 px-2">
-          <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      )}
-       {!isLoggedIn && !authError && (
-           <div className="mt-auto pb-4 px-2 space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                    <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
-                 </Button>
-                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                     <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
-                 </Button>
-           </div>
-       )}
+      <div className="mt-auto pb-4 px-2 space-y-4">
+        <div className="px-2 py-1">
+                <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2">
+                    <Settings className="mr-2 h-4 w-4" /> Settings
+                </Label>
+                <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
+                    <div className="flex items-center space-x-2">
+                    {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                    <Label htmlFor="theme-switch-mobile" className="text-sm"> 
+                        {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </Label>
+                    </div>
+                    <Switch
+                        id="theme-switch-mobile" 
+                        checked={theme === 'dark'}
+                        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                        aria-label="Toggle theme"
+                    />
+                </div>
+            </div>
+        {isLoggedIn && (
+            <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+            </Button>
+        )}
+        {!isLoggedIn && !authError && (
+            <div className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                        <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
+                    </Button>
+                    <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                        <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
+                    </Button>
+            </div>
+        )}
+      </div>
     </div>
   );
 }

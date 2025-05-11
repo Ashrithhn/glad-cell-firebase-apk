@@ -1,8 +1,25 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, AlertCircle } from 'lucide-react';
+import { getContent } from '@/services/content'; // Import service to fetch content
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-export default function PrivacyPolicyPage() {
+// Fetch privacy policy content on the server
+async function loadPrivacyPolicyContent(): Promise<{ content?: string, error?: string }> {
+    const result = await getContent('privacy-policy'); // Fetch 'privacy-policy' content block
+    if (result.success && typeof result.data === 'string') {
+        return { content: result.data };
+    } else if (!result.success) {
+        return { error: result.message || 'Failed to load privacy policy content.' };
+    }
+    return { content: 'Default Privacy Policy content. Please update via admin panel.' }; // Default content
+}
+
+export default async function PrivacyPolicyPage() {
+  const { content, error } = await loadPrivacyPolicyContent();
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
@@ -12,79 +29,36 @@ export default function PrivacyPolicyPage() {
         </p>
       </div>
 
-      {/* 
-        IMPORTANT: 
-        The content below is a SAMPLE placeholder. 
-        You MUST replace this with your own comprehensive Privacy Policy 
-        tailored to the GLAD CELL application and its data handling practices.
-        Consult with legal counsel if necessary.
-      */}
+      {error && (
+         <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Content</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+         </Alert>
+      )}
 
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5" /> Introduction
+            <ShieldCheck className="h-5 w-5" /> Privacy Policy Details
           </CardTitle>
         </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground space-y-3">
-          <p>
-            GLAD CELL ("us", "we", or "our") operates the GLAD CELL application (the "Service").
-            This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
-            We use your data to provide and improve the Service. By using the Service, you agree to the collection and use of information in accordance with this policy.
-          </p>
+        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+           <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
         </CardContent>
       </Card>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl">Information Collection and Use</CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground space-y-3">
-          <p>
-            We collect several different types of information for various purposes to provide and improve our Service to you.
-          </p>
-          <section>
-            <h2 className="text-lg font-semibold">Types of Data Collected</h2>
-            <h3 className="text-md font-semibold mt-2">Personal Data</h3>
-            <p>
-              While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you ("Personal Data").
-              Personally identifiable information may include, but is not limited to:
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Email address</li>
-              <li>Full name</li>
-              <li>Phone number</li>
-              <li>Branch, Semester, Registration Number</li>
-              <li>College Name, City, Pincode</li>
-              <li>Usage Data</li>
-              <li>Profile Picture (if uploaded)</li>
-              <li>Event participation data (including payment information if applicable)</li>
-              <li>Ideas submitted by users</li>
-            </ul>
-            <h3 className="text-md font-semibold mt-2">Usage Data</h3>
-            <p>
-              We may also collect information how the Service is accessed and used ("Usage Data").
-              This Usage Data may include information such as your device's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.
-            </p>
-          </section>
-        </CardContent>
-      </Card>
-       {/* Add more sections as needed: Use of Data, Transfer Of Data, Disclosure Of Data, Security Of Data, Service Providers, Links To Other Sites, Children's Privacy, Changes To This Privacy Policy, Contact Us etc. */}
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl">Contact Us</CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-            <p>If you have any questions about this Privacy Policy, please contact us:</p>
-            <ul className="list-disc pl-5">
-                <li>By email: [Your Contact Email for GLAD CELL - e.g., gladcell.gecm@example.com]</li>
-                <li>By visiting this page on our website: [Link to Contact Page if applicable, or remove]</li>
-            </ul>
-             <p className="mt-4 font-semibold text-destructive bg-destructive/10 p-3 rounded-md">
-            [DEVELOPER NOTE: This is a sample Privacy Policy page. Replace this with your own comprehensive policy tailored to GLAD CELL's data practices. Consult legal counsel if necessary.]
-          </p>
-        </CardContent>
-      </Card>
+      {/* Note for admin to update content */}
+       {content === 'Default Privacy Policy content. Please update via admin panel.' && !error && (
+          <Alert variant="default" className="mt-6 bg-primary/10 border-primary/20 text-primary">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Content Note</AlertTitle>
+            <AlertDescription>
+              This is default content. Please update the Privacy Policy from the admin panel.
+            </AlertDescription>
+          </Alert>
+       )}
     </div>
   );
 }
+
