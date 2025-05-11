@@ -25,9 +25,9 @@ import {
   Users as UsersIcon, 
   FileText, 
   Contact as ContactIcon,
-  ShieldCheck, // For Privacy Policy
-  ScrollText,  // For Terms and Conditions
-  Image as ImageIcon, // Added ImageIcon
+  ShieldCheck, 
+  ScrollText,  
+  Image as ImageIcon, 
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -56,7 +56,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
         setLinks(result.data as SiteLinks);
       } else {
         console.warn("Could not fetch site links for sidebar:", result.message);
-        setLinks({ whatsappCommunity: '' }); // Default to empty if fetch fails
+        setLinks({ whatsappCommunity: '' }); 
       }
       setLoadingLinks(false);
     }
@@ -65,7 +65,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
 
   const handleLinkClick = () => {
-    closeSheet(); // Close sheet when a link is clicked
+    closeSheet(); 
   };
 
    const handleCombinedLogout = () => {
@@ -179,7 +179,17 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/homepage-images">
-                <ImageIcon className="mr-2 h-4 w-4" /> Manage Homepage Images
+                <ImageIcon className="mr-2 h-4 w-4" /> Manage Carousel Images
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/edit-explore-ideas-image">
+                <ImageIcon className="mr-2 h-4 w-4" /> "Explore Ideas" Img
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/edit-latest-event-image">
+                <ImageIcon className="mr-2 h-4 w-4" /> "Latest Event" Img
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>

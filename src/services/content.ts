@@ -1,4 +1,3 @@
-
 'use server';
 
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -27,15 +26,25 @@ export interface SiteLinks {
 }
 
 /**
- * Type for the data stored under a content ID.
- * Can be a simple string (e.g., for 'about' page) or an object (e.g., for 'contact' or 'links').
+ * Defines the structure for a specific homepage section image.
  */
-type ContentData = string | ContactInfo | SiteLinks;
+export interface HomepageSectionImage {
+  imageUrl: string;
+  altText: string;
+  storagePath: string; // Path in Firebase Storage for deletion
+}
+
+
+/**
+ * Type for the data stored under a content ID.
+ * Can be a simple string (e.g., for 'about' page) or an object (e.g., for 'contact', 'links', or 'HomepageSectionImage').
+ */
+type ContentData = string | ContactInfo | SiteLinks | HomepageSectionImage;
 
 /**
  * Fetches a specific content block from the 'siteContent' collection.
  *
- * @param contentId - The ID of the content block to fetch (e.g., 'about', 'contact', 'links').
+ * @param contentId - The ID of the content block to fetch (e.g., 'about', 'contact', 'links', 'homepage_image_explore_ideas').
  * @returns Promise resolving to the success status, fetched data, or an error message.
  */
 export async function getContent(contentId: string): Promise<{ success: boolean; data?: ContentData; message?: string }> {
@@ -63,10 +72,9 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
         if (docSnap.exists()) {
             const data = docSnap.data()?.content; // Content is stored under the 'content' field
             console.log(`[Server Action] Content found for ID: ${contentId}`);
-            return { success: true, data: data as ContentData }; // Assume data matches ContentData type
+            return { success: true, data: data as ContentData }; 
         } else {
             console.log(`[Server Action] No content found for ID: ${contentId}. Returning default.`);
-            // Return success but undefined data, indicating no content set yet
             return { success: true, data: undefined };
         }
     } catch (error: any) {
@@ -98,12 +106,6 @@ export async function updateContent(contentId: string, data: ContentData): Promi
         return { success: false, message: errorMessage };
     }
 
-    // TODO: Add a server-side check here to ensure the user calling this is an admin.
-    // Example (needs actual implementation):
-    // const isAdmin = await verifyAdminRole(); // Implement this function
-    // if (!isAdmin) {
-    //     return { success: false, message: 'Unauthorized: Admin privileges required.' };
-    // }
 
     if (!contentId) {
         return { success: false, message: 'Content ID is required.' };
@@ -115,11 +117,10 @@ export async function updateContent(contentId: string, data: ContentData): Promi
 
     try {
         const contentDocRef = doc(db, 'siteContent', contentId);
-        // Store the actual content under a 'content' field, and add a timestamp
         await setDoc(contentDocRef, {
             content: data,
             updatedAt: serverTimestamp() as Timestamp
-        }, { merge: true }); // Use merge: true to avoid overwriting updatedAt if only content changes, though setDoc creates/overwrites fully
+        }, { merge: true }); 
 
         console.log(`[Server Action] Content updated successfully for ID: ${contentId}`);
 
@@ -131,10 +132,14 @@ export async function updateContent(contentId: string, data: ContentData): Promi
              revalidatePath('/contact');
              revalidatePath('/admin/content/contact');
         } else if (contentId === 'links') {
-             revalidatePath('/'); // Links might appear in header/sidebar/footer
+             revalidatePath('/'); 
              revalidatePath('/admin/content/links');
-        } else {
-            revalidatePath('/'); // Revalidate broadly if unsure
+        } else if (contentId.startsWith('homepage_image_')) {
+            revalidatePath('/'); // Revalidate homepage
+            revalidatePath(`/admin/content/${contentId.replace('homepage_image_', 'edit-')}-image`); // e.g. /admin/content/edit-explore-ideas-image
+        }
+         else {
+            revalidatePath('/'); 
         }
 
 

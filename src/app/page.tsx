@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, Image as ImageIcon } from 'lucide-react';
 import { getEvents } from '@/services/events';
 import type { EventData } from '@/services/events';
-import { getHomepageImages } from '@/services/homepageContent'; // Import new service
-import type { HomepageImage } from '@/services/homepageContent'; // Import type
+import { getHomepageImages } from '@/services/homepageContent'; 
+import type { HomepageImage } from '@/services/homepageContent'; 
+import { getContent } from '@/services/content'; // Import getContent
+import type { HomepageSectionImage } from '@/services/content'; // Import HomepageSectionImage type
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
-import Image from 'next/image'; // Use next/image
+import Image from 'next/image'; 
 
 // Fetch events data on the server
 async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }> {
@@ -18,11 +20,11 @@ async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }>
     } else if (!result.success) {
         return { error: result.message || 'Failed to load events.' };
     } else {
-        return { event: undefined }; // No events found
+        return { event: undefined }; 
     }
 }
 
-// Fetch homepage images
+// Fetch general homepage images
 async function loadHomepageImagesData(): Promise<{ images?: HomepageImage[], error?: string }> {
     const result = await getHomepageImages();
     if (result.success && result.images) {
@@ -32,10 +34,24 @@ async function loadHomepageImagesData(): Promise<{ images?: HomepageImage[], err
     }
 }
 
+// Fetch specific section images
+async function loadSectionImage(contentId: string): Promise<{ image?: HomepageSectionImage, error?: string }> {
+    const result = await getContent(contentId);
+    if (result.success && result.data && typeof result.data === 'object' && 'imageUrl' in result.data) {
+        return { image: result.data as HomepageSectionImage };
+    } else if (!result.success) {
+        return { error: result.message || `Failed to load image for ${contentId}.`};
+    }
+    return { image: undefined }; // No image or incorrect format
+}
+
 
 export default async function Home() {
   const { event, error: eventError } = await loadLatestEvent();
   const { images: homepageImages, error: imagesError } = await loadHomepageImagesData();
+  const { image: exploreIdeasImage, error: exploreIdeasImageError } = await loadSectionImage('homepage_image_explore_ideas');
+  const { image: latestEventImage, error: latestEventImageError } await loadSectionImage('homepage_image_latest_event');
+
 
   return (
     <div className="flex flex-col items-center justify-center space-y-12 home-page-texture min-h-[calc(100vh-var(--header-height,4rem))] py-8">
@@ -49,7 +65,6 @@ export default async function Home() {
         </p>
       </div>
 
-      {/* Dynamic Homepage Images Section */}
       {imagesError && (
         <Alert variant="destructive" className="w-full max-w-4xl mx-auto">
             <AlertCircle className="h-4 w-4" />
@@ -63,7 +78,7 @@ export default async function Home() {
             <ImageIcon className="h-6 w-6"/> Featured Highlights
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {homepageImages.slice(0,3).map((img) => ( // Display up to 3 images
+            {homepageImages.slice(0,3).map((img) => ( 
               <Card key={img.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105">
                 <Image 
                   src={img.imageUrl} 
@@ -90,13 +105,16 @@ export default async function Home() {
             <Lightbulb className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent className="space-y-4">
+            {exploreIdeasImageError && (
+                 <Alert variant="destructive" className="text-xs"><AlertCircle className="h-3 w-3 mr-1"/>{exploreIdeasImageError}</Alert>
+            )}
             <Image 
-              src="https://picsum.photos/seed/ideas/600/300" // Fallback or default static image
-              alt="Abstract representation of ideas" 
+              src={exploreIdeasImage?.imageUrl || "https://picsum.photos/seed/ideas/600/300"}
+              alt={exploreIdeasImage?.altText || "Abstract representation of ideas"} 
               width={600} 
               height={300} 
-              className="rounded-md mb-3 object-cover"
-              data-ai-hint="innovation abstract"
+              className="rounded-md mb-3 object-cover h-48 w-full" // Added fixed height
+              data-ai-hint={exploreIdeasImage ? undefined : "innovation abstract"}
             />
             <p className="text-muted-foreground">
               Browse through the diverse collection of startup and ideathon concepts submitted by students across the college.
@@ -123,15 +141,18 @@ export default async function Home() {
                      <AlertDescription>{eventError}</AlertDescription>
                  </Alert>
              )}
+              {latestEventImageError && (
+                 <Alert variant="destructive" className="text-xs"><AlertCircle className="h-3 w-3 mr-1"/>{latestEventImageError}</Alert>
+              )}
              {!eventError && event ? (
                  <div key={event.id} className='space-y-2'>
                     <Image 
-                        src="https://picsum.photos/seed/event/600/300" // Fallback or default static image
-                        alt="Representation of an event or program" 
+                        src={latestEventImage?.imageUrl || "https://picsum.photos/seed/event/600/300"}
+                        alt={latestEventImage?.altText || "Representation of an event or program"} 
                         width={600} 
                         height={300} 
-                        className="rounded-md mb-3 object-cover"
-                        data-ai-hint="conference event"
+                        className="rounded-md mb-3 object-cover h-48 w-full" // Added fixed height
+                        data-ai-hint={latestEventImage ? undefined : "conference event"}
                     />
                     <p className="font-medium text-primary text-lg">{event.name}</p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -155,12 +176,12 @@ export default async function Home() {
              ) : !eventError ? (
                 <>
                   <Image 
-                      src="https://picsum.photos/seed/no-event/600/300" 
-                      alt="Placeholder for no events" 
+                      src={latestEventImage?.imageUrl || "https://picsum.photos/seed/no-event/600/300"}
+                      alt={latestEventImage?.altText || "Placeholder for no events"} 
                       width={600} 
                       height={300} 
-                      className="rounded-md mb-3 object-cover opacity-50"
-                      data-ai-hint="empty calendar"
+                      className="rounded-md mb-3 object-cover opacity-50 h-48 w-full" // Added fixed height
+                      data-ai-hint={latestEventImage ? undefined : "empty calendar"}
                   />
                   <p className="text-muted-foreground italic">No upcoming programs or events announced yet.</p>
                 </>

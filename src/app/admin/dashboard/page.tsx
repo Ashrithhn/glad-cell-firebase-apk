@@ -4,15 +4,14 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
-import { useAuth } from '@/hooks/use-auth'; // Import useAuth to handle logout for admin
-import { useRouter } from 'next/navigation'; // For redirecting after logout
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText, Image as ImageIcon } from 'lucide-react'; 
+import { useAuth } from '@/hooks/use-auth'; 
+import { useRouter } from 'next/navigation'; 
 
 export default function AdminDashboardPage() {
   const { logout } = useAuth(); 
   const router = useRouter(); 
 
-  // Handle admin logout
   const handleAdminLogout = async () => {
     await logout();
     router.push('/admin/login');
@@ -51,7 +50,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><FileText className="h-6 w-6 text-primary"/> Site Content</CardTitle>
-            <CardDescription>Edit text content for "About Us", "Contact", legal pages, and manage site links.</CardDescription>
+            <CardDescription>Edit text content for "About Us", "Contact", legal pages, and manage site links & images.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -81,7 +80,17 @@ export default function AdminDashboardPage() {
             </Button>
             <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/homepage-images">
-                 <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Images
+                 <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Carousel
+               </Link>
+            </Button>
+             <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/edit-explore-ideas-image">
+                 <ImageIcon className="mr-2 h-4 w-4"/> "Explore Ideas" Image
+               </Link>
+            </Button>
+             <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/edit-latest-event-image">
+                 <ImageIcon className="mr-2 h-4 w-4"/> "Latest Event" Image
                </Link>
             </Button>
           </CardContent>
