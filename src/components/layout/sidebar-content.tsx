@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -28,6 +27,7 @@ import {
   Contact as ContactIcon,
   ShieldCheck, // For Privacy Policy
   ScrollText,  // For Terms and Conditions
+  Image as ImageIcon, // Added ImageIcon
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -175,6 +175,11 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
               <Link href="/admin/content/links">
                 <Link2 className="mr-2 h-4 w-4" /> Manage Site Links
+              </Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/admin/content/homepage-images">
+                <ImageIcon className="mr-2 h-4 w-4" /> Manage Homepage Images
               </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>

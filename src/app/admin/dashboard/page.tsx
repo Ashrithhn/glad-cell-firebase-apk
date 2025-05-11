@@ -1,11 +1,10 @@
-
 'use client'; // Added to make this a Client Component
 
 // Placeholder Admin Dashboard Page
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText } from 'lucide-react'; // Added QrCode, ShieldCheck, ScrollText icons
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth to handle logout for admin
 import { useRouter } from 'next/navigation'; // For redirecting after logout
 
@@ -78,6 +77,11 @@ export default function AdminDashboardPage() {
             <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/links">
                  <Link2 className="mr-2 h-4 w-4"/> Manage Site Links
+               </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/homepage-images">
+                 <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Images
                </Link>
             </Button>
           </CardContent>
