@@ -88,12 +88,14 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
   return (
     <div className="flex flex-col h-full pt-6">
       <nav className="flex-grow space-y-2">
-         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Home
-            </Link>
-          </Button>
+         {!isAdmin && ( // Only show Home link if not admin
+            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+                <Link href="/">
+                <Home className="mr-2 h-4 w-4" />
+                Home
+                </Link>
+            </Button>
+         )}
 
           <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
             <Link href="/ideas">
@@ -278,3 +280,4 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
     </div>
   );
 }
+
