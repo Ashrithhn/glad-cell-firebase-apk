@@ -3,13 +3,14 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google'; // Import Inter font
 import './globals.css';
 import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer'; // Import Footer
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { WelcomeHandler } from '@/components/layout/welcome-handler';
 import { GlobalStyles } from '@/components/layout/global-styles';
-import { GlobalLoadingIndicator } from '@/components/layout/global-loading-indicator'; // Import loader
+import { GlobalLoadingIndicator } from '@/components/layout/global-loading-indicator';
 
 // Initialize Inter font with subsets
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -27,23 +28,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('antialiased font-sans', inter.variable)}> {/* Apply Inter font */}
+      <body className={cn('antialiased font-sans bg-background text-foreground', inter.variable)}> {/* Apply Inter font and background/foreground */}
          <ThemeProvider
             attribute="class"
-            defaultTheme="light" // Changed default theme to light
+            defaultTheme="light"
             enableSystem
             disableTransitionOnChange
           >
             <AuthProvider>
                 <WelcomeHandler>
                     <GlobalStyles />
-                    <GlobalLoadingIndicator /> {/* Add Global Loading Indicator here */}
+                    <GlobalLoadingIndicator />
                     <div className="flex flex-col min-h-screen">
                       <Header />
                       <main className="flex-grow container mx-auto py-8 px-4">
                         {children}
                       </main>
-                      {/* Footer can be added here */}
+                      <Footer /> {/* Add Footer component here */}
                     </div>
                     <Toaster />
                  </WelcomeHandler>

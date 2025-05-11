@@ -12,6 +12,14 @@ export default function TermsAndConditionsPage() {
         </p>
       </div>
 
+      {/* 
+        IMPORTANT: 
+        The content below is a SAMPLE placeholder. 
+        You MUST replace this with your own comprehensive Terms and Conditions 
+        tailored to the GLAD CELL application and its services.
+        Consult with legal counsel if necessary.
+      */}
+
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
@@ -67,8 +75,8 @@ export default function TermsAndConditionsPage() {
             By accessing or using the Service You agree to be bound by these Terms and Conditions. If You disagree with any part of these Terms and Conditions then You may not access the Service.
           </p>
           {/* Add more sections as needed: User Accounts, Content, Termination, Limitation of Liability, Governing Law, Changes to These Terms, Contact Us etc. */}
-          <p className="mt-4 font-semibold">
-            [Placeholder: This is a sample Terms and Conditions page. You should replace this with your own comprehensive terms tailored to GLAD CELL.]
+          <p className="mt-4 font-semibold text-destructive bg-destructive/10 p-3 rounded-md">
+            [DEVELOPER NOTE: This is a sample Terms and Conditions page. Replace this with your own comprehensive policy tailored to GLAD CELL. Consult legal counsel if necessary.]
           </p>
         </CardContent>
       </Card>

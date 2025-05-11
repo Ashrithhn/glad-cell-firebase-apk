@@ -12,6 +12,14 @@ export default function PrivacyPolicyPage() {
         </p>
       </div>
 
+      {/* 
+        IMPORTANT: 
+        The content below is a SAMPLE placeholder. 
+        You MUST replace this with your own comprehensive Privacy Policy 
+        tailored to the GLAD CELL application and its data handling practices.
+        Consult with legal counsel if necessary.
+      */}
+
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
@@ -20,7 +28,7 @@ export default function PrivacyPolicyPage() {
         </CardHeader>
         <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground space-y-3">
           <p>
-            GLAD CELL ("us", "we", or "our") operates the GLAD CELL mobile application (the "Service").
+            GLAD CELL ("us", "we", or "our") operates the GLAD CELL application (the "Service").
             This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
             We use your data to provide and improve the Service. By using the Service, you agree to the collection and use of information in accordance with this policy.
           </p>
@@ -49,6 +57,9 @@ export default function PrivacyPolicyPage() {
               <li>Branch, Semester, Registration Number</li>
               <li>College Name, City, Pincode</li>
               <li>Usage Data</li>
+              <li>Profile Picture (if uploaded)</li>
+              <li>Event participation data (including payment information if applicable)</li>
+              <li>Ideas submitted by users</li>
             </ul>
             <h3 className="text-md font-semibold mt-2">Usage Data</h3>
             <p>
@@ -66,11 +77,11 @@ export default function PrivacyPolicyPage() {
         <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
             <p>If you have any questions about this Privacy Policy, please contact us:</p>
             <ul className="list-disc pl-5">
-                <li>By email: [Your Contact Email for GLAD CELL]</li>
-                <li>By visiting this page on our website: [Link to Contact Page if applicable]</li>
+                <li>By email: [Your Contact Email for GLAD CELL - e.g., gladcell.gecm@example.com]</li>
+                <li>By visiting this page on our website: [Link to Contact Page if applicable, or remove]</li>
             </ul>
-             <p className="mt-4 font-semibold">
-            [Placeholder: This is a sample Privacy Policy page. You should replace this with your own comprehensive policy tailored to GLAD CELL and consult with legal counsel if necessary.]
+             <p className="mt-4 font-semibold text-destructive bg-destructive/10 p-3 rounded-md">
+            [DEVELOPER NOTE: This is a sample Privacy Policy page. Replace this with your own comprehensive policy tailored to GLAD CELL's data practices. Consult legal counsel if necessary.]
           </p>
         </CardContent>
       </Card>
