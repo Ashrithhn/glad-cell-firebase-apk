@@ -1,5 +1,4 @@
-
-'use client'; // Required for state and event handlers if any are added
+'use client';
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,31 +9,86 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import React, { useState } from 'react'; // Import useState for local component state
-
-// This page will have more enabled and new placeholder settings.
-// Actual functionality for new settings would require backend logic and state management.
+import React, { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { getSiteSettings, updateSiteSettings } from '@/services/settings';
+import type { SiteSettingsData, MaintenanceSettings, GeneralSiteSettings } from '@/services/settings';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
-  // Example state for new settings (local to this component for UI demonstration)
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // States for various settings
   const [siteName, setSiteName] = useState('GLAD CELL - GEC Mosalehosahalli');
   const [allowRegistrations, setAllowRegistrations] = useState(true);
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceModeEnabled, setMaintenanceModeEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('Site is currently undergoing maintenance. Please check back soon.');
 
-  // Handlers for new settings (would interact with backend in a real app)
-  const handleSiteNameChange = (e: React.ChangeEvent<HTMLInputElement>) => setSiteName(e.target.value);
-  const handleAllowRegistrationsToggle = () => setAllowRegistrations(!allowRegistrations);
-  const handleMaintenanceModeToggle = () => setMaintenanceMode(!maintenanceMode);
-  const handleMaintenanceMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setMaintenanceMessage(e.target.value);
+  useEffect(() => {
+    async function loadSettings() {
+      setIsLoading(true);
+      const result = await getSiteSettings();
+      if (result.success && result.settings) {
+        const { general, maintenance } = result.settings;
+        if (general) {
+          setSiteName(general.siteName || 'GLAD CELL - GEC Mosalehosahalli');
+          setAllowRegistrations(typeof general.allowRegistrations === 'boolean' ? general.allowRegistrations : true);
+        }
+        if (maintenance) {
+          setMaintenanceModeEnabled(maintenance.enabled || false);
+          setMaintenanceMessage(maintenance.message || 'Site is currently undergoing maintenance. Please check back soon.');
+        }
+      } else {
+        toast({
+          title: "Error Loading Settings",
+          description: result.message || "Could not fetch site settings.",
+          variant: "destructive",
+        });
+      }
+      setIsLoading(false);
+    }
+    loadSettings();
+  }, [toast]);
 
-  const handleSaveChanges = () => {
-    // In a real app, this would trigger a server action to save all settings.
-    // For now, it can show a toast or log to console.
-    console.log("Saving settings:", { siteName, allowRegistrations, maintenanceMode, maintenanceMessage });
-    // Example: toast({ title: "Settings Saved (Placeholder)", description: "Changes would be applied in a live app." });
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    const currentSettings: SiteSettingsData = {
+      general: {
+        siteName,
+        allowRegistrations,
+      },
+      maintenance: {
+        enabled: maintenanceModeEnabled,
+        message: maintenanceMessage,
+      },
+    };
+
+    const result = await updateSiteSettings(currentSettings);
+    if (result.success) {
+      toast({
+        title: "Settings Saved",
+        description: "Site settings have been updated successfully.",
+      });
+    } else {
+      toast({
+        title: "Error Saving Settings",
+        description: result.message || "Could not save site settings.",
+        variant: "destructive",
+      });
+    }
+    setIsSaving(false);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-12 px-4 max-w-3xl flex justify-center items-center min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Loading settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-12 px-4 max-w-3xl">
@@ -57,7 +111,7 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-4">
             <div>
                 <Label htmlFor="site-name">Site Name</Label>
-                <Input id="site-name" value={siteName} onChange={handleSiteNameChange} placeholder="Your Application Name" />
+                <Input id="site-name" value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="Your Application Name" />
                 <p className="text-xs text-muted-foreground mt-1">This name appears in browser tabs and metadata.</p>
             </div>
             <div>
@@ -73,8 +127,7 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-
-        {/* Theme & Appearance (Existing, now 'enabled' UI-wise) */}
+        {/* Theme & Appearance */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5"/> Theme &amp; Appearance</CardTitle>
@@ -83,10 +136,10 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 border rounded-md">
               <Label htmlFor="dark-mode-toggle" className="font-medium">Enable Dark Mode by Default for Users</Label>
-              <Switch id="dark-mode-toggle" defaultChecked={false} />
+              <Switch id="dark-mode-toggle" defaultChecked={false} disabled/>
             </div>
             <p className="text-sm text-muted-foreground italic">
-              Theme choice is primarily user-controlled via the header toggle. This setting (if implemented) would set the initial default theme for new visitors.
+              Theme choice is user-controlled. This setting is a placeholder for future default theme selection.
             </p>
           </CardContent>
         </Card>
@@ -100,21 +153,21 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-4">
              <div className="flex items-center justify-between p-3 border rounded-md">
                 <Label htmlFor="allow-registrations-toggle" className="font-medium">Allow New User Registrations</Label>
-                <Switch id="allow-registrations-toggle" checked={allowRegistrations} onCheckedChange={handleAllowRegistrationsToggle} />
+                <Switch id="allow-registrations-toggle" checked={allowRegistrations} onCheckedChange={setAllowRegistrations} />
             </div>
             <div className="flex items-center justify-between p-3 border rounded-md">
                 <Label htmlFor="require-approval-toggle" className="font-medium">Require Admin Approval for New Accounts</Label>
-                <Switch id="require-approval-toggle" disabled /> {/* Placeholder */}
+                <Switch id="require-approval-toggle" disabled /> 
             </div>
             <p className="text-sm text-muted-foreground italic">Approval system coming soon.</p>
           </CardContent>
         </Card>
 
-        {/* Notification Settings (Existing, remains placeholder for backend) */}
+        {/* Notification Settings */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5"/> Notification Settings</CardTitle>
-            <CardDescription>Configure email notifications for new registrations, submissions, etc.</CardDescription>
+            <CardDescription>Configure email notifications.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -125,19 +178,19 @@ export default function AdminSettingsPage() {
                 <Label htmlFor="notify-new-user-toggle" className="font-medium">Notify on New User Registration</Label>
                 <Switch id="notify-new-user-toggle" disabled />
             </div>
-            <p className="text-sm text-muted-foreground italic">Email notification system (e.g., SendGrid, Nodemailer integration) coming soon.</p>
+            <p className="text-sm text-muted-foreground italic">Email notification system coming soon.</p>
           </CardContent>
         </Card>
 
-        {/* Security & Access (Existing, "Manage Admin Accounts" now 'enabled' UI-wise) */}
+        {/* Security & Access */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5"/> Security &amp; Access</CardTitle>
             <CardDescription>Manage admin access and site security features.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-             <Button variant="outline">Manage Admin Accounts</Button> {/* Button is now enabled */}
-             <p className="text-sm text-muted-foreground italic mt-2">Advanced admin role management (e.g., using Firebase Custom Claims) is a future enhancement.</p>
+             <Button variant="outline" disabled>Manage Admin Accounts</Button>
+             <p className="text-sm text-muted-foreground italic mt-2">Advanced admin role management coming soon.</p>
              <div className="flex items-center justify-between p-3 border rounded-md">
                 <Label htmlFor="two-fa-toggle" className="font-medium">Enable Two-Factor Authentication for Admins</Label>
                 <Switch id="two-fa-toggle" disabled />
@@ -155,12 +208,18 @@ export default function AdminSettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 border rounded-md">
                 <Label htmlFor="maintenance-mode-toggle" className="font-medium">Enable Maintenance Mode</Label>
-                <Switch id="maintenance-mode-toggle" checked={maintenanceMode} onCheckedChange={handleMaintenanceModeToggle} />
+                <Switch id="maintenance-mode-toggle" checked={maintenanceModeEnabled} onCheckedChange={setMaintenanceModeEnabled} />
             </div>
-            {maintenanceMode && (
+            {maintenanceModeEnabled && (
                 <div>
                     <Label htmlFor="maintenance-message">Maintenance Mode Message</Label>
-                    <Textarea id="maintenance-message" value={maintenanceMessage} onChange={handleMaintenanceMessageChange} placeholder="Site is down for scheduled maintenance." rows={3}/>
+                    <Textarea 
+                        id="maintenance-message" 
+                        value={maintenanceMessage} 
+                        onChange={(e) => setMaintenanceMessage(e.target.value)} 
+                        placeholder="Site is down for scheduled maintenance." 
+                        rows={3}
+                    />
                     <p className="text-xs text-muted-foreground mt-1">This message will be shown to users when maintenance mode is active.</p>
                 </div>
             )}
@@ -171,14 +230,14 @@ export default function AdminSettingsPage() {
 
         {/* Save Changes Button */}
         <div className="flex justify-end">
-            <Button size="lg" onClick={handleSaveChanges}>
-                <Edit3 className="mr-2 h-4 w-4"/> Save All Settings
+            <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit3 className="mr-2 h-4 w-4"/>}
+                {isSaving ? 'Saving...' : 'Save All Settings'}
             </Button>
         </div>
          <p className="text-xs text-muted-foreground text-center italic mt-4">
-            Note: Many settings on this page are placeholders for UI demonstration. Full functionality requires backend implementation.
+            Note: Some settings are placeholders. Maintenance mode and registration toggle are functional.
         </p>
-
       </div>
     </div>
   );

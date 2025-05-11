@@ -26,38 +26,29 @@ export interface SiteLinks {
 }
 
 /**
- * Defines the structure for a specific homepage section image.
- */
-export interface HomepageSectionImage {
-  imageUrl: string;
-  altText: string;
-  storagePath: string; // Path in Firebase Storage for deletion
-}
-
-
-/**
  * Type for the data stored under a content ID.
- * Can be a simple string (e.g., for 'about' page) or an object (e.g., for 'contact', 'links', or 'HomepageSectionImage').
+ * Can be a simple string (e.g., for 'about' page) or an object (e.g., for 'contact', 'links').
  */
-type ContentData = string | ContactInfo | SiteLinks | HomepageSectionImage;
+type ContentData = string | ContactInfo | SiteLinks; // Removed HomepageSectionImage, SiteSettingsData
+
 
 /**
  * Fetches a specific content block from the 'siteContent' collection.
  *
- * @param contentId - The ID of the content block to fetch (e.g., 'about', 'contact', 'links', 'homepage_image_explore_ideas').
+ * @param contentId - The ID of the content block to fetch (e.g., 'about', 'contact', 'links').
  * @returns Promise resolving to the success status, fetched data, or an error message.
  */
 export async function getContent(contentId: string): Promise<{ success: boolean; data?: ContentData; message?: string }> {
-    console.log(`[Server Action] getContent invoked for ID: ${contentId}`);
+    console.log(`[Service - Content] getContent invoked for ID: ${contentId}`);
 
     if (initializationError) {
         const errorMessage = `Content service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.error(`[Server Action Error] getContent: ${errorMessage}`);
+        console.error(`[Service Error - Content] getContent: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
     if (!db) {
         const errorMessage = 'Content service unavailable: Firestore service instance missing.';
-        console.error(`[Server Action Error] getContent: ${errorMessage}`);
+        console.error(`[Service Error - Content] getContent: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
@@ -71,14 +62,21 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
 
         if (docSnap.exists()) {
             const data = docSnap.data()?.content; // Content is stored under the 'content' field
-            console.log(`[Server Action] Content found for ID: ${contentId}`);
+            console.log(`[Service - Content] Content found for ID: ${contentId}`);
             return { success: true, data: data as ContentData }; 
         } else {
-            console.log(`[Server Action] No content found for ID: ${contentId}. Returning default.`);
-            return { success: true, data: undefined };
+            console.log(`[Service - Content] No content found for ID: ${contentId}. Returning default or undefined.`);
+            // Return specific defaults based on contentId if necessary
+            if (contentId === 'contact') {
+                 return { success: true, data: { address: '', email: '', phone: '' } as ContactInfo };
+            }
+            if (contentId === 'links') {
+                return { success: true, data: { whatsappCommunity: '' } as SiteLinks };
+            }
+            return { success: true, data: undefined }; // Generic undefined for others like 'about'
         }
     } catch (error: any) {
-        console.error(`[Server Action Error] Error fetching content for ID ${contentId}:`, error.message, error.stack);
+        console.error(`[Service Error - Content] Error fetching content for ID ${contentId}:`, error.message, error.stack);
         return { success: false, message: `Failed to fetch content: ${error.message || 'Unknown database error'}` };
     }
 }
@@ -93,16 +91,16 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
  * @returns Promise resolving to the success status or an error message.
  */
 export async function updateContent(contentId: string, data: ContentData): Promise<{ success: boolean; message?: string }> {
-    console.log(`[Server Action] updateContent invoked for ID: ${contentId}`);
+    console.log(`[Service - Content] updateContent invoked for ID: ${contentId}`);
 
     if (initializationError) {
         const errorMessage = `Content service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.error(`[Server Action Error] updateContent: ${errorMessage}`);
+        console.error(`[Service Error - Content] updateContent: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
     if (!db) {
         const errorMessage = 'Content service unavailable: Firestore service instance missing.';
-        console.error(`[Server Action Error] updateContent: ${errorMessage}`);
+        console.error(`[Service Error - Content] updateContent: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
@@ -110,7 +108,7 @@ export async function updateContent(contentId: string, data: ContentData): Promi
     if (!contentId) {
         return { success: false, message: 'Content ID is required.' };
     }
-    if (data === undefined || data === null) {
+    if (data === undefined || data === null) { // Check for undefined or null specifically
          return { success: false, message: 'Content data cannot be empty.' };
     }
 
@@ -122,7 +120,7 @@ export async function updateContent(contentId: string, data: ContentData): Promi
             updatedAt: serverTimestamp() as Timestamp
         }, { merge: true }); 
 
-        console.log(`[Server Action] Content updated successfully for ID: ${contentId}`);
+        console.log(`[Service - Content] Content updated successfully for ID: ${contentId}`);
 
         // Revalidate paths related to the updated content
         if (contentId === 'about') {
@@ -132,13 +130,15 @@ export async function updateContent(contentId: string, data: ContentData): Promi
              revalidatePath('/contact');
              revalidatePath('/admin/content/contact');
         } else if (contentId === 'links') {
-             revalidatePath('/'); 
+             revalidatePath('/'); // For sidebar links
              revalidatePath('/admin/content/links');
-        } else if (contentId.startsWith('homepage_image_')) {
-            revalidatePath('/'); // Revalidate homepage
-            revalidatePath(`/admin/content/${contentId.replace('homepage_image_', 'edit-')}-image`); // e.g. /admin/content/edit-explore-ideas-image
-        }
-         else {
+        } else if (contentId === 'privacy-policy') {
+            revalidatePath('/privacy-policy');
+            revalidatePath('/admin/content/privacy');
+        } else if (contentId === 'terms-and-conditions') {
+            revalidatePath('/terms-and-conditions');
+            revalidatePath('/admin/content/terms');
+        } else {
             revalidatePath('/'); 
         }
 
@@ -146,7 +146,7 @@ export async function updateContent(contentId: string, data: ContentData): Promi
         return { success: true };
 
     } catch (error: any) {
-        console.error(`[Server Action Error] Error updating content for ID ${contentId}:`, error.message, error.stack);
+        console.error(`[Service Error - Content] Error updating content for ID ${contentId}:`, error.message, error.stack);
         return { success: false, message: `Could not update content: ${error.message || 'Unknown database error'}` };
     }
 }
