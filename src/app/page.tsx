@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, ImageOff } from 'lucide-react';
+import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, ImageOff, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
 import { getEvents } from '@/services/events'; 
 import type { EventData } from '@/services/events'; 
 import { getHomepageImages } from '@/services/homepage';
@@ -47,7 +47,7 @@ async function loadHomepageSectionImages(): Promise<{
 
 export default async function Home() {
   const { event, error: eventError } = await loadLatestEvent();
-  const { exploreIdeasImage, latestEventPromoImage, error: imageError } = await loadHomepageSectionImages();
+  const { error: imageError } = await loadHomepageSectionImages();
   const overallError = eventError || imageError;
 
   return (
@@ -77,20 +77,9 @@ export default async function Home() {
             <Lightbulb className="h-6 w-6 text-primary" />
           </CardHeader>
           <CardContent className="space-y-4">
-             {exploreIdeasImage && exploreIdeasImage.imageUrl ? (
-                <Image 
-                  src={exploreIdeasImage.imageUrl} 
-                  alt={exploreIdeasImage.altText} 
-                  width={600} 
-                  height={300} 
-                  className="rounded-md mb-3 object-cover aspect-video"
-                  data-ai-hint="innovation abstract"
-                />
-             ) : (
-                <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                    <ImageIcon className="h-16 w-16 text-muted-foreground"/>
-                </div>
-             )}
+            <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                <ImageIcon className="h-16 w-16 text-muted-foreground"/>
+            </div>
             <p className="text-muted-foreground">
               Browse through the diverse collection of startup and ideathon concepts submitted by students.
             </p>
@@ -118,15 +107,6 @@ export default async function Home() {
                             height={300} 
                             className="rounded-md mb-3 object-cover aspect-video"
                             data-ai-hint="conference event"
-                        />
-                    ) : latestEventPromoImage && latestEventPromoImage.imageUrl ? (
-                         <Image 
-                            src={latestEventPromoImage.imageUrl} 
-                            alt={latestEventPromoImage.altText}
-                            width={600} 
-                            height={300} 
-                            className="rounded-md mb-3 object-cover aspect-video"
-                            data-ai-hint="event placeholder"
                         />
                     ) : (
                         <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
