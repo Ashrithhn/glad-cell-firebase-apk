@@ -1,4 +1,3 @@
-
 'use client'; // Required for hooks
 
 import { useEffect } from 'react';
@@ -7,7 +6,7 @@ import { LoginForm } from '@/components/features/auth/login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { useAuth } from '@/hooks/use-auth'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, ShieldAlert } from 'lucide-react'; 
 import { Separator } from '@/components/ui/separator';
@@ -43,7 +42,6 @@ export default function LoginPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
-            {/* Removed Skeleton for Google button */}
             <Skeleton className="h-8 w-1/3 mx-auto mt-2" />
           </CardContent>
         </Card>
@@ -80,17 +78,20 @@ export default function LoginPage() {
               Forgot Password?
             </Link>
           </div>
-
-          {/* Removed OR Separator and GoogleSignInButton */}
-
-           <div className="text-center mt-6"> 
+          
+          {/* 
+            Admin Login Link - Removed from public view. 
+            Admins should navigate to /admin/login directly.
+          <div className="text-center mt-6"> 
              <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
                <ShieldAlert className="h-4 w-4" />
                Admin Login
              </Link>
            </div>
+          */}
         </CardContent>
       </Card>
     </div>
   );
 }
+
