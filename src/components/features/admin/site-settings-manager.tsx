@@ -1,8 +1,13 @@
 
 'use client';
 
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+=======
+import React, { useState, useEffect, useTransition } from 'react';
+import Link from 'next/link'; // Added import for Link
+>>>>>>> 349b43b (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 <<<<<<< HEAD
@@ -21,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck, Save, ExternalLink } from 'lucide-react';
+import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck, Save, ExternalLink, UserCog } from 'lucide-react'; // Added UserCog
 import { getSiteSettings, updateSiteSettings } from '@/services/site-settings';
 import type { SiteSettings } from '@/services/site-settings';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -472,3 +477,4 @@ export function SiteSettingsManager() {
     </div>
   );
 }
+
