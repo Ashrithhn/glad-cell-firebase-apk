@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -60,6 +61,32 @@ export function Footer() {
           <p className="mt-1">
             Developed with a vision to foster innovation.
           </p>
+=======
+import Link from 'next/link';
+import { Copyright } from 'lucide-react';
+
+export function Footer() {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="border-t bg-background/80 backdrop-blur-sm">
+      <div className="container mx-auto py-6 px-4 text-center text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="flex items-center gap-1">
+            <Copyright className="h-4 w-4" /> {currentYear} GLAD CELL - GEC Mosalehosahalli. All Rights Reserved.
+          </p>
+          <nav className="flex gap-4">
+            <Link href="/terms-and-conditions" className="hover:text-primary transition-colors">
+              Terms & Conditions
+            </Link>
+            <Link href="/privacy-policy" className="hover:text-primary transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/contact" className="hover:text-primary transition-colors">
+              Contact Us
+            </Link>
+          </nav>
+>>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
         </div>
       </div>
     </footer>
