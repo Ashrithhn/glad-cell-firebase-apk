@@ -22,6 +22,7 @@ export interface EventData {
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
     fee: number; // Fee in Paisa
+    imageUrl?: string | null; // Modified to allow null
     createdAt?: Timestamp | string;
 }
 
@@ -197,8 +198,8 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
         const querySnapshot = await getDocs(eventsQuery);
 
         const events: EventData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap
+            const data = docSnap.data();
 
             const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
                  if (timestamp instanceof Timestamp) {
@@ -208,7 +209,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
             }
 
             events.push({
-                id: doc.id,
+                id: docSnap.id,
                 name: data.name,
                 description: data.description,
                 venue: data.venue,
@@ -220,6 +221,7 @@ export async function getEvents(): Promise<{ success: boolean; events?: EventDat
                 minTeamSize: data.minTeamSize,
                 maxTeamSize: data.maxTeamSize,
                 fee: data.fee,
+                imageUrl: data.imageUrl === undefined ? null : data.imageUrl, // Handle undefined imageUrl
                 createdAt: convertTimestamp(data.createdAt),
             } as EventData); // Added type assertion
         });
@@ -259,8 +261,8 @@ export async function getParticipationData(userId: string): Promise<{ success: b
     const querySnapshot = await getDocs(participationsQuery);
 
     const participations: any[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap
+      const data = docSnap.data();
       const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
         if (timestamp instanceof Timestamp) {
           return timestamp.toDate().toISOString();
@@ -268,7 +270,7 @@ export async function getParticipationData(userId: string): Promise<{ success: b
         return typeof timestamp === 'string' ? timestamp : null;
       };
       participations.push({
-        id: doc.id,
+        id: docSnap.id,
         ...data,
         participatedAt: convertTimestamp(data.participatedAt),
       });
@@ -281,3 +283,5 @@ export async function getParticipationData(userId: string): Promise<{ success: b
     return { success: false, message: `Could not fetch participation data: ${error.message || 'Unknown error'}` };
   }
 }
+
+    

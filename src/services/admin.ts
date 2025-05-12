@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, initializationError } from '@/lib/firebase/config';
 import { revalidatePath } from 'next/cache';
@@ -19,7 +19,7 @@ export interface EventData {
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
     fee: number; 
-    imageUrl?: string; // Added imageUrl
+    imageUrl?: string | null; // Modified to allow null
     createdAt?: Timestamp | string; 
 }
 
@@ -41,7 +41,7 @@ export interface UserProfileData {
 }
 
 
-export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | 'startDate' | 'endDate' | 'registrationDeadline'> & { startDate: string, endDate: string, registrationDeadline?: string, imageFile?: string }): Promise<{ success: boolean; eventId?: string; message?: string }> {
+export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | 'startDate' | 'endDate' | 'registrationDeadline' | 'imageUrl'> & { startDate: string, endDate: string, registrationDeadline?: string, imageFile?: string }): Promise<{ success: boolean; eventId?: string; message?: string }> {
   console.log('[Server Action - Admin] addEvent invoked.');
 
   if (initializationError) {
@@ -57,7 +57,7 @@ export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | '
 
   console.log('[Server Action - Admin] Attempting to add item to Firestore:', eventData.name);
 
-  let imageUrl: string | undefined = undefined;
+  let imageUrl: string | null = null; // Initialize as null
 
   try {
     if (eventData.imageFile) {
@@ -87,14 +87,16 @@ export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | '
         eventType: eventData.eventType,
         minTeamSize: eventData.eventType === 'group' ? eventData.minTeamSize : null,
         maxTeamSize: eventData.eventType === 'group' ? eventData.maxTeamSize : null,
-        fee: Math.round(eventData.fee * 100), 
-        imageUrl: imageUrl, // Add the image URL
+        fee: eventData.fee, // Assuming fee is already in paisa from form
+        imageUrl: imageUrl, // Use the potentially null imageUrl
         createdAt: serverTimestamp() as Timestamp,
     };
 
     if (!docData.rules) delete docData.rules;
     if (docData.minTeamSize === undefined) delete docData.minTeamSize;
     if (docData.maxTeamSize === undefined) delete docData.maxTeamSize;
+    // If imageUrl is null, it will be stored as null, which is acceptable by Firestore.
+    // If it was undefined, it would cause an error or not be set.
 
     const docRef = await addDoc(collection(db, 'events'), docData);
     console.log('[Server Action - Admin] Item added successfully to Firestore with ID:', docRef.id);
@@ -134,10 +136,10 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
 
   try {
     const eventDocRef = doc(db, 'events', eventId);
-    // Optionally, delete associated image from Storage if imageUrl exists
-    const eventDoc = await getDocs(query(collection(db, 'events'), where('__name__', '==', eventId))); // Fetch doc to get imageUrl
-    if (!eventDoc.empty) {
-      const eventData = eventDoc.docs[0].data() as EventData;
+    const eventDocSnapshot = await getDoc(eventDocRef); // Fetch doc to get imageUrl
+
+    if (eventDocSnapshot.exists()) {
+      const eventData = eventDocSnapshot.data() as EventData;
       if (eventData.imageUrl) {
         try {
           const imageStorageRef = storageRef(getStorage(), eventData.imageUrl);
@@ -187,8 +189,8 @@ export async function getUsers(): Promise<{ success: boolean; users?: UserProfil
     const querySnapshot = await getDocs(usersQuery);
 
     const users: UserProfileData[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    querySnapshot.forEach((docSnap) => { // Renamed doc to docSnap to avoid conflict
+      const data = docSnap.data();
       // Convert Timestamps to ISO strings
       const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
            if (timestamp instanceof Timestamp) {
@@ -197,7 +199,7 @@ export async function getUsers(): Promise<{ success: boolean; users?: UserProfil
            return typeof timestamp === 'string' ? timestamp : null;
       }
       users.push({
-        uid: doc.id, // Use doc.id as uid, assuming uid is the document ID
+        uid: docSnap.id, // Use doc.id as uid, assuming uid is the document ID
         ...data,
         createdAt: convertTimestamp(data.createdAt),
       } as UserProfileData);
@@ -211,3 +213,5 @@ export async function getUsers(): Promise<{ success: boolean; users?: UserProfil
     return { success: false, message: `Could not fetch users due to a database error: ${error.message || 'Unknown error'}` };
   }
 }
+
+    
