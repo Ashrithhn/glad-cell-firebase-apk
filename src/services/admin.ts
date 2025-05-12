@@ -1,37 +1,47 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, initializationError } from '@/lib/firebase/config';
-import { revalidatePath } from 'next/cache'; // Import revalidatePath
+import { revalidatePath } from 'next/cache';
 
-// TODO: Implement robust admin role checking here, e.g., using Firebase Custom Claims
-
-/**
- * Represents the structure of event data stored in Firestore.
- * Includes added fields: venue and registrationDeadline.
- */
 export interface EventData {
-    id?: string; // Added during retrieval
+    id?: string; 
     name: string;
     description: string;
-    venue: string; // Added venue
+    venue: string; 
     rules?: string;
-    startDate: Timestamp | string; // Store as Timestamp, handle ISO string input/output
-    endDate: Timestamp | string;   // Store as Timestamp, handle ISO string input/output
-    registrationDeadline?: Timestamp | string | null; // Added optional deadline
+    startDate: Timestamp | string; 
+    endDate: Timestamp | string;   
+    registrationDeadline?: Timestamp | string | null; 
     eventType: 'individual' | 'group';
     minTeamSize?: number | null;
     maxTeamSize?: number | null;
-    fee: number; // Fee in Paisa
-    createdAt?: Timestamp | string; // Store as Timestamp, retrieve potentially as string
+    fee: number; 
+    imageUrl?: string; // Added imageUrl
+    createdAt?: Timestamp | string; 
 }
 
-/**
- * Adds a new event document to the 'events' collection in Firestore.
- * Includes new fields: venue and registrationDeadline.
- */
-export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | 'startDate' | 'endDate' | 'registrationDeadline'> & { startDate: string, endDate: string, registrationDeadline?: string }): Promise<{ success: boolean; eventId?: string; message?: string }> {
+export interface UserProfileData {
+  uid: string;
+  email?: string | null;
+  name?: string | null;
+  photoURL?: string | null;
+  branch?: string | null;
+  semester?: number | string | null;
+  registrationNumber?: string | null;
+  collegeName?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  createdAt?: Timestamp | string | null; 
+  authProvider?: string | null;
+  emailVerified?: boolean | null;
+  // Add other fields from your Firestore 'users' collection
+}
+
+
+export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | 'startDate' | 'endDate' | 'registrationDeadline'> & { startDate: string, endDate: string, registrationDeadline?: string, imageFile?: string }): Promise<{ success: boolean; eventId?: string; message?: string }> {
   console.log('[Server Action - Admin] addEvent invoked.');
 
   if (initializationError) {
@@ -45,39 +55,53 @@ export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | '
     return { success: false, message: errorMessage };
   }
 
-  // TODO: Add a server-side check to ensure the calling user has an admin role
-
   console.log('[Server Action - Admin] Attempting to add item to Firestore:', eventData.name);
 
+  let imageUrl: string | undefined = undefined;
+
   try {
-    // Prepare data for Firestore
+    if (eventData.imageFile) {
+      const storage = getStorage();
+      // Expected format for imageFile (data URI): 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQA...'
+      if (!eventData.imageFile.startsWith('data:image/')) {
+        throw new Error('Invalid image data format. Expected Data URI.');
+      }
+      const mimeType = eventData.imageFile.substring(eventData.imageFile.indexOf(':') + 1, eventData.imageFile.indexOf(';'));
+      const extension = mimeType.split('/')[1] || 'jpg';
+      const fileName = `event_images/${Date.now()}_${Math.random().toString(36).substring(2)}.${extension}`;
+      const imageStorageRef = storageRef(storage, fileName);
+      
+      const uploadResult = await uploadString(imageStorageRef, eventData.imageFile, 'data_url');
+      imageUrl = await getDownloadURL(uploadResult.ref);
+      console.log('[Server Action - Admin] Event image uploaded to:', imageUrl);
+    }
+
     const docData: Omit<EventData, 'id'> = {
-        ...eventData,
-        // Convert ISO date strings back to Firestore Timestamps
+        name: eventData.name,
+        description: eventData.description,
+        venue: eventData.venue,
+        rules: eventData.rules,
         startDate: Timestamp.fromDate(new Date(eventData.startDate)),
         endDate: Timestamp.fromDate(new Date(eventData.endDate)),
-        // Convert optional deadline ISO string to Timestamp or null
         registrationDeadline: eventData.registrationDeadline ? Timestamp.fromDate(new Date(eventData.registrationDeadline)) : null,
-        createdAt: serverTimestamp() as Timestamp, // Add creation timestamp
-        // Ensure team sizes are only included for group events, otherwise set to null
+        eventType: eventData.eventType,
         minTeamSize: eventData.eventType === 'group' ? eventData.minTeamSize : null,
         maxTeamSize: eventData.eventType === 'group' ? eventData.maxTeamSize : null,
+        fee: Math.round(eventData.fee * 100), 
+        imageUrl: imageUrl, // Add the image URL
+        createdAt: serverTimestamp() as Timestamp,
     };
 
-    // Remove optional fields if they are empty strings or undefined before saving
     if (!docData.rules) delete docData.rules;
     if (docData.minTeamSize === undefined) delete docData.minTeamSize;
     if (docData.maxTeamSize === undefined) delete docData.maxTeamSize;
-    // No need to delete registrationDeadline if null, Firestore handles it
 
     const docRef = await addDoc(collection(db, 'events'), docData);
-
     console.log('[Server Action - Admin] Item added successfully to Firestore with ID:', docRef.id);
 
-    // Revalidate relevant paths after adding data
     revalidatePath('/admin/events');
-    revalidatePath('/programs'); // Revalidate the public programs page
-    revalidatePath('/'); // Revalidate the home page
+    revalidatePath('/programs'); 
+    revalidatePath('/'); 
 
     return { success: true, eventId: docRef.id };
 
@@ -88,9 +112,6 @@ export async function addEvent(eventData: Omit<EventData, 'id' | 'createdAt' | '
 }
 
 
-/**
- * Deletes an event document from the 'events' collection in Firestore.
- */
 export async function deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
   console.log('[Server Action - Admin] deleteEvent invoked for ID:', eventId);
 
@@ -109,20 +130,32 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
        return { success: false, message: 'Event ID is required for deletion.' };
    }
 
-  // TODO: Add a server-side check to ensure the calling user has an admin role
-
   console.log('[Server Action - Admin] Attempting to delete item from Firestore:', eventId);
 
   try {
     const eventDocRef = doc(db, 'events', eventId);
+    // Optionally, delete associated image from Storage if imageUrl exists
+    const eventDoc = await getDocs(query(collection(db, 'events'), where('__name__', '==', eventId))); // Fetch doc to get imageUrl
+    if (!eventDoc.empty) {
+      const eventData = eventDoc.docs[0].data() as EventData;
+      if (eventData.imageUrl) {
+        try {
+          const imageStorageRef = storageRef(getStorage(), eventData.imageUrl);
+          await deleteObject(imageStorageRef);
+          console.log('[Server Action - Admin] Associated event image deleted from Storage.');
+        } catch (imgError: any) {
+          console.error('[Server Action Error - Admin] Failed to delete event image from Storage:', imgError.message);
+          // Continue with Firestore deletion even if image deletion fails, but log error.
+        }
+      }
+    }
+    
     await deleteDoc(eventDocRef);
-
     console.log('[Server Action - Admin] Item deleted successfully from Firestore:', eventId);
 
-     // Revalidate relevant paths after deleting data
     revalidatePath('/admin/events');
-    revalidatePath('/programs'); // Revalidate the public programs page
-    revalidatePath('/'); // Revalidate the home page
+    revalidatePath('/programs'); 
+    revalidatePath('/'); 
 
     return { success: true };
 
@@ -132,11 +165,49 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
   }
 }
 
+/**
+ * Fetches all user profiles from the 'users' collection in Firestore.
+ */
+export async function getUsers(): Promise<{ success: boolean; users?: UserProfileData[]; message?: string }> {
+  console.log('[Server Action - Admin] getUsers invoked.');
 
-// Placeholder for verifying admin role (replace with actual implementation)
-async function verifyAdminRole(): Promise<boolean> {
-    // In a real app, this would involve checking Firebase Auth custom claims
-    // or querying a secure admin collection.
-    console.warn("verifyAdminRole: Placeholder function, returning false. Implement proper admin check!");
-    return false; // Default to false for security
+  if (initializationError) {
+      const errorMessage = `Admin service unavailable: Firebase initialization error - ${initializationError.message}.`;
+      console.error(`[Server Action Error - Admin] getUsers: ${errorMessage}`);
+      return { success: false, message: errorMessage };
+  }
+  if (!db) {
+    const errorMessage = 'Admin service unavailable: Firestore service instance missing.';
+    console.error(`[Server Action Error - Admin] getUsers: ${errorMessage}`);
+    return { success: false, message: errorMessage };
+  }
+
+  try {
+    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc')); // Order by creation date
+    const querySnapshot = await getDocs(usersQuery);
+
+    const users: UserProfileData[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Convert Timestamps to ISO strings
+      const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
+           if (timestamp instanceof Timestamp) {
+              return timestamp.toDate().toISOString();
+           }
+           return typeof timestamp === 'string' ? timestamp : null;
+      }
+      users.push({
+        uid: doc.id, // Use doc.id as uid, assuming uid is the document ID
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+      } as UserProfileData);
+    });
+
+    console.log(`[Server Action - Admin] getUsers: Fetched ${users.length} users.`);
+    return { success: true, users };
+
+  } catch (error: any)    {
+    console.error('[Server Action Error - Admin] Error fetching users from Firestore:', error.code, error.message, error.stack);
+    return { success: false, message: `Could not fetch users due to a database error: ${error.message || 'Unknown error'}` };
+  }
 }

@@ -3,14 +3,13 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, List, ArrowLeft, AlertCircle, Calendar } from 'lucide-react';
-import { getEvents } from '@/services/events'; // Import the renamed service function
-import type { EventData } from '@/services/events'; // Import the renamed type
+import { getEvents } from '@/services/events'; 
+import type { EventData } from '@/services/events'; 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { EventListClient } from '@/components/features/admin/event-list-client'; // Import the new client component
+import { EventListClient } from '@/components/features/admin/event-list-client'; 
 
-// Fetch event data from Firestore on the server
 async function loadEvents(): Promise<{ events?: EventData[], error?: string }> {
-    const result = await getEvents(); // Use the renamed function
+    const result = await getEvents(); 
     if (result.success) {
         return { events: result.events };
     } else {
@@ -48,14 +47,14 @@ export default async function AdminManageEventsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><List className="h-5 w-5"/> Existing Items</CardTitle>
-          <CardDescription>List of current programs and events.</CardDescription>
+          <CardDescription>List of current programs and events. Click an item to edit (soon) or delete.</CardDescription>
         </CardHeader>
         <CardContent>
           {!error && events ? (
-            <EventListClient events={events} /> // Use client component to display list and handle delete
+            <EventListClient events={events} /> 
           ) : !error ? (
             <p className="text-muted-foreground text-center">No items found.</p>
-          ) : null /* Don't show 'No items' if there was an error */}
+          ) : null }
         </CardContent>
       </Card>
     </div>

@@ -1,25 +1,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Mail, Phone, MapPin, AlertCircle } from 'lucide-react';
-import { getContent } from '@/services/content'; // Import service
-import type { ContactInfo } from '@/services/content'; // Import type
+// import { getContent } from '@/services/content'; // Service call no longer needed for static content
+// import type { ContactInfo } from '@/services/content'; 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-// Fetch contact info on the server
-async function loadContactInfo(): Promise<{ contactInfo?: ContactInfo, error?: string }> {
-    const result = await getContent('contact'); // Fetch 'contact' content block
-    if (result.success && typeof result.data === 'object' && result.data !== null) {
-        return { contactInfo: result.data as ContactInfo };
-    } else if (!result.success) {
-        return { error: result.message || 'Failed to load contact info.' };
-    }
-    // Return default empty structure if no content exists yet
-    return { contactInfo: { address: 'Address not set.', email: 'Email not set.', phone: 'Phone not set.' } };
-}
+// Static contact info as requested
+const staticContactInfo = {
+  address: 'Department of Computer Science and Engineering,\nGovernment Engineering College Mosalehosahalli,\nHassan, Karnataka, India',
+  email: 'gladcell2019@gmail.com',
+  phone: '7625026715 / 8073682882 / 9483901788', // Combined phone numbers
+};
 
 
 export default async function ContactPage() {
-  const { contactInfo, error } = await loadContactInfo();
+  const contactInfo = staticContactInfo; // Use static info
+  const error = null; // No fetching error for static content
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -30,7 +26,7 @@ export default async function ContactPage() {
         </p>
       </div>
 
-       {error && (
+       {error && ( // Keep error display in case of future dynamic content
          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Contact Info</AlertTitle>
@@ -48,7 +44,7 @@ export default async function ContactPage() {
             <MapPin className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
             <div>
               <h3 className="font-semibold">Address</h3>
-              <p className="text-muted-foreground whitespace-pre-line"> {/* Use whitespace-pre-line to respect newlines */}
+              <p className="text-muted-foreground whitespace-pre-line">
                 {contactInfo?.address || 'N/A'}
               </p>
             </div>
@@ -71,24 +67,11 @@ export default async function ContactPage() {
               <p className="text-muted-foreground">
                  {contactInfo?.phone || 'N/A'}
               </p>
-              {/* You might want a separate field for availability */}
               <p className="text-xs text-muted-foreground">(Availability may vary)</p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-       {/* Optional: Add a contact form component here later */}
-      {/*
-      <Card>
-        <CardHeader>
-          <CardTitle>Send us a Message</CardTitle>
-        </CardHeader>
-        <CardContent>
-          // Contact Form Component
-        </CardContent>
-      </Card>
-      */}
     </div>
   );
 }

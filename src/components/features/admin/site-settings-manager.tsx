@@ -5,23 +5,16 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck, Save, ExternalLink } from 'lucide-react';
 import { getSiteSettings, updateSiteSettings } from '@/services/site-settings';
 import type { SiteSettings } from '@/services/site-settings';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { useTheme } from 'next-themes'; // For theme consistency
 
 export function SiteSettingsManager() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
@@ -29,6 +22,13 @@ export function SiteSettingsManager() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const { theme: currentNextTheme, setTheme: setNextTheme } = useTheme(); // For syncing with next-themes
+
+  // Local temporary state for form fields
+  const [tempSeoTitle, setTempSeoTitle] = useState('');
+  const [tempSeoDescription, setTempSeoDescription] = useState('');
+  const [tempCustomDomain, setTempCustomDomain] = useState('');
+
 
   useEffect(() => {
     async function fetchSettings() {
@@ -37,9 +37,12 @@ export function SiteSettingsManager() {
         const result = await getSiteSettings();
         if (result.success && result.settings) {
           setSettings(result.settings);
+          setTempSeoTitle(result.settings.seoTitle || '');
+          setTempSeoDescription(result.settings.seoDescription || '');
+          setTempCustomDomain(result.settings.customDomain || '');
         } else {
-          // Initialize with default settings if none found
-          setSettings({ maintenanceMode: false, theme: 'default' });
+          const defaultSettings: SiteSettings = { maintenanceMode: false, theme: 'default', seoTitle: '', seoDescription: '', customDomain: '' };
+          setSettings(defaultSettings);
           if (!result.success) {
             toast({
               title: 'Error Loading Settings',
@@ -49,7 +52,7 @@ export function SiteSettingsManager() {
           }
         }
       } catch (error) {
-        setSettings({ maintenanceMode: false, theme: 'default' });
+        setSettings({ maintenanceMode: false, theme: 'default', seoTitle: '', seoDescription: '', customDomain: '' });
         toast({
           title: 'Error Loading Settings',
           description: 'An unexpected error occurred while fetching settings. Using defaults.',
@@ -62,37 +65,41 @@ export function SiteSettingsManager() {
     fetchSettings();
   }, [toast]);
 
-  const handleToggleMaintenanceMode = (enabled: boolean) => {
+  const handleSettingChange = (key: keyof SiteSettings, value: any) => {
     if (!settings) return;
-    const newSettings = { ...settings, maintenanceMode: enabled };
+    const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
-    saveSettings(newSettings, 'Maintenance mode');
-  };
-  
-  const handleThemeChange = (newTheme: string) => {
-    if (!settings) return;
-    // In a real app, you'd have a select or radio group for themes
-    // For now, this is a placeholder
-    const newSettings = { ...settings, theme: newTheme };
-    setSettings(newSettings);
-    saveSettings(newSettings, `Theme changed to ${newTheme}`);
-     toast({
-        title: "Theme Change (Placeholder)",
-        description: "Theme selection UI not fully implemented. This is a placeholder for future theme management.",
-    });
+
+    // Update temp states if specific keys are changed
+    if (key === 'seoTitle') setTempSeoTitle(value);
+    if (key === 'seoDescription') setTempSeoDescription(value);
+    if (key === 'customDomain') setTempCustomDomain(value);
   };
 
+  const handleSaveSettings = (sectionName: string) => {
+    if (!settings) return;
+    
+    // Consolidate temp states into settings before saving
+    const settingsToSave: SiteSettings = {
+        ...settings,
+        seoTitle: tempSeoTitle,
+        seoDescription: tempSeoDescription,
+        customDomain: tempCustomDomain,
+    };
 
-  const saveSettings = (newSettings: SiteSettings, successMessagePrefix: string) => {
     startTransition(async () => {
       setIsSaving(true);
       try {
-        const result = await updateSiteSettings(newSettings);
+        const result = await updateSiteSettings(settingsToSave);
         if (result.success) {
+          setSettings(settingsToSave); // Persist consolidated settings to main state
           toast({
-            title: `${successMessagePrefix} Updated`,
+            title: `${sectionName} Settings Updated`,
             description: 'Site settings have been saved successfully.',
           });
+          if (sectionName === "Theme") {
+             setNextTheme(settingsToSave.theme || 'default'); // Sync with next-themes
+          }
         } else {
           throw new Error(result.message || 'Failed to save settings.');
         }
@@ -102,8 +109,6 @@ export function SiteSettingsManager() {
           description: error instanceof Error ? error.message : 'An unexpected error occurred.',
           variant: 'destructive',
         });
-        // Optionally revert UI state if save fails
-        // For simplicity, we're not reverting here but you might want to
       } finally {
         setIsSaving(false);
       }
@@ -113,30 +118,24 @@ export function SiteSettingsManager() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
+        {[1,2,3].map(i => (
+        <Card key={i}>
+          <CardHeader><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-2/3 mt-1" /></CardHeader>
+          <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+          <CardFooter><Skeleton className="h-8 w-24" /></CardFooter>
         </Card>
-         <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
+        ))}
       </div>
     );
   }
+  
+  if (!settings) {
+      return <p>Error: Settings could not be loaded.</p>;
+  }
+
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" id="site-settings">
       <Card className="border-destructive/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
@@ -150,21 +149,21 @@ export function SiteSettingsManager() {
           <div className="flex items-center space-x-3 rounded-md border p-4">
             <Switch
               id="maintenance-mode"
-              checked={settings?.maintenanceMode || false}
-              onCheckedChange={handleToggleMaintenanceMode}
+              checked={settings.maintenanceMode}
+              onCheckedChange={(checked) => handleSettingChange('maintenanceMode', checked)}
               disabled={isSaving || isPending}
               aria-label="Toggle Maintenance Mode"
             />
             <Label htmlFor="maintenance-mode" className="flex-grow cursor-pointer">
-              {settings?.maintenanceMode ? 'Maintenance Mode is ON' : 'Maintenance Mode is OFF'}
+              {settings.maintenanceMode ? 'Maintenance Mode is ON' : 'Maintenance Mode is OFF'}
             </Label>
-            {(isSaving || isPending) && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
           </div>
         </CardContent>
         <CardFooter>
-            <p className="text-xs text-muted-foreground">
-                Enabling this will restrict access for regular users. Use with caution.
-            </p>
+            <Button onClick={() => handleSaveSettings('Maintenance Mode')} disabled={isSaving || isPending}>
+                {isSaving || isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Maintenance Setting
+            </Button>
         </CardFooter>
       </Card>
 
@@ -174,17 +173,35 @@ export function SiteSettingsManager() {
             <Palette className="h-5 w-5" /> Theme Settings
           </CardTitle>
           <CardDescription>
-            Manage the visual theme of the application (Coming Soon).
+            Manage the visual theme of the application. Changes apply globally.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-            <Button onClick={() => handleThemeChange(settings?.theme === 'dark' ? 'light' : 'dark')} disabled>
-                Toggle Theme (Placeholder)
-            </Button>
-             <p className="text-sm text-muted-foreground mt-2">
-                Currently selected theme: {settings?.theme || 'default'}. Full theme customization will be available in the future.
+        <CardContent className="space-y-3">
+            <Label htmlFor="site-theme">Select Site Theme</Label>
+            <Select
+                value={settings.theme || 'default'}
+                onValueChange={(value) => handleSettingChange('theme', value)}
+            >
+                <SelectTrigger id="site-theme" className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Select theme" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="default">System Default</SelectItem>
+                    {/* Add more custom themes here if created */}
+                </SelectContent>
+            </Select>
+             <p className="text-xs text-muted-foreground">
+                "System Default" will respect the user's OS preference. Current active theme: {currentNextTheme}.
             </p>
         </CardContent>
+         <CardFooter>
+            <Button onClick={() => handleSaveSettings('Theme')} disabled={isSaving || isPending}>
+                {isSaving || isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Theme Setting
+            </Button>
+        </CardFooter>
       </Card>
       
       <Card>
@@ -193,15 +210,35 @@ export function SiteSettingsManager() {
             <Globe className="h-5 w-5" /> Domain & SEO
           </CardTitle>
           <CardDescription>
-            Configure custom domain, SEO metadata, and analytics integrations (Coming Soon).
+            Configure custom domain, SEO metadata, and analytics integrations.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-            <p className="text-sm text-muted-foreground">
-                This section will allow management of domain settings, meta tags for search engines, and integration with analytics services.
-            </p>
-             <Button variant="outline" disabled className="mt-4">Configure SEO (Coming Soon)</Button>
+        <CardContent className="space-y-4">
+            <div>
+                <Label htmlFor="customDomain">Custom Domain (e.g., www.gladcell.com)</Label>
+                <Input id="customDomain" placeholder="Enter custom domain" value={tempCustomDomain} onChange={e => setTempCustomDomain(e.target.value)} disabled={isSaving || isPending}/>
+                <p className="text-xs text-muted-foreground mt-1">Requires DNS configuration. Contact support for assistance.</p>
+            </div>
+            <div>
+                <Label htmlFor="seoTitle">Default SEO Title</Label>
+                <Input id="seoTitle" placeholder="Site title for search engines" value={tempSeoTitle} onChange={e => setTempSeoTitle(e.target.value)} disabled={isSaving || isPending}/>
+            </div>
+             <div>
+                <Label htmlFor="seoDescription">Default SEO Meta Description</Label>
+                <Textarea id="seoDescription" placeholder="Brief description for search engines (approx. 160 characters)" value={tempSeoDescription} onChange={e => setTempSeoDescription(e.target.value)} rows={3} disabled={isSaving || isPending}/>
+            </div>
+             {/* Placeholder for Analytics */}
+             <div>
+                <Label>Analytics Integration (e.g., Google Analytics ID)</Label>
+                <Input placeholder="UA-XXXXX-Y or G-XXXXXXX (Coming Soon)" disabled />
+             </div>
         </CardContent>
+         <CardFooter>
+            <Button onClick={() => handleSaveSettings('Domain & SEO')} disabled={isSaving || isPending}>
+                {isSaving || isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save SEO Settings
+            </Button>
+        </CardFooter>
       </Card>
 
       <Card>
@@ -210,33 +247,36 @@ export function SiteSettingsManager() {
             <ShieldCheck className="h-5 w-5" /> Security & Access
           </CardTitle>
           <CardDescription>
-            Manage admin roles, IP restrictions, and other security settings (Coming Soon).
+            Manage admin roles, IP restrictions, and other security settings.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-             <p className="text-sm text-muted-foreground">
-                Advanced security configurations, including multi-factor authentication settings, user role management, and access controls will be available here.
-            </p>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled className="mt-4">Manage Admin Access (Coming Soon)</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Feature Not Yet Implemented</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Managing admin access and advanced security features are planned for a future update.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Close</AlertDialogCancel>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+        <CardContent className="space-y-4">
+             <div>
+                <Label>Admin User Management</Label>
+                 <Button variant="outline" className="w-full justify-start" asChild>
+                     <Link href="/admin/users?role=admin"><UserCog className="mr-2 h-4 w-4" /> Manage Admin Accounts</Link>
+                 </Button>
+                 <p className="text-xs text-muted-foreground mt-1">Add, remove, or modify users with administrative privileges.</p>
+             </div>
+             <div>
+                <Label htmlFor="ipRestrictions">IP Address Restrictions (CIDR format, one per line)</Label>
+                <Textarea id="ipRestrictions" placeholder="e.g., 192.168.1.0/24 (Coming Soon)" rows={3} disabled />
+                 <p className="text-xs text-muted-foreground mt-1">Limit access to the admin panel from specific IP ranges.</p>
+             </div>
+              <div>
+                <Label>Two-Factor Authentication (2FA)</Label>
+                <Button variant="outline" className="w-full justify-start" disabled>
+                    <ShieldCheck className="mr-2 h-4 w-4"/> Configure 2FA for Admins (Coming Soon)
+                </Button>
+             </div>
         </CardContent>
+         <CardFooter>
+            <Button onClick={() => handleSaveSettings('Security')} disabled={isSaving || isPending || true /* Disable save for now */}>
+                {isSaving || isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Security Settings (Disabled)
+            </Button>
+        </CardFooter>
       </Card>
-
-
     </div>
   );
 }

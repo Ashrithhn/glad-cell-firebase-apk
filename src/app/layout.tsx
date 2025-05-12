@@ -1,17 +1,18 @@
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Import Inter font
+import { Inter } from 'next/font/google'; 
 import './globals.css';
 import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer'; // Import Footer
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/layout/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
+import { AuthProvider } from '@/hooks/use-auth'; 
 import { WelcomeHandler } from '@/components/layout/welcome-handler';
 import { GlobalStyles } from '@/components/layout/global-styles';
-import { MaintenanceBanner } from '@/components/layout/maintenance-banner'; // Import MaintenanceBanner
+import { MaintenanceBanner } from '@/components/layout/maintenance-banner';
+import { PageLoader } from '@/components/layout/page-loader'; // Import PageLoader
 
-// Initialize Inter font with subsets
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -27,23 +28,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('antialiased', inter.className)}> {/* Apply Inter font */}
+      <body className={cn('antialiased', inter.className)}> 
          <ThemeProvider
             attribute="class"
-            defaultTheme="light"
+            defaultTheme="light" // Can be 'system' or 'dark'
             enableSystem
             disableTransitionOnChange
           >
             <AuthProvider>
                 <WelcomeHandler>
                     <GlobalStyles />
+                    {/* <PageLoader /> */} {/* Uncomment to simulate slow network loader */}
                     <div className="flex flex-col min-h-screen">
-                      <MaintenanceBanner /> {/* Add Maintenance Banner here */}
+                      <MaintenanceBanner /> 
                       <Header />
                       <main className="flex-grow container mx-auto py-8 px-4">
                         {children}
                       </main>
-                      {/* Footer can be added here */}
+                      <Footer /> {/* Add Footer here */}
                     </div>
                     <Toaster />
                  </WelcomeHandler>

@@ -10,26 +10,30 @@ import { Separator } from '@/components/ui/separator';
 import {
   User,
   CalendarCheck,
-  MessageCircle, // Keep for WhatsApp
+  MessageCircle, 
   Info,
-  HelpCircle,
+  HelpCircle as HelpCircleIcon, // Renamed to avoid conflict
   Settings,
   LogOut,
   Sun,
   Moon,
-  BarChart, // Added Admin Icon
-  Home, // Added Home Icon
-  Lightbulb, // Added Ideas Icon
-  MessageSquare, // Added Feedback Icon
-  Loader2, // For loading state
-  Link2, // Generic link icon
-  QrCode // Added QrCode for attendance
+  BarChart, 
+  Home, 
+  Lightbulb, 
+  MessageSquare, 
+  Loader2, 
+  Link2, 
+  QrCode,
+  Users as UsersIcon, // For Manage Users
+  Image as ImageIcon, // For Homepage Images
+  FileText, // For general content
+  Contact, // For contact edit
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react'; // Import React hooks
-import { getContent } from '@/services/content'; // Import content service
-import type { SiteLinks } from '@/services/content'; // Import type
-import { useAuth } from '@/hooks/use-auth'; // Keep useAuth for login state etc.
-import { toast } from '@/hooks/use-toast'; // For feedback placeholder
+import React, { useEffect, useState } from 'react'; 
+import { getContent } from '@/services/content'; 
+import type { SiteLinks } from '@/services/content'; 
+import { useAuth } from '@/hooks/use-auth'; 
+import { toast } from '@/hooks/use-toast'; 
 
 interface SidebarContentProps {
   isLoggedIn: boolean;
@@ -52,7 +56,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
         setLinks(result.data as SiteLinks);
       } else {
         console.warn("Could not fetch site links for sidebar:", result.message);
-        setLinks({ whatsappCommunity: '' }); // Default to empty if fetch fails
+        setLinks({ whatsappCommunity: '' }); 
       }
       setLoadingLinks(false);
     }
@@ -61,7 +65,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
 
   const handleLinkClick = () => {
-    closeSheet(); // Close sheet when a link is clicked
+    closeSheet(); 
   };
 
    const handleCombinedLogout = () => {
@@ -70,7 +74,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
    };
 
    const handleFeedbackClick = () => {
-       // TODO: Implement feedback mechanism (e.g., open modal, link to form)
        toast({
            title: "Feedback",
            description: "Feedback feature coming soon! Thanks for your interest.",
@@ -81,25 +84,54 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
    const whatsappLink = links?.whatsappCommunity;
 
+  // Common navigation items
+  const commonNavItems = [
+    { href: "/", label: "Home", Icon: Home },
+    { href: "/ideas", label: "Ideas", Icon: Lightbulb },
+    { href: "/programs", label: "Events", Icon: CalendarCheck },
+    { href: "/about", label: "About Us", Icon: Info },
+    { href: "/contact", label: "Contact & Help", Icon: HelpCircleIcon },
+  ];
+
+  const adminNavItems = [
+    { href: "/admin/dashboard", label: "Admin Dashboard", Icon: BarChart },
+    { href: "/admin/events", label: "Manage Events", Icon: CalendarCheck },
+    { href: "/admin/users", label: "Manage Users", Icon: UsersIcon },
+    { href: "/admin/attendance", label: "Attendance Scanner", Icon: QrCode },
+    { label: "Content Management", isSeparator: true },
+    { href: "/admin/content/about", label: "Edit About Page", Icon: FileText },
+    { href: "/admin/content/contact", label: "Edit Contact Info", Icon: Contact },
+    { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2 },
+    { href: "/admin/content/help", label: "Edit Help/FAQ", Icon: HelpCircleIcon },
+    { href: "/admin/content/homepage-images", label: "Homepage Images", Icon: ImageIcon },
+    { label: "Site Configuration", isSeparator: true },
+    { href: "/admin/dashboard#site-settings", label: "Site Settings", Icon: Settings }, // Link to section in dashboard
+  ];
+
+  const navItemsToRender = isAdmin ? adminNavItems : commonNavItems;
+
+
   return (
     <div className="flex flex-col h-full pt-6">
-      <nav className="flex-grow space-y-2">
-         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Home
-            </Link>
-          </Button>
+      <nav className="flex-grow space-y-1">
+        {navItemsToRender.map((item, index) => {
+          if (item.isSeparator) {
+            return <Separator key={`sep-${index}`} className="my-2" />;
+          }
+          const { Icon, href, label } = item;
+          return (
+            <Button key={href || label} variant="ghost" className="w-full justify-start text-sm" asChild onClick={handleLinkClick}>
+              <Link href={href!}>
+                {Icon && <Icon className="mr-2 h-4 w-4" />}
+                {label}
+              </Link>
+            </Button>
+          );
+        })}
 
-          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/ideas">
-              <Lightbulb className="mr-2 h-4 w-4" />
-              Ideas
-            </Link>
-          </Button>
-
-        {isLoggedIn && !isAdmin && ( // Show profile only for logged-in non-admin users
-          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+        {/* User-specific links (not admin) */}
+        {!isAdmin && isLoggedIn && (
+          <Button variant="ghost" className="w-full justify-start text-sm" asChild onClick={handleLinkClick}>
             <Link href="/profile">
               <User className="mr-2 h-4 w-4" />
               Profile
@@ -107,111 +139,70 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
           </Button>
         )}
 
-        {isAdmin && ( // Show Admin Dashboard link if admin
-          <>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                 <Link href="/admin/dashboard">
-                     <BarChart className="mr-2 h-4 w-4"/> Admin Dashboard
-                 </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                <Link href="/admin/attendance">
-                    <QrCode className="mr-2 h-4 w-4"/> Attendance Scanner
-                </Link>
-            </Button>
-          </>
-        )}
-
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/programs">
-            <CalendarCheck className="mr-2 h-4 w-4" />
-            Events
-          </Link>
-        </Button>
-
-         {/* Dynamic WhatsApp Community Link */}
+        {/* Dynamic WhatsApp Community Link (for all users if available) */}
         {loadingLinks ? (
-             <Button variant="ghost" className="w-full justify-start" disabled>
+             <Button variant="ghost" className="w-full justify-start text-sm" disabled>
                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Link...
              </Button>
         ) : whatsappLink ? (
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
+            <Button variant="ghost" className="w-full justify-start text-sm" asChild onClick={handleLinkClick}>
                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="mr-2 h-4 w-4" />
                   WhatsApp Community
                 </a>
             </Button>
-        ) : null /* Don't render if link is empty or not loaded */}
+        ) : null}
 
-
-         {/* Feedback Button */}
-        <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
+        {/* Feedback Button (for all users) */}
+        <Button variant="ghost" className="w-full justify-start text-sm" onClick={handleFeedbackClick}>
             <MessageSquare className="mr-2 h-4 w-4" />
             Feedback
         </Button>
+        
+        {!isAdmin && <Separator />}
 
+      </nav>
 
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/about">
-            <Info className="mr-2 h-4 w-4" />
-            About Us
-          </Link>
-        </Button>
-
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-          <Link href="/contact">
-            <HelpCircle className="mr-2 h-4 w-4" />
-            Contact & Help
-          </Link>
-        </Button>
-
-        <Separator />
-
-        {/* Settings Section */}
+      {/* Settings and Auth Section */}
+      <div className="mt-auto pb-4 px-2 space-y-2">
         <div className="px-2 py-1">
              <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2">
-                 <Settings className="mr-2 h-4 w-4" /> Settings
+                 <Settings className="mr-2 h-4 w-4" /> Display Settings
              </Label>
             <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
                  <div className="flex items-center space-x-2">
                  {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                 <Label htmlFor="theme-switch-mobile" className="text-sm"> {/* Unique ID for mobile switch */}
+                 <Label htmlFor="theme-switch-mobile" className="text-sm">
                     {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                  </Label>
                  </div>
                 <Switch
-                    id="theme-switch-mobile" // Unique ID
+                    id="theme-switch-mobile" 
                     checked={theme === 'dark'}
                     onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
                     aria-label="Toggle theme"
                 />
             </div>
         </div>
+        <Separator />
 
-         <Separator />
-
-      </nav>
-
-      {/* Logout button at the bottom */}
-      {isLoggedIn && (
-        <div className="mt-auto pb-4 px-2">
+        {isLoggedIn && (
           <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
-        </div>
-      )}
-       {/* Show Login/Register only if not logged in AND no auth error */}
+        )}
        {!isLoggedIn && !authError && (
-           <div className="mt-auto pb-4 px-2 space-y-2">
+           <>
                 <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
                     <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
                  </Button>
                  <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
                      <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
                  </Button>
-           </div>
+           </>
        )}
+       </div>
     </div>
   );
 }

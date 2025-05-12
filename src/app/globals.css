@@ -8,77 +8,99 @@ body {
 
 @layer base {
   :root {
-    /* Light Theme Variables (Modern Blue/Gray with Vibrant Orange Accent) */
-    --background: 210 20% 98%; /* Very light cool gray */
-    --foreground: 210 10% 23%; /* Dark cool gray */
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 210 10% 23%;
+    /* Light Theme Variables (Inspired by modern, clean aesthetics with vibrant accents) */
+    --background: 0 0% 100%; /* Pure White */
+    --foreground: 240 10% 3.9%; /* Almost Black */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
-    --primary: 221 83% 53%; /* Vibrant Blue */
-    --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 210 20% 94%; /* Light cool gray */
-    --secondary-foreground: 210 10% 23%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 210 10% 45%; /* Medium cool gray */
-    --accent: 25 95% 53%; /* Vibrant Orange */
-    --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 72% 51%; /* Red */
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 88%; /* Lighter cool gray Border */
-    --input: 210 20% 88%;
-    --ring: 221 83% 53%; /* Vibrant Blue */
-    --chart-1: 221 70% 60%;
-    --chart-2: 180 60% 55%;
-    --chart-3: 25 80% 60%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 210 20% 96%; /* Slightly off-white for sidebar */
-    --sidebar-foreground: 210 10% 23%;
-    --sidebar-primary: 221 83% 53%; /* Primary blue for sidebar active items */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 95% 90%; /* Lighter Orange for sidebar hover */
-    --sidebar-accent-foreground: 25 95% 30%; /* Darker orange for text on sidebar accent */
-    --sidebar-border: 210 20% 85%;
-    --sidebar-ring: 221 83% 53%;
-    --radius: 0.75rem; /* Slightly larger radius for modern feel */
+    --popover-foreground: 240 10% 3.9%;
+    
+    --primary: 262.1 83.3% 57.8%; /* Vibrant Purple */
+    --primary-foreground: 0 0% 98%; /* Light Gray for text on primary */
+    
+    --secondary: 240 4.8% 95.9%; /* Light Gray */
+    --secondary-foreground: 240 5.9% 10%; /* Dark Gray */
+    
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%; /* Lighter Gray for muted text */
+    
+    --accent: 346.8 77.2% 49.8%; /* Vibrant Pink/Coral */
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 84.2% 60.2%; /* Standard Red */
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 90%; /* Light Gray Border */
+    --input: 240 5.9% 90%;
+    --ring: 262.1 83.3% 57.8%; /* Primary Purple for rings */
+    
+    --chart-1: 262 70% 50%; 
+    --chart-2: 340 80% 55%;
+    --chart-3: 25 85% 55%;
+    --chart-4: 190 75% 45%;
+    --chart-5: 45 90% 50%;
+
+    --radius: 0.5rem; /* Standard radius */
+
+    /* Sidebar Specific Colors - Light Theme */
+    --sidebar-background: 240 4.8% 97.5%; /* Slightly off-white for sidebar */
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-accent: 346.8 77.2% 49.8%; /* Use main accent for sidebar */
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-ring: 262.1 83.3% 57.8%;
   }
 
   .dark {
-    /* Dark Theme Variables (Deep Blue/Gray with Vibrant Orange Accent) */
-    --background: 222 47% 11%; /* Deep dark blue */
-    --foreground: 210 20% 95%; /* Light cool gray text */
-    --card: 222 47% 14%; /* Slightly lighter deep blue */
-    --card-foreground: 210 20% 95%;
-    --popover: 222 47% 10%; /* Darker popover */
-    --popover-foreground: 210 20% 95%;
-    --primary: 217 91% 60%; /* Brighter Blue for dark mode */
-    --primary-foreground: 222 47% 11%; /* Dark text on primary */
-    --secondary: 222 47% 18%; /* Darker gray-blue */
-    --secondary-foreground: 210 20% 95%;
-    --muted: 222 47% 18%;
-    --muted-foreground: 210 10% 60%; /* Lighter gray-blue text */
-    --accent: 25 95% 58%; /* Vibrant Orange */
-    --accent-foreground: 222 47% 11%; /* Dark text on accent */
-    --destructive: 0 63% 51%; /* Vibrant Red */
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 47% 20%; /* Adjusted border */
-    --input: 222 47% 18%; /* Adjusted input */
-    --ring: 217 91% 60%; /* Ring matches primary */
-    --chart-1: 217 80% 70%; /* Brighter chart colors */
-    --chart-2: 180 70% 65%;
-    --chart-3: 25 90% 65%;
-    --chart-4: 280 75% 70%;
-    --chart-5: 340 85% 65%;
-    --sidebar-background: 222 47% 13%; /* Slightly lighter sidebar */
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 25 95% 35%; /* Darker vibrant orange for sidebar accent bg */
-    --sidebar-accent-foreground: 25 95% 95%; /* Light text */
-    --sidebar-border: 222 47% 20%;
-    --sidebar-ring: 217 91% 60%;
-    /* --radius remains the same */
+    /* Dark Theme Variables (Inspired by modern, clean aesthetics with vibrant accents) */
+    --background: 240 10% 3.9%; /* Almost Black */
+    --foreground: 0 0% 98%; /* Light Gray */
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 262.1 83.3% 67.8%; /* Lighter Purple for dark mode */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%; /* Dark Gray */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%; /* Lighter Gray for muted text */
+
+    --accent: 346.8 77.2% 59.8%; /* Lighter Pink/Coral for dark mode */
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%; /* Darker Red */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 262.1 83.3% 67.8%;
+
+    --chart-1: 262 70% 60%;
+    --chart-2: 340 80% 65%;
+    --chart-3: 25 85% 65%;
+    --chart-4: 190 75% 55%;
+    --chart-5: 45 90% 60%;
+    
+    /* Sidebar Specific Colors - Dark Theme */
+    --sidebar-background: 240 3.7% 10.9%; /* Darker sidebar */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 346.8 77.2% 59.8%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-primary: 262.1 83.3% 67.8%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-ring: 262.1 83.3% 67.8%;
   }
 }
 
@@ -104,4 +126,33 @@ body {
     background-size: 16px 16px; */
     /* Or a subtle linear gradient */
     @apply bg-gradient-to-b from-background to-muted/10;
+}
+
+/* Loading animation styles */
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background-color: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  padding: 6px;
+  background: conic-gradient(from 180deg at 50% 50%, hsla(var(--muted-foreground) / 0.2) 0deg, hsl(var(--primary)) 360deg) content-box,
+              linear-gradient(hsl(var(--muted-foreground) / 0.1) 0 0) padding-box,
+              linear-gradient(hsl(var(--muted-foreground) / 0.1) 0 0) border-box;
+  animation: spinner-spin 1s linear infinite;
+}
+
+@keyframes spinner-spin {
+  100% {
+    transform: rotate(1turn);
+  }
 }

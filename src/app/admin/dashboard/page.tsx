@@ -1,10 +1,10 @@
 
-'use client'; // Added 'use client' directive
+'use client'; 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact as ContactIcon, Link2, LogOut, QrCode, Image as ImageIcon, Globe, ShieldCheck } from 'lucide-react'; // Renamed Contact to ContactIcon
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact as ContactIcon, Link2, LogOut, QrCode, Image as ImageIcon, Globe, ShieldCheck, HelpCircleIcon } from 'lucide-react'; 
 import { useAuth } from '@/hooks/use-auth'; 
 import { useRouter } from 'next/navigation'; 
 import { SiteSettingsManager } from '@/components/features/admin/site-settings-manager';
@@ -32,7 +32,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><Activity className="h-6 w-6 text-primary"/> Manage Programs &amp; Events</CardTitle>
-            <CardDescription>Create, view, and manage all campus programs and events.</CardDescription>
+            <CardDescription>Create, view, and manage all campus programs and events, including images.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="default" className="w-full">
@@ -52,7 +52,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><FileText className="h-6 w-6 text-primary"/> Site Content</CardTitle>
-            <CardDescription>Edit text content for "About Us", "Contact", and manage site links.</CardDescription>
+            <CardDescription>Edit text for "About Us", "Contact", "Help/FAQ", and manage site links.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -68,6 +68,11 @@ export default function AdminDashboardPage() {
             <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/links">
                  <Link2 className="mr-2 h-4 w-4"/> Manage Site Links
+               </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/help">
+                 <HelpCircleIcon className="mr-2 h-4 w-4"/> Edit Help/FAQ Page
                </Link>
             </Button>
           </CardContent>
@@ -104,14 +109,14 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Idea Management Card */}
+        {/* Idea Management Card (Still Placeholder) */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
              <CardTitle className="flex items-center gap-3 text-xl"><Lightbulb className="h-6 w-6 text-secondary-foreground"/> Manage Ideas</CardTitle>
-            <CardDescription>Review and manage submitted student ideas.</CardDescription>
+            <CardDescription>Review and manage submitted student ideas. (Feature Coming Soon)</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full">
+            <Button asChild variant="outline" className="w-full" disabled>
                <Link href="/admin/ideas">
                  View Submitted Ideas
                </Link>
@@ -123,7 +128,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><ImageIcon className="h-6 w-6 text-primary"/> Homepage Content</CardTitle>
-            <CardDescription>Manage images and featured content on the homepage.</CardDescription>
+            <CardDescription>Manage images (carousel, section promos) and other featured content on the homepage.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -131,7 +136,7 @@ export default function AdminDashboardPage() {
                  <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Images
                </Link>
             </Button>
-            {/* Add more links here if needed, e.g., for featured event, announcements */}
+            {/* Add more links here e.g., for featured event text, announcements */}
           </CardContent>
         </Card>
 
