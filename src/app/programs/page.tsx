@@ -1,5 +1,5 @@
 
-'use client'; 
+'use client';
 
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,16 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { getEvents } from '@/services/events'; 
-import type { EventData } from '@/services/events'; 
+import { getEvents } from '@/services/events';
+import type { EventData } from '@/services/events';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { format, parseISO, isPast } from 'date-fns'; 
+import { format, parseISO, isPast } from 'date-fns';
 import Image from 'next/image';
 
 
 export default function ProgramsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState<EventData | null>(null); 
+  const [selectedEvent, setSelectedEvent] = React.useState<EventData | null>(null);
   const [events, setEvents] = React.useState<EventData[]>([]);
   const [loadingEvents, setLoadingEvents] = React.useState(true);
   const [eventsError, setEventsError] = React.useState<string | null>(null);
@@ -32,7 +32,7 @@ export default function ProgramsPage() {
     async function loadEvents() {
       setLoadingEvents(true);
       setEventsError(null);
-      const result = await getEvents(); 
+      const result = await getEvents();
       if (result.success && result.events) {
         setEvents(result.events);
       } else {
@@ -47,8 +47,8 @@ export default function ProgramsPage() {
   const isLoggedIn = !authLoading && (!!userId || isAdmin);
 
   const handleParticipateClick = (event: EventData) => {
-     if (isLoggedIn && !isAdmin) { 
-        
+     if (isLoggedIn && !isAdmin) {
+
         if (event.registrationDeadline && isPast(parseISO(event.registrationDeadline as string))) {
             toast({
                 title: "Registration Closed",
@@ -61,7 +61,7 @@ export default function ProgramsPage() {
         const formattedStartDate = event.startDate ? format(parseISO(event.startDate as string), 'PPP') : 'N/A';
         setSelectedEvent({
             ...event,
-            startDate: formattedStartDate, 
+            startDate: formattedStartDate,
         });
         setIsModalOpen(true);
      } else if (isAdmin) {
@@ -79,7 +79,9 @@ export default function ProgramsPage() {
   const formatFee = (feeInPaisa: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
   };
-
+  // Ensure all JavaScript statements above this line are correctly terminated.
+  // Explicit semicolon before return, though usually not strictly necessary for function declarations.
+  ;
   return (
     <div className="space-y-12 max-w-5xl mx-auto px-4">
       <div className="text-center">
@@ -112,11 +114,11 @@ export default function ProgramsPage() {
             {/* Image Section */}
             <div className="w-full md:w-1/3 aspect-video md:aspect-auto bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
               {event.imageUrl ? (
-                <Image 
-                    src={event.imageUrl} 
+                <Image
+                    src={event.imageUrl}
                     alt={`Image for ${event.name}`}
-                    width={400} 
-                    height={225} 
+                    width={400}
+                    height={225}
                     className="object-cover w-full h-full"
                     data-ai-hint="conference team"
                 />
@@ -135,7 +137,7 @@ export default function ProgramsPage() {
                     {event.eventType === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
                     {event.name}
                 </CardTitle>
-                <CardDescription className="pt-1 line-clamp-3"> 
+                <CardDescription className="pt-1 line-clamp-3">
                     {event.description}
                 </CardDescription>
                 </CardHeader>
@@ -180,10 +182,10 @@ export default function ProgramsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6 mt-auto"> {/* mt-auto pushes button to bottom */}
                     {authLoading ? (
-                            <Skeleton className="h-10 w-40" /> 
+                            <Skeleton className="h-10 w-40" />
                     ) : (
-                        <Button 
-                            onClick={() => handleParticipateClick(event)} 
+                        <Button
+                            onClick={() => handleParticipateClick(event)}
                             className="flex-shrink-0 w-full sm:w-auto"
                             disabled={isDeadlinePast && !isAdmin} // Disable if deadline past for non-admins
                         >
@@ -198,7 +200,7 @@ export default function ProgramsPage() {
                 </CardContent>
             </div>
           </Card>
-        )})}
+        )})
       )}
 
       {!loadingEvents && !eventsError && events.length === 0 && (
@@ -212,11 +214,11 @@ export default function ProgramsPage() {
        {selectedEvent && (
          <ParticipationModal
             isOpen={isModalOpen}
-            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}} 
-            eventDetails={{ 
+            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}}
+            eventDetails={{
                 id: selectedEvent.id || 'unknown-event',
                 name: selectedEvent.name,
-                date: selectedEvent.startDate as string, 
+                date: selectedEvent.startDate as string,
                 fee: selectedEvent.fee
             }}
          />
