@@ -21,10 +21,10 @@ import {
   Sun,
   Moon,
   BarChart, 
-  Home, 
   Lightbulb, 
   MessageSquare, 
   Loader2, 
+<<<<<<< HEAD
   Link2, 
 <<<<<<< HEAD
   QrCode, 
@@ -37,12 +37,19 @@ import {
   LogIn as LogInIcon,
   UserPlus
 =======
+=======
+  Link2 as Link2Icon, // Renamed to avoid conflict with Link component
+>>>>>>> 2d08f22 (and remove home button in admin dashboard)
   QrCode,
   Users as UsersIcon, // For Manage Users
   Image as ImageIcon, // For Homepage Images
   FileText, // For general content
+<<<<<<< HEAD
   Contact, // For contact edit
 >>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+=======
+  Contact as ContactIcon, // Renamed to avoid conflict
+>>>>>>> 2d08f22 (and remove home button in admin dashboard)
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -101,7 +108,7 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
 
   // Common navigation items
   const commonNavItems = [
-    { href: "/", label: "Home", Icon: Home },
+    { href: "/", label: "Home", Icon: Lightbulb }, // Using Lightbulb for Home as per original
     { href: "/ideas", label: "Ideas", Icon: Lightbulb },
     { href: "/programs", label: "Events", Icon: CalendarCheck },
     { href: "/about", label: "About Us", Icon: Info },
@@ -115,8 +122,8 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
     { href: "/admin/attendance", label: "Attendance Scanner", Icon: QrCode },
     { label: "Content Management", isSeparator: true },
     { href: "/admin/content/about", label: "Edit About Page", Icon: FileText },
-    { href: "/admin/content/contact", label: "Edit Contact Info", Icon: Contact },
-    { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2 },
+    { href: "/admin/content/contact", label: "Edit Contact Info", Icon: ContactIcon },
+    { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2Icon },
     { href: "/admin/content/help", label: "Edit Help/FAQ", Icon: HelpCircleIcon },
     { href: "/admin/content/homepage-images", label: "Homepage Images", Icon: ImageIcon },
     { label: "Site Configuration", isSeparator: true },
@@ -403,3 +410,4 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
     </div>
   );
 }
+
