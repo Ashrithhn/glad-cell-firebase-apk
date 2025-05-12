@@ -7,7 +7,7 @@ import { supabase, supabaseError } from '@/lib/supabaseClient'; // Import Supaba
 import { logoutUser as serverLogout } from '@/services/auth'; // Server action for logout
 
 // Define a more detailed User type for our context
-interface UserProfile {
+export interface UserProfile {
   id: string; // Supabase uses 'id' for user UID
   email?: string | null;
   name?: string | null;

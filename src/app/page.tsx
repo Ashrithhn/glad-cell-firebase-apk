@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin } from 'lucide-react';
 import { getEvents } from '@/services/events';
-import type { EventData } from '@/services/events';
+import type { EventData } from '@/services/events'; 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
 import NextImage from 'next/image';
@@ -16,8 +16,8 @@ async function loadLatestEvent(): Promise<{ event?: EventData, error?: string }>
     if (result.success && result.events && result.events.length > 0) {
         // Sort events: Handle potential null createdAt values, treat null as older
         const sortedEvents = result.events.sort((a, b) => {
-            const dateA = a.createdAt ? parseISO(a.createdAt as string).getTime() : 0;
-            const dateB = b.createdAt ? parseISO(b.createdAt as string).getTime() : 0;
+            const dateA = a.created_at ? parseISO(a.created_at as string).getTime() : 0;
+            const dateB = b.created_at ? parseISO(b.created_at as string).getTime() : 0;
             return dateB - dateA;
         });
         return { event: sortedEvents[0] };
@@ -79,10 +79,10 @@ export default async function Home() {
              )}
              {!eventError && event ? (
                  <div key={event.id} className='space-y-2'>
-                    {event.imageUrl && (
+                    {event.image_url && ( // Use image_url from Supabase EventData
                       <div className="relative w-full h-40 md:h-48 mb-3 rounded-md overflow-hidden shadow-sm">
                         <NextImage
-                          src={event.imageUrl}
+                          src={event.image_url}
                           alt={event.name || 'Latest Event Image'}
                           layout="fill"
                           objectFit="cover"
@@ -94,8 +94,8 @@ export default async function Home() {
                     <p className="font-medium text-primary text-lg">{event.name}</p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                          <CalendarCheck className="h-4 w-4 flex-shrink-0"/>
-                         {event.startDate && typeof event.startDate === 'string' ? format(parseISO(event.startDate), 'MMM d, yyyy') : 'N/A'}
-                         {event.endDate && typeof event.endDate === 'string' && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate), 'MMM d, yyyy')}` : ''}
+                         {event.start_date && typeof event.start_date === 'string' ? format(parseISO(event.start_date), 'MMM d, yyyy') : 'N/A'}
+                         {event.end_date && typeof event.end_date === 'string' && event.start_date !== event.end_date ? ` - ${format(parseISO(event.end_date), 'MMM d, yyyy')}` : ''}
                      </p>
                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <MapPin className="h-4 w-4 flex-shrink-0" />

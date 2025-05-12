@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { getUserProfile } from '@/services/events'; // Uses Supabase
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; 
 import type { UserProfileSupabase } from '@/services/auth'; // Supabase profile type
+import { supabase as supabaseClient } from '@/lib/supabaseClient'; // Direct import for check
 
 interface ParticipationModalProps {
   isOpen: boolean;
@@ -74,7 +75,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
   React.useEffect(() => {
       const fetchAndPrefillProfile = async () => {
-          if (isOpen && userId && !authLoading && !authError && supabase) { // Check supabase client
+          if (isOpen && userId && !authLoading && !authError && supabaseClient) { 
               setIsFetchingProfile(true);
               try {
                   const profileResult = await getUserProfile(userId); // Fetches from Supabase
@@ -99,7 +100,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
               }
           } else if (!isOpen) {
               form.reset(); 
-          } else if (authError || !supabase) {
+          } else if (authError || !supabaseClient) {
               form.reset(); 
           }
       };
@@ -108,7 +109,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
   }, [isOpen, userId, user, authLoading, authError]); 
 
   async function initiatePayment(values: FormData) {
-     if (authError || !supabase) {
+     if (authError || !supabaseClient) {
          toast({ title: "Error", description: `Cannot proceed: ${authError?.message || 'Supabase client not available'}.`, variant: "destructive" });
          return;
      }
@@ -150,7 +151,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
 
   const handleOpenChange = (open: boolean) => { if (!open) { form.reset(); onClose(); } };
   const formattedFee = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(eventDetails.fee / 100);
-  const isDisabled = authLoading || isFetchingProfile || isSubmitting || !!authError || !supabase; // Add !supabase check
+  const isDisabled = authLoading || isFetchingProfile || isSubmitting || !!authError || !supabaseClient; // Add !supabaseClient check
 
   return (
     <>
@@ -162,7 +163,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
             {isFetchingProfile && <p className="text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Loading profile...</p>}
           </DialogHeader>
 
-          {(authError || !supabase) && (
+          {(authError || !supabaseClient) && (
              <Alert variant="destructive" className="my-4">
                  <AlertCircle className="h-4 w-4" />
                  <AlertTitle>Configuration Error</AlertTitle>
@@ -182,7 +183,7 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
                     <FormField control={form.control} name="registration_number" render={({ field }) => (<FormItem><FormLabel>Reg. Number</FormLabel><FormControl><Input placeholder="USN/Reg No." {...field} suppressHydrationWarning/></FormControl><FormMessage /></FormItem>)} />
                   </div>
                </fieldset>
-              <div className="border-t pt-4 mt-4 space-y-2"><h3 className="text-lg font-semibold flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Payment</h3><p className="text-sm text-muted-foreground">Click below to proceed with {formattedFee} via Cashfree.</p>{(authError || !supabase) && <p className="text-sm text-destructive italic">Payment disabled due to configuration error.</p>}</div>
+              <div className="border-t pt-4 mt-4 space-y-2"><h3 className="text-lg font-semibold flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Payment</h3><p className="text-sm text-muted-foreground">Click below to proceed with {formattedFee} via Cashfree.</p>{(authError || !supabaseClient) && <p className="text-sm text-destructive italic">Payment disabled due to configuration error.</p>}</div>
               <DialogFooter>
                 <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting} suppressHydrationWarning>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isDisabled} suppressHydrationWarning>
@@ -196,6 +197,3 @@ export function ParticipationModal({ isOpen, onClose, eventDetails }: Participat
     </>
   );
 }
-
-// Reference to supabase client to ensure it's bundled if used in useEffect dependencies (though not directly)
-const supabase = import('@/lib/supabaseClient').then(m => m.supabase);

@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, ArrowLeft, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { getAllUsers } from '@/services/users'; // Import the service function to get users
-import type { UserProfileData } from '@/services/users'; // Import the user profile type
+import type { UserProfileSupabase as UserProfileData } from '@/services/users'; // Import the user profile type from Supabase-refactored service
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { UserListClient } from '@/components/features/admin/user-list-client'; // Client component to display list
 
 async function loadUsers(): Promise<{ users?: UserProfileData[], error?: string }> {
     const result = await getAllUsers();
-    if (result.success) {
+    if (result.success && result.users) { // Check for users directly
         return { users: result.users };
     } else {
         return { error: result.message || 'Failed to load users.' };

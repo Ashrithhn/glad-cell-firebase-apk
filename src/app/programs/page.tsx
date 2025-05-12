@@ -62,11 +62,11 @@ export default function ProgramsPage() {
   const handleParticipateClick = (event: EventData) => {
      if (isLoggedIn && !isAdmin) { // Only allow logged-in non-admin users
         // Format dates before passing to modal if needed, or format inside modal
-        const formattedStartDate = event.startDate ? format(parseISO(event.startDate as string), 'PPP') : 'N/A';
+        const formattedStartDate = event.start_date ? format(parseISO(event.start_date as string), 'PPP') : 'N/A';
 
         setSelectedEvent({
             ...event,
-            startDate: formattedStartDate, // Pass formatted date if needed by modal
+            start_date: formattedStartDate, // Pass formatted date if needed by modal
         });
         setIsModalOpen(true);
      } else if (isAdmin) {
@@ -115,10 +115,10 @@ export default function ProgramsPage() {
       {!loadingEvents && !eventsError && events.length > 0 && (
         events.map((event) => (
           <Card key={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-            {event.imageUrl && (
+            {event.image_url && (
               <div className="relative w-full h-56 sm:h-64 md:h-72"> {/* Responsive height */}
                 <NextImage
-                  src={event.imageUrl}
+                  src={event.image_url}
                   alt={event.name || 'Event Image'}
                   layout="fill"
                   objectFit="cover"
@@ -127,9 +127,9 @@ export default function ProgramsPage() {
                 />
               </div>
             )}
-            <CardHeader className={`border-b bg-muted/30 ${event.imageUrl ? 'pt-4' : ''}`}>
+            <CardHeader className={`border-b bg-muted/30 ${event.image_url ? 'pt-4' : ''}`}>
               <CardTitle className="text-2xl text-primary flex items-center gap-2">
-                 {event.eventType === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
+                 {event.event_type === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
                  {event.name}
               </CardTitle>
               <CardDescription className="pt-1 line-clamp-3"> 
@@ -142,8 +142,8 @@ export default function ProgramsPage() {
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <CalendarCheck className="h-4 w-4 text-primary flex-shrink-0" />
                         <span>
-                            {event.startDate ? format(parseISO(event.startDate as string), 'MMM d, yyyy') : 'N/A'}
-                            {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate as string), 'MMM d, yyyy')}`: ''}
+                            {event.start_date ? format(parseISO(event.start_date as string), 'MMM d, yyyy') : 'N/A'}
+                            {event.end_date && event.start_date !== event.end_date ? ` - ${format(parseISO(event.end_date), 'MMM d, yyyy')}`: ''}
                         </span>
                     </div>
 
@@ -157,16 +157,16 @@ export default function ProgramsPage() {
                         <span>{formatFee(event.fee)}</span>
                     </div>
 
-                     {event.registrationDeadline && (
+                     {event.registration_deadline && (
                          <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4 text-destructive flex-shrink-0" />
-                            <span>Register by: {format(parseISO(event.registrationDeadline as string), 'MMM d, yyyy')}</span>
+                            <span>Register by: {format(parseISO(event.registration_deadline as string), 'MMM d, yyyy')}</span>
                         </div>
                      )}
 
                       <div className="flex items-center gap-2 text-muted-foreground">
                           <Users className="h-4 w-4 text-primary flex-shrink-0" />
-                         <span>{event.eventType === 'group' ? `Team (${event.minTeamSize || 'N/A'}-${event.maxTeamSize || 'N/A'} members)` : 'Individual'}</span>
+                         <span>{event.event_type === 'group' ? `Team (${event.min_team_size || 'N/A'}-${event.max_team_size || 'N/A'} members)` : 'Individual'}</span>
                       </div>
                 </div>
 
@@ -221,7 +221,7 @@ export default function ProgramsPage() {
             eventDetails={{ 
                 id: selectedEvent.id || 'unknown-event',
                 name: selectedEvent.name,
-                date: selectedEvent.startDate as string, 
+                date: selectedEvent.start_date as string, // Use start_date from EventData
                 fee: selectedEvent.fee
             }}
          />

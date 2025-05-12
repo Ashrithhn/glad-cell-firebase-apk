@@ -30,7 +30,7 @@ const ideaStatusEnum = z.enum(['Pending', 'Approved', 'Rejected', 'Implemented']
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }).max(150),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }).max(2000),
-  submitterName: z.string().optional(),
+  submitter_name: z.string().optional(), // Changed to snake_case
   department: z.string().optional(),
   tags: z.string().optional().transform(val => val ? val.split(',').map(tag => tag.trim()).filter(tag => tag) : []), // CSV to array
   status: ideaStatusEnum,
@@ -48,7 +48,7 @@ export function AddIdeaForm() {
     defaultValues: {
       title: '',
       description: '',
-      submitterName: '',
+      submitter_name: '', // Changed to snake_case
       department: '',
       tags: [],
       status: 'Pending',
@@ -66,10 +66,10 @@ export function AddIdeaForm() {
 
     try {
       // Construct IdeaData matching the service
-      const ideaPayload: Omit<IdeaData, 'id' | 'createdAt' | 'updatedAt'> = {
+      const ideaPayload: Omit<IdeaData, 'id' | 'created_at' | 'updated_at' | 'submitter_id'> = {
         title: values.title,
         description: values.description,
-        submitterName: values.submitterName || undefined, // Optional
+        submitter_name: values.submitter_name || undefined, // Optional
         department: values.department || undefined, // Optional
         tags: values.tags,
         status: values.status,
@@ -132,7 +132,7 @@ export function AddIdeaForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="submitterName"
+              name="submitter_name" // Changed to snake_case
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Submitter Name (Optional)</FormLabel>

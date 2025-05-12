@@ -27,7 +27,7 @@ export default async function IdeasPage() {
   const mappedIdeas = ideas?.map(idea => ({
     id: idea.id!,
     title: idea.title,
-    submitter: idea.submitterName || 'Admin Submitted', // Fallback submitter name
+    submitter: idea.submitter_name || 'Admin Submitted', // Use submitter_name
     department: idea.department || 'N/A',
     description: idea.description,
     tags: idea.tags || [],
@@ -66,4 +66,3 @@ export default async function IdeasPage() {
     </div>
   );
 }
-

@@ -9,7 +9,7 @@ const EVENTS_BUCKET = 'event-images'; // Define your Supabase Storage bucket nam
 
 // Input type for adding an event, dates are ISO strings, fee in Paisa.
 // imageDataUri is for uploading image.
-interface AddEventInput {
+export interface AddEventInput { // Renamed to avoid conflict with Supabase types if any
   name: string;
   description: string;
   venue: string;

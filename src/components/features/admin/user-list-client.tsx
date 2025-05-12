@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import type { UserProfileData } from '@/services/users';
+import type { UserProfileSupabase as UserProfileData } from '@/services/users'; // Changed type import
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Trash2, Loader2, Mail, Building, Hash } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ interface UserListClientProps {
 }
 
 export function UserListClient({ users }: UserListClientProps) {
-  const [isProcessing, setIsProcessing] = React.useState<string | null>(null); // Store UID of user being processed
+  const [isProcessing, setIsProcessing] = React.useState<string | null>(null); // Store user ID (string for Supabase)
   const router = useRouter();
 
   const handleViewDetails = (userId: string) => {
@@ -88,10 +88,10 @@ export function UserListClient({ users }: UserListClientProps) {
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.uid}>
+                <TableRow key={user.id}> {/* Changed from user.uid to user.id for Supabase */}
                   <TableCell>
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.photoURL || undefined} alt={user.name || 'User avatar'} />
+                      <AvatarImage src={user.photo_url || undefined} alt={user.name || 'User avatar'} />
                       <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
                     </Avatar>
                   </TableCell>
@@ -108,24 +108,24 @@ export function UserListClient({ users }: UserListClientProps) {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                      <div className="flex items-center gap-1">
-                        <Hash className="h-3 w-3 text-muted-foreground"/> {user.registrationNumber || 'N/A'}
+                        <Hash className="h-3 w-3 text-muted-foreground"/> {user.registration_number || 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
-                    <Badge variant={user.authProvider === 'google.com' ? 'default' : 'secondary'}>
-                        {user.authProvider || 'Email'}
+                    <Badge variant={user.auth_provider === 'google' ? 'default' : 'secondary'}> {/* Adjusted provider name */}
+                        {user.auth_provider || 'email'} {/* Adjusted default value */}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="icon" onClick={() => handleViewDetails(user.uid)} title="View Details" disabled={isProcessing === user.uid}>
+                      <Button variant="outline" size="icon" onClick={() => handleViewDetails(user.id!)} title="View Details" disabled={isProcessing === user.id}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleEditUser(user.uid)} title="Edit User" disabled={isProcessing === user.uid}>
+                      <Button variant="outline" size="icon" onClick={() => handleEditUser(user.id!)} title="Edit User" disabled={isProcessing === user.id}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDeleteUser(user.uid, user.name)} title="Delete User" disabled={isProcessing === user.uid}>
-                        {isProcessing === user.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      <Button variant="destructive" size="icon" onClick={() => handleDeleteUser(user.id!, user.name)} title="Delete User" disabled={isProcessing === user.id}>
+                        {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </div>
                   </TableCell>

@@ -70,7 +70,7 @@ export function RegistrationForm() {
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: result.message || 'Your account has been created. Please check your email for verification.',
+          description: result.message || 'Your account has been created. Please check your email to verify your account.',
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });

@@ -31,7 +31,7 @@ const ideaStatusEnum = z.enum(['Pending', 'Approved', 'Rejected', 'Implemented']
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }).max(150),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }).max(2000),
-  submitterName: z.string().optional(),
+  submitter_name: z.string().optional(), // Changed to snake_case
   department: z.string().optional(),
   tags: z.string().optional().transform(val => val ? val.split(',').map(tag => tag.trim()).filter(tag => tag) : []),
   status: ideaStatusEnum,
@@ -53,7 +53,7 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
     defaultValues: {
       title: currentIdea.title || '',
       description: currentIdea.description || '',
-      submitterName: currentIdea.submitterName || '',
+      submitter_name: currentIdea.submitter_name || '', // Changed to snake_case
       department: currentIdea.department || '',
       tags: currentIdea.tags || [],
       status: currentIdea.status || 'Pending',
@@ -74,10 +74,10 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
     }
 
     try {
-      const ideaPayload: Partial<Omit<IdeaData, 'id' | 'createdAt'>> = {
+      const ideaPayload: Partial<Omit<IdeaData, 'id' | 'created_at' | 'submitter_id'>> = {
         title: values.title,
         description: values.description,
-        submitterName: values.submitterName || undefined,
+        submitter_name: values.submitter_name || undefined, // Changed to snake_case
         department: values.department || undefined,
         tags: values.tags,
         status: values.status,
@@ -139,12 +139,12 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="submitterName"
+              name="submitter_name" // Changed to snake_case
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Submitter Name (Optional)</FormLabel>
                   <FormControl><Input placeholder="Name of the person who submitted the idea" {...field} /></FormControl>
-                  <FormDescription>If submitted by a specific student or admin themselves.</FormDescription>
+                  <FormDescription>If submitted by a specific student or admin themselves.</FormMessage>
                   <FormMessage />
                 </FormItem>
               )}

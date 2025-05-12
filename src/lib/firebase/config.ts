@@ -3,10 +3,12 @@ import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'fi
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
-// --- Firebase Configuration ---
-// DEPRECATED: This project is migrating to Supabase.
-// This configuration is kept temporarily for reference or if some parts still use Firebase.
-// Ensure all Firebase related code is refactored or removed.
+// --- Firebase Configuration (DEPRECATED) ---
+// This project has migrated to Supabase. This Firebase configuration is no longer actively used
+// and is kept for historical reference or if a specific, isolated Firebase feature remains.
+// New development should use Supabase.
+
+console.log("--- Firebase Config Loading (DEPRECATED - Project Migrated to Supabase) ---");
 
 const firebaseConfig: FirebaseOptions = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,51 +25,44 @@ let authInstance: Auth | undefined;
 let dbInstance: Firestore | undefined;
 let initializationError: Error | null = null;
 
-console.log("--- Firebase Config Loading (DEPRECATED - Migrating to Supabase) ---");
-
 const requiredConfigKeys: (keyof FirebaseOptions)[] = [
-    'apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId',
+    'apiKey', 'authDomain', 'projectId', // Minimal check for basic functionality if still used
 ];
-
 const missingKeys = requiredConfigKeys.filter(key => !firebaseConfig[key]);
 
 if (missingKeys.length > 0) {
-    const errorMessage = `Firebase configuration is incomplete. Missing environment variables: ${missingKeys.map(key => `NEXT_PUBLIC_FIREBASE_${String(key).toUpperCase()}`).join(', ')}. This configuration is deprecated.`;
+    const errorMessage = `Firebase configuration is incomplete for DEPRECATED setup. Missing: ${missingKeys.map(key => `NEXT_PUBLIC_FIREBASE_${String(key).toUpperCase()}`).join(', ')}. This may not be an issue if Firebase is fully unused.`;
     initializationError = new Error(errorMessage);
-    console.error("-----------------------------------------------------");
-    console.error("🔴 Firebase Config Error (DEPRECATED): Required environment variables are missing!");
-    missingKeys.forEach(key => {
-        const envVarName = `NEXT_PUBLIC_FIREBASE_${String(key).toUpperCase()}`;
-        console.error(`🔴 Missing Variable: ${envVarName}`);
-    });
-    console.error("🔴 Ensure these are set if Firebase is still partially used, or remove Firebase dependencies if fully migrated to Supabase.");
-    console.error("-----------------------------------------------------");
+    console.warn(`🟠 ${errorMessage}`);
 } else {
-    console.log("✅ Firebase Config (DEPRECATED): All required NEXT_PUBLIC_ environment variables for Firebase seem to be present.");
+    console.log("✅ Firebase Config (DEPRECATED): Minimal required NEXT_PUBLIC_ environment variables for Firebase are present (if it were still in use).");
 }
 
-if (!initializationError) {
+if (!initializationError && firebaseConfig.apiKey && firebaseConfig.projectId) {
   try {
-    console.log("[Firebase (DEPRECATED)] Attempting initialization...");
+    console.log("[Firebase (DEPRECATED)] Attempting initialization (if config present)...");
     if (getApps().length === 0) {
       app = initializeApp(firebaseConfig);
-      console.log("[Firebase (DEPRECATED)] ✅ Initialized new Firebase app.");
+      console.log("[Firebase (DEPRECATED)] ✅ Initialized new Firebase app (if config valid).");
     } else {
       app = getApp();
-      console.log("[Firebase (DEPRECATED)] ✅ Using existing Firebase app.");
+      console.log("[Firebase (DEPRECATED)] ✅ Using existing Firebase app (if config valid).");
     }
     authInstance = getAuth(app);
     dbInstance = getFirestore(app);
-    console.log("[Firebase (DEPRECATED)] ✅ Firebase services obtained successfully.");
+    console.log("[Firebase (DEPRECATED)] ✅ Firebase services obtained (if config valid).");
   } catch (error) {
     initializationError = error instanceof Error ? error : new Error(String(error));
     app = undefined; authInstance = undefined; dbInstance = undefined;
-    console.error(`🔴 [Firebase (DEPRECATED)] Initialization failed: ${initializationError.message}`);
+    console.error(`🔴 [Firebase (DEPRECATED)] Initialization failed (if config was present): ${initializationError.message}`);
   }
 } else {
-     console.warn(`🟠 Skipping Firebase initialization (DEPRECATED) due to missing configuration: ${initializationError.message}`);
+     console.warn(`🟠 Skipping Firebase initialization (DEPRECATED) due to missing/incomplete configuration or previous error: ${initializationError?.message || 'Key/ProjectID missing'}`);
+     initializationError = initializationError || new Error("Firebase config incomplete, not initializing (DEPRECATED).");
+     app = undefined; authInstance = undefined; dbInstance = undefined;
 }
 
 console.log("--- Firebase Config Finished (DEPRECATED) ---");
 
+// Export potentially undefined instances. Consumers must check for their existence.
 export { app, authInstance as auth, dbInstance as db, initializationError };
