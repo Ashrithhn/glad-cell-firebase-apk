@@ -1,13 +1,14 @@
 
-'use client'; // Added to make this a Client Component
+'use client'; // Added 'use client' directive
 
-// Placeholder Admin Dashboard Page
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact, Link2, LogOut, QrCode, ShieldCheck, ScrollText, Image as ImageIcon } from 'lucide-react'; 
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact as ContactIcon, Link2, LogOut, QrCode, Image as ImageIcon, Globe, ShieldCheck, ScrollText } from 'lucide-react'; // Renamed Contact to ContactIcon, added ScrollText
 import { useAuth } from '@/hooks/use-auth'; 
 import { useRouter } from 'next/navigation'; 
+import { SiteSettingsManager } from '@/components/features/admin/site-settings-manager';
+
 
 export default function AdminDashboardPage() {
   const { logout } = useAuth(); 
@@ -51,7 +52,7 @@ export default function AdminDashboardPage() {
         <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><FileText className="h-6 w-6 text-primary"/> Site Content</CardTitle>
-            <CardDescription>Edit text content for "About Us", "Contact", legal pages, and manage site links & homepage carousel images.</CardDescription>
+            <CardDescription>Edit text content for "About Us", "Contact", legal pages, and manage site links.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -61,7 +62,7 @@ export default function AdminDashboardPage() {
             </Button>
              <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/contact">
-                 <Contact className="mr-2 h-4 w-4"/> Edit Contact Info
+                 <ContactIcon className="mr-2 h-4 w-4"/> Edit Contact Info
                </Link>
             </Button>
              <Button asChild variant="outline" className="w-full justify-start text-left">
@@ -77,11 +78,6 @@ export default function AdminDashboardPage() {
             <Button asChild variant="outline" className="w-full justify-start text-left">
                <Link href="/admin/content/links">
                  <Link2 className="mr-2 h-4 w-4"/> Manage Site Links
-               </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full justify-start text-left">
-               <Link href="/admin/content/homepage-images">
-                 <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Carousel
                </Link>
             </Button>
           </CardContent>
@@ -102,8 +98,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-
-         {/* User Management Card - Now Enabled */}
+         {/* User Management Card */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl"><Users className="h-6 w-6 text-secondary-foreground"/> Manage Users</CardTitle>
@@ -118,7 +113,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Idea Management Card - Now Enabled */}
+        {/* Idea Management Card */}
          <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
           <CardHeader>
              <CardTitle className="flex items-center gap-3 text-xl"><Lightbulb className="h-6 w-6 text-secondary-foreground"/> Manage Ideas</CardTitle>
@@ -132,19 +127,32 @@ export default function AdminDashboardPage() {
             </Button>
           </CardContent>
         </Card>
-
-        {/* Site Settings Card (Optional) - Now Enabled */}
-        <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50">
+        
+        {/* Homepage Content Management */}
+        <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-primary/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-xl"><Settings className="h-6 w-6 text-secondary-foreground"/> Site Settings</CardTitle>
-            <CardDescription>Manage general site configurations. (Placeholder)</CardDescription>
+            <CardTitle className="flex items-center gap-3 text-xl"><ImageIcon className="h-6 w-6 text-primary"/> Homepage Content</CardTitle>
+            <CardDescription>Manage images and featured content on the homepage.</CardDescription>
           </CardHeader>
-          <CardContent>
-             <Button asChild variant="outline" className="w-full">
-               <Link href="/admin/settings">
-                 Configure Settings
+          <CardContent className="space-y-3">
+            <Button asChild variant="outline" className="w-full justify-start text-left">
+               <Link href="/admin/content/homepage-images">
+                 <ImageIcon className="mr-2 h-4 w-4"/> Manage Homepage Images
                </Link>
             </Button>
+            {/* Add more links here if needed, e.g., for featured event, announcements */}
+          </CardContent>
+        </Card>
+
+
+        {/* Site Settings Card (Encompassing Maintenance Mode) */}
+        <Card className="hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out rounded-lg overflow-hidden border-secondary/50 col-span-1 sm:col-span-2 lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl"><Settings className="h-6 w-6 text-secondary-foreground"/> Site Settings</CardTitle>
+            <CardDescription>Manage general site configurations, including maintenance mode, theme, and more.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <SiteSettingsManager />
           </CardContent>
         </Card>
 
