@@ -28,21 +28,21 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
         NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 
-        # Firebase Configuration (Get these from your Firebase project settings)
+        # Firebase Configuration (DEPRECATED - Kept for reference if any part still uses it)
         # ⚠️ IMPORTANT: These variables MUST start with NEXT_PUBLIC_ to be accessible in the browser!
-        NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
-        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
-        NEXT_PUBLIC_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
-        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
-        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
-        NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
-        NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=YOUR_FIREBASE_MEASUREMENT_ID # Optional
+        NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID_IF_STILL_USED
+        NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=YOUR_FIREBASE_MEASUREMENT_ID_IF_STILL_USED # Optional
 
-        # Firebase Realtime Database URL (Optional - ONLY for Server-Side use if you intend to use Realtime Database)
+        # Firebase Realtime Database URL (DEPRECATED - ONLY for Server-Side use if you intend to use Realtime Database)
         # Get this from Firebase Console > Realtime Database > Data tab
         # DO NOT prefix with NEXT_PUBLIC_ if only used server-side.
         # This project primarily uses Firestore, so this might not be strictly needed.
-        FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL
+        FIREBASE_REALTIME_DB_URL=YOUR_FIREBASE_REALTIME_DATABASE_URL_IF_STILL_USED
 
         # Cashfree Configuration (Get these from your Cashfree dashboard)
         # These are used server-side, no NEXT_PUBLIC_ prefix needed.
@@ -55,61 +55,186 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         # GOOGLE_GENAI_API_KEY=YOUR_GOOGLE_AI_API_KEY
         ```
 
-    **🔴 CRITICAL: Firebase `auth/invalid-api-key` or Missing Key Errors 🔴**
+    **🔴 CRITICAL: Supabase `AuthApiError` or Missing Key Errors 🔴**
 
-    If you encounter errors like `FirebaseError: Firebase: Error (auth/invalid-api-key)` or console messages indicating missing Firebase config (API Key, Project ID, etc.), it almost always means your environment variables are not correctly set up or accessed.
+    If you encounter errors related to Supabase (e.g., "AuthApiError: invalid JWT", "Failed to fetch"), it almost always means your Supabase environment variables are not correctly set up or accessed.
 
     **Troubleshooting Steps:**
-    *   **Verify `.env.local`:** Ensure the `.env.local` file exists in the project's **root directory** (the same level as `package.json`).
-    *   **Check Variable Names:** Confirm the Firebase variable names start **exactly** with `NEXT_PUBLIC_` (e.g., `NEXT_PUBLIC_FIREBASE_API_KEY`). Variables without this prefix are **not** available in the browser/client-side code where Firebase is initialized.
-    *   **Check Key Values:** Double-check that the API key, Project ID, etc., copied from your Firebase project settings are correct. Make sure there are no extra spaces or characters.
-    *   **⭐️ RESTART THE SERVER ⭐️:** **YOU ABSOLUTELY MUST RESTART** your Next.js development server (`npm run dev`) after creating or modifying the `.env.local` file. Next.js only loads environment variables at build/startup time. **This is the MOST common reason for these errors!**
-    *   **Server Access (Server Actions):** For server-side code (like Server Actions in `src/services`), ensure the server process itself can read the environment variables. In development (`npm run dev`), `.env.local` usually works if you restart the server. For deployments, consult your hosting provider's documentation on setting environment variables.
+    *   **Verify `.env.local`:** Ensure the `.env.local` file exists in the project's **root directory**.
+    *   **Check Variable Names:** Confirm the Supabase variable names are **exactly** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+    *   **Check Key Values:** Double-check that the URL and Anon Key copied from your Supabase project settings are correct.
+    *   **⭐️ RESTART THE SERVER ⭐️:** **YOU ABSOLUTELY MUST RESTART** your Next.js development server (`npm run dev`) after creating or modifying the `.env.local` file. Next.js only loads environment variables at build/startup time.
 
-    **🔴 IMPORTANT: Firebase `auth/configuration-not-found` Error 🔴**
+3.  **Set Up Supabase Database Schema:**
 
-    If you encounter a `FirebaseError: Firebase: Error (auth/configuration-not-found)` when trying to **register or log in with Email/Password**, it means you haven't enabled the Email/Password sign-in method in your Firebase project.
+    The application requires several tables in your Supabase database. Go to your Supabase project dashboard, navigate to the **SQL Editor**, and run the following SQL commands one by one or as a batch.
 
-    **How to Fix:**
-    1.  Go to the [Firebase Console](https://console.firebase.google.com/).
-    2.  Select your project.
-    3.  In the left-hand menu, navigate to **Authentication**.
-    4.  Click the **Sign-in method** tab.
-    5.  Find **Email/Password** in the list of providers.
-    6.  Click the pencil icon (Edit) and **enable** the provider.
-    7.  Click **Save**.
-    8.  **Restart your Next.js development server (`npm run dev`)** if it was running.
+    **Important:**
+    *   Make sure the `uuid-ossp` extension is enabled. You can enable it by running `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";` in the SQL Editor.
+    *   By default, new tables in Supabase have Row Level Security (RLS) **disabled**. For initial development, this is often fine. However, **before going to production, you MUST enable RLS and define appropriate policies** for each table to secure your data.
 
-    **🔴 IMPORTANT: Firebase `auth/unauthorized-domain` Error (Especially with Google Sign-In) 🔴**
+    ```sql
+    -- Enable UUID generation if not already enabled
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-    If you encounter a `FirebaseError: Firebase: Error (auth/unauthorized-domain)` when trying to use a sign-in provider (commonly Google Sign-In), it means the domain your application is running on (e.g., `localhost`, or your deployed domain like `your-app.vercel.app`) has not been added to the list of authorized domains in your Firebase project.
+    -- Users Table (public.users)
+    -- Stores additional profile information, linked to auth.users
+    CREATE TABLE IF NOT EXISTS public.users (
+        id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+        email text UNIQUE,
+        name text,
+        branch text,
+        semester integer,
+        registration_number text UNIQUE,
+        college_name text,
+        city text,
+        pincode text,
+        photo_url text,
+        auth_provider text,
+        created_at timestamptz DEFAULT now() NOT NULL,
+        updated_at timestamptz DEFAULT now() NOT NULL
+    );
+    -- Optional: Trigger to update 'updated_at' timestamp
+    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
 
-    **How to Fix:**
-    1.  Go to the [Firebase Console](https://console.firebase.google.com/).
-    2.  Select your project.
-    3.  In the left-hand menu, navigate to **Authentication**.
-    4.  Click the **Sign-in method** tab.
-    5.  Scroll down to the **Authorized domains** section.
-    6.  Click the **Add domain** button.
-    7.  Enter the domain your application is currently running on.
-        *   For local development, this is usually `localhost`. **Make sure `localhost` is added if you are testing locally.**
-        *   For deployed applications, use your actual domain (e.g., `your-app-name.vercel.app`, `www.yourdomain.com`).
-    8.  Click **Add**.
-    9.  It might take a few minutes for the changes to propagate. You might also need to clear your browser cache or restart your development server.
+    CREATE TRIGGER set_users_updated_at
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp();
 
-3.  **Run the Development Server:**
+    -- Events Table (public.events)
+    CREATE TABLE IF NOT EXISTS public.events (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name text NOT NULL,
+        description text NOT NULL,
+        venue text NOT NULL,
+        rules text,
+        start_date timestamptz NOT NULL,
+        end_date timestamptz NOT NULL,
+        registration_deadline timestamptz,
+        event_type text CHECK (event_type IN ('individual', 'group')) NOT NULL,
+        min_team_size integer,
+        max_team_size integer,
+        fee integer DEFAULT 0 NOT NULL, -- Fee in Paisa
+        image_url text,
+        image_storage_path text, -- To store the path in Supabase Storage
+        created_at timestamptz DEFAULT now() NOT NULL
+    );
+
+    -- Participations Table (public.participations)
+    -- Tracks user participation in events
+    CREATE TABLE IF NOT EXISTS public.participations (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+        event_id uuid NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+        event_name text NOT NULL,
+        user_name text NOT NULL,
+        user_email text NOT NULL,
+        user_phone text NOT NULL,
+        user_branch text NOT NULL,
+        user_semester integer NOT NULL,
+        user_registration_number text NOT NULL,
+        payment_details jsonb, -- Store payment gateway response (order_id, payment_id, etc.)
+        qr_code_data_uri text, -- Store the base64 QR code image
+        participated_at timestamptz DEFAULT now() NOT NULL,
+        attended_at timestamptz, -- Timestamp for actual attendance
+        CONSTRAINT unique_user_event_participation UNIQUE (user_id, event_id)
+    );
+
+    -- Ideas Table (public.ideas)
+    CREATE TABLE IF NOT EXISTS public.ideas (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        title text NOT NULL,
+        description text NOT NULL,
+        submitter_name text,
+        submitter_id uuid REFERENCES public.users(id) ON DELETE SET NULL, -- Optional link to user
+        department text,
+        tags text[], -- Array of tags
+        status text CHECK (status IN ('Pending', 'Approved', 'Rejected', 'Implemented')) NOT NULL DEFAULT 'Pending',
+        created_at timestamptz DEFAULT now() NOT NULL,
+        updated_at timestamptz DEFAULT now() NOT NULL
+    );
+    -- Trigger for ideas updated_at
+    CREATE TRIGGER set_ideas_updated_at
+    BEFORE UPDATE ON public.ideas
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp();
+
+
+    -- Site Content Table (public.site_content)
+    -- For editable content like About Us, Contact Info, Links
+    CREATE TABLE IF NOT EXISTS public.site_content (
+        id text PRIMARY KEY, -- e.g., 'about', 'contact', 'links', 'privacy-policy', 'terms-and-conditions'
+        content_data jsonb NOT NULL,
+        updated_at timestamptz DEFAULT now() NOT NULL
+    );
+    -- Trigger for site_content updated_at
+    CREATE TRIGGER set_site_content_updated_at
+    BEFORE UPDATE ON public.site_content
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp();
+
+    -- Homepage Images Table (public.homepage_images)
+    -- For managing images on the homepage carousel or sections
+    CREATE TABLE IF NOT EXISTS public.homepage_images (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        image_url text NOT NULL,
+        alt_text text NOT NULL,
+        display_order integer DEFAULT 0 NOT NULL,
+        is_active boolean DEFAULT true NOT NULL,
+        storage_path text NOT NULL, -- Path in Supabase Storage
+        created_at timestamptz DEFAULT now() NOT NULL
+    );
+
+    -- Site Configuration Table (public.site_configuration)
+    -- For global site settings like maintenance mode
+    CREATE TABLE IF NOT EXISTS public.site_configuration (
+        id text PRIMARY KEY, -- e.g., 'mainSettings'
+        settings_data jsonb NOT NULL,
+        last_updated_at timestamptz DEFAULT now() NOT NULL
+    );
+    -- Trigger for site_configuration last_updated_at
+    CREATE TRIGGER set_site_configuration_updated_at
+    BEFORE UPDATE ON public.site_configuration
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_timestamp(); -- Reusing the same trigger function
+
+    -- Note: After creating tables, you might need to set up Supabase Storage buckets:
+    -- 'event-images' (for event posters)
+    -- 'profile-pictures' (for user avatars)
+    -- 'homepage-images' (for homepage slider/section images)
+    -- Ensure appropriate RLS policies and public access settings for these buckets.
+    -- For example, 'profile-pictures' might need to be public for avatars to display easily.
+    ```
+
+4.  **Set Up Supabase Storage Buckets:**
+
+    The application uses Supabase Storage for images. You need to create the following buckets in your Supabase project dashboard (Storage > Buckets):
+    *   `event-images`: For event poster images.
+    *   `profile-pictures`: For user profile avatars.
+    *   `homepage-images`: For images used on the homepage (e.g., carousel).
+
+    **Important:** For each bucket, configure its access policies. For example, `profile-pictures` and `homepage-images` likely need to be **public** for images to be displayed on the website. `event-images` might also need to be public. Review Supabase documentation on Storage and RLS for buckets.
+
+5.  **Run the Development Server:**
     ```bash
     npm run dev
     ```
-    Check the terminal output carefully for any Firebase or Supabase configuration errors logged during startup.
+    Check the terminal output carefully for any Supabase or Firebase configuration errors logged during startup.
 
-4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the browser's developer console (F12) and the terminal where you ran `npm run dev` for any error messages, especially Firebase/Supabase configuration errors.
+6.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the browser's developer console (F12) and the terminal where you ran `npm run dev` for any error messages, especially Supabase configuration errors or database connection issues.
 
 ## Project Structure
 
 *   `src/app/`: Contains the application pages using the Next.js App Router.
 *   `src/components/`: Shared UI components ( Shadcn UI, layout, features).
-*   `src/lib/`: Utility functions and Firebase/Supabase configuration.
+*   `src/lib/`: Utility functions and Supabase/Firebase configuration.
 *   `src/hooks/`: Custom React hooks (e.g., `useAuth`, `useToast`).
 *   `src/services/`: Server Actions for backend logic (authentication, payments, database interactions).
 *   `src/ai/`: (Optional) Genkit configuration and flows for AI features.
@@ -142,12 +267,37 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
 ## Troubleshooting
 
-### Firestore Index Required Error (Firebase Specific - Less relevant with Supabase)
+### Supabase: "relation public.X does not exist"
 
-If you were using Firebase Firestore and saw an error like:
-`FirebaseError: The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/YOUR_PROJECT_ID/firestore/indexes?create_composite=...`
-This means a query needs a composite index.
+If you see an error like `relation "public.your_table_name" does not exist`, it means the required table (`your_table_name`) has not been created in your Supabase database.
+**Solution:**
+1.  Go to your Supabase project dashboard.
+2.  Navigate to the **SQL Editor**.
+3.  Copy the SQL commands from the "Set Up Supabase Database Schema" section above for the missing table (and any other tables you haven't created) and run them.
+4.  Ensure the `uuid-ossp` extension is enabled by running `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";` if you haven't already.
 
-**For Supabase (PostgreSQL):**
-Database indexing is handled differently. If you encounter performance issues with Supabase queries, you'll need to add database indexes directly to your PostgreSQL tables via the Supabase dashboard (SQL Editor or Table Editor) or through migrations. Common fields to index include foreign keys, fields used in `WHERE` clauses frequently, and fields used for `ORDER BY`.
+### Supabase: RLS (Row Level Security) Issues
 
+If you can't insert or select data even if the table exists, RLS might be enabled without proper policies.
+**Solution:**
+1.  Go to Supabase Dashboard > Authentication > Policies.
+2.  For each table, either:
+    *   **Disable RLS** (for development only, NOT recommended for production).
+    *   **Create policies** that allow the necessary operations (SELECT, INSERT, UPDATE, DELETE) for the appropriate users/roles (e.g., `authenticated` users can insert into `participations`, `anon` users can select from `events`). Example for allowing all authenticated users to read events:
+        ```sql
+        CREATE POLICY "Allow authenticated read access to events"
+        ON public.events
+        FOR SELECT
+        TO authenticated
+        USING (true);
+        ```
+        Consult Supabase RLS documentation for detailed policy creation.
+
+### Firebase (DEPRECATED) Errors
+
+This project has primarily migrated to Supabase. If you encounter Firebase errors:
+*   `FirebaseError: Firebase: Error (auth/invalid-api-key)` or missing config errors: This usually means your `.env.local` file is missing Firebase variables or they are incorrect. **Firebase is deprecated for this project; focus on Supabase setup.**
+*   `FirebaseError: Firebase: Error (auth/configuration-not-found)` (Email/Password sign-in): Firebase Email/Password provider not enabled.
+*   `FirebaseError: Firebase: Error (auth/unauthorized-domain)` (Google Sign-In): `localhost` or your deployed domain not in Firebase authorized domains.
+
+**For all `.env.local` changes, remember to restart your Next.js development server (`npm run dev`).**
