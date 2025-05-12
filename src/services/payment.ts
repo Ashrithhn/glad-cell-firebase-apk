@@ -2,96 +2,174 @@
 'use server';
 
 /**
- * @fileOverview Service functions for handling Razorpay payment integration.
+ * @fileOverview Service functions for handling Cashfree payment integration.
  */
 
-import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { participateInEvent } from './events'; // Import the existing participation function
-import QRCode from 'qrcode'; // Import qrcode library
+import { participateInEvent } from './events';
+import QRCode from 'qrcode';
+import type { Timestamp } from 'firebase/firestore';
 
-// Ensure environment variables are set
-const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
-const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+// Ensure environment variables are set for Cashfree
+const cashfreeAppId = process.env.CASHFREE_APP_ID;
+const cashfreeSecretKey = process.env.CASHFREE_SECRET_KEY;
+const cashfreeApiBaseUrl = process.env.CASHFREE_API_BASE_URL || 'https://api.cashfree.com/pg'; // Or 'https://sandbox.cashfree.com/pg' for sandbox
+const appBaseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || 'http://localhost:9002';
 
-let razorpay: Razorpay | null = null;
-let razorpayInitError: string | null = null;
 
-if (!razorpayKeyId || !razorpayKeySecret) {
-  razorpayInitError = "Razorpay API keys are not configured in environment variables.";
-  console.error(`[Server Action Init Error] payment.ts: ${razorpayInitError}`);
+let cashfreeInitError: string | null = null;
+
+if (!cashfreeAppId || !cashfreeSecretKey) {
+  cashfreeInitError = "Cashfree App ID or Secret Key is not configured in environment variables.";
+  console.error(`[Server Action Init Error] payment.ts: ${cashfreeInitError}`);
 } else {
-  try {
-    // Initialize Razorpay instance
-    razorpay = new Razorpay({
-      key_id: razorpayKeyId,
-      key_secret: razorpayKeySecret,
-    });
-    console.log('[Server Action Init] payment.ts: Razorpay initialized successfully.');
-  } catch (error: any) {
-    razorpayInitError = `Failed to initialize Razorpay: ${error.message}`;
-    console.error(`[Server Action Init Error] payment.ts: ${razorpayInitError}`);
-    razorpay = null; // Ensure instance is null on error
-  }
+  console.log('[Server Action Init] payment.ts: Cashfree credentials seem to be present.');
 }
 
-/**
- * Creates a Razorpay order.
- * @param orderData - Data required to create the order.
- * @returns {Promise<{success: boolean, orderId?: string, amount?: number, currency?: string, message?: string}>}
- */
-export async function createRazorpayOrderAction(orderData: {
-  amount: number; // Amount in the smallest currency unit (e.g., paisa for INR)
-  currency: string;
-  receipt: string;
-}): Promise<{ success: boolean; orderId?: string; amount?: number; currency?: string; message?: string }> {
-  console.log('[Server Action] createRazorpayOrderAction invoked.');
+interface CreateOrderResponse {
+  cf_order_id: number;
+  order_id: string;
+  entity: string;
+  order_currency: string;
+  order_amount: number;
+  order_status: string;
+  order_expiry_time: string;
+  customer_details: {
+    customer_id: string;
+    customer_phone: string;
+    customer_email?: string;
+    customer_name?: string;
+  };
+  order_meta: {
+    return_url?: string;
+    notify_url?: string;
+    payment_methods?: string;
+  };
+  payment_link?: string; // This is what we'll use for redirection
+  payments?: { url: string };
+  refunds?: { url: string };
+  settlements?: { url: string };
+  order_splits?: any[];
+  order_tags?: Record<string, string>;
+  order_notes?: Record<string, string>;
+  order_token?: string; // This is often used for SDK integrations
+}
 
-  if (!razorpay) {
-       const errorMessage = `Razorpay not initialized. ${razorpayInitError || ''}`;
-       console.error(`[Server Action Error] createRazorpayOrderAction: ${errorMessage}`);
-       return { success: false, message: errorMessage };
+
+/**
+ * Creates a Cashfree order and returns a payment link.
+ * @param orderData - Data required to create the order.
+ * @returns {Promise<{success: boolean, paymentLink?: string, orderId?: string, message?: string}>}
+ */
+export async function createCashfreeOrderAction(orderData: {
+  amount: number; // Amount in the currency's main unit (e.g., INR)
+  currency: string; // e.g., "INR"
+  receipt: string; // Your internal order/receipt ID
+  customer_id: string;
+  customer_phone: string;
+  customer_email: string;
+  customer_name?: string;
+  eventId: string;
+}): Promise<{ success: boolean; paymentLink?: string; orderId?: string; cashfreeOrderId?: string; message?: string }> {
+  console.log('[Server Action] createCashfreeOrderAction invoked.');
+
+  if (cashfreeInitError) {
+    console.error(`[Server Action Error] createCashfreeOrderAction: ${cashfreeInitError}`);
+    return { success: false, message: cashfreeInitError };
+  }
+  if (!cashfreeAppId || !cashfreeSecretKey) {
+     // This check is redundant due to cashfreeInitError but good for explicit check
+    return { success: false, message: "Cashfree credentials missing." };
   }
 
-  const options = {
-    amount: orderData.amount,
-    currency: orderData.currency,
-    receipt: orderData.receipt,
+  const order_id = `GLAD-${orderData.receipt}-${Date.now()}`; // Unique order ID for Cashfree
+  const returnUrl = `${appBaseUrl}/api/payment/cashfree_webhook?order_id={order_id}&event_id=${orderData.eventId}&user_id=${orderData.customer_id}`;
+
+  const requestBody = {
+    customer_details: {
+      customer_id: orderData.customer_id,
+      customer_email: orderData.customer_email,
+      customer_phone: orderData.customer_phone,
+      customer_name: orderData.customer_name || orderData.customer_email,
+    },
+    order_id: order_id,
+    order_amount: orderData.amount,
+    order_currency: orderData.currency,
+    order_note: `Participation fee for event: ${orderData.receipt}`,
+    order_meta: {
+      return_url: returnUrl, // Cashfree will append order_id and payment_id
+      notify_url: `${appBaseUrl}/api/payment/cashfree_webhook`, // For server-to-server notifications
+    },
+    order_tags: {
+        eventId: orderData.eventId,
+        userId: orderData.customer_id,
+    }
   };
 
-  console.log('[Server Action] Creating Razorpay order with options:', options);
+  console.log('[Server Action] Creating Cashfree order with body:', JSON.stringify(requestBody));
+  console.log('[Server Action] Using return_url:', requestBody.order_meta.return_url);
+
 
   try {
-    const order = await razorpay.orders.create(options);
-    console.log('[Server Action] Razorpay Order Created:', order);
-    if (!order || !order.id) {
-        throw new Error('Failed to create Razorpay order (Invalid response).');
+    const response = await fetch(`${cashfreeApiBaseUrl}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-client-id': cashfreeAppId,
+        'x-client-secret': cashfreeSecretKey,
+        'x-api-version': '2023-08-01', // Use a recent, stable API version
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseData: CreateOrderResponse | any = await response.json(); // Type more strictly if possible
+
+    if (!response.ok) {
+      console.error('[Server Action Error] Cashfree API Error:', responseData);
+      throw new Error(responseData.message || `Cashfree API request failed with status ${response.status}`);
     }
+
+    console.log('[Server Action] Cashfree Order Created:', responseData);
+
+    if (!responseData.order_id || !responseData.payment_session_id) { // payment_session_id is key for checkout
+      throw new Error('Failed to create Cashfree order (Invalid response - missing order_id or payment_session_id).');
+    }
+
+    // Construct payment link using payment_session_id and order_token (order_id from response)
+    // The standard way is to use Cashfree's SDK or a redirect to a page they provide.
+    // For a direct link, you might need to check Cashfree's documentation for "seamless" or redirection methods.
+    // Often, the `order_token` or `payment_session_id` is used with their JS SDK.
+    // If a direct payment_link is provided in the response, use that. Otherwise, construct from payment_session_id.
+    // The `payment_link` might not be directly for redirection but for SDK.
+    // Cashfree often uses a redirect to `https://checkout.cashfree.com/pg/orders/sessions/{payment_session_id}`
+
+    const paymentLink = responseData.payments?.url || `https://checkout.cashfree.com/pg/orders/sessions/${responseData.payment_session_id}`;
+
+
     return {
       success: true,
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
+      paymentLink: paymentLink, // This is the URL to redirect the user to for payment
+      orderId: responseData.order_id, // Cashfree's order ID
+      cashfreeOrderId: responseData.cf_order_id?.toString(), // cf_order_id if available
     };
   } catch (error: any) {
-    console.error('[Server Action Error] Error creating Razorpay order:', error.message, error.stack); // Log stack too
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during order creation.';
-    return { success: false, message: `Failed to create payment order: ${errorMessage}` };
+    console.error('[Server Action Error] Error creating Cashfree order:', error.message, error.stack);
+    return { success: false, message: `Failed to create payment order: ${error.message || 'Unknown error'}` };
   }
 }
 
+
 /**
- * Verifies the Razorpay payment signature and records event participation if successful.
- * Generates a QR code for the ticket.
- * @param verificationData - Data received from Razorpay handler and participant details.
+ * Verifies the Cashfree payment signature (typically handled by webhook or return URL parameters)
+ * and records event participation if successful. Generates a QR code for the ticket.
+ * This function would be called by your webhook/return URL handler.
+ * @param verificationData - Data from Cashfree (e.g., order_id, transaction status from webhook).
  * @returns {Promise<{success: boolean, message?: string}>}
  */
-export async function verifyPaymentAndParticipateAction(verificationData: {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-  // Participant details to pass to participateInEvent
-  userId: string; // Ensure userId is passed explicitly
+export async function verifyCashfreePaymentAndParticipateAction(verificationData: {
+  order_id: string; // Cashfree's order_id
+  // Participant details should be retrieved based on order_id or passed through webhook state
+  userId: string;
   eventId: string;
   eventName: string;
   name: string;
@@ -100,99 +178,81 @@ export async function verifyPaymentAndParticipateAction(verificationData: {
   branch: string;
   semester: number;
   registrationNumber: string;
+  paymentStatus?: string; // From Cashfree, e.g., "SUCCESS", "FAILED"
+  transactionId?: string; // Cashfree's transaction ID
 }): Promise<{ success: boolean; message?: string }> {
-    console.log('[Server Action] verifyPaymentAndParticipateAction invoked.');
+  console.log('[Server Action] verifyCashfreePaymentAndParticipateAction invoked.');
 
-    // Check razorpayKeySecret specifically needed for verification
-    if (!razorpayKeySecret) {
-      const errorMessage = 'Razorpay key secret not configured for verification.';
-      console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${errorMessage}`);
-      return { success: false, message: errorMessage };
-    }
+  const {
+    order_id,
+    userId,
+    eventId,
+    paymentStatus,
+    transactionId,
+    ...participantDetails // name, email, etc.
+  } = verificationData;
 
-    const {
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        userId, // Destructure userId
-        ...participantDetails // Rest of the data is participant info
-    } = verificationData;
+  if (!order_id || !userId || !eventId) {
+    return { success: false, message: 'Missing required data for verification (order_id, userId, eventId).' };
+  }
 
-    // Basic validation
-    if (!userId) {
-        const errorMessage = 'User ID is missing for verification.';
-        console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
+  console.log('[Server Action] Verifying Cashfree payment details for order:', order_id, 'User:', userId);
 
-    console.log('[Server Action] Verifying Razorpay payment:', { razorpay_order_id, razorpay_payment_id, userId });
+  // In a real scenario, you'd fetch the order status from Cashfree API using order_id to confirm.
+  // For this example, we'll assume `paymentStatus` is passed correctly from the webhook/return handler.
+  // Webhook verification (checking signature) should happen in the API route itself before calling this.
 
-    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+  if (paymentStatus !== 'SUCCESS' && paymentStatus !== 'PAID') { // Cashfree might use 'PAID' for successful transactions
+    console.warn(`[Server Action Warning] Payment for order ${order_id} was not successful. Status: ${paymentStatus}`);
+    return { success: false, message: `Payment not successful. Status: ${paymentStatus}` };
+  }
 
+  console.log(`[Server Action] Payment for order ${order_id} confirmed as successful.`);
+
+  try {
+    const qrDataString = JSON.stringify({
+      orderId: order_id, // Use Cashfree order_id
+      eventId: eventId,
+      userId: userId,
+      timestamp: Date.now(),
+    });
+    let qrCodeDataUri = '';
     try {
-        const expectedSignature = crypto
-        .createHmac('sha256', razorpayKeySecret)
-        .update(body.toString())
-        .digest('hex');
-
-        console.log(`[Server Action] Generated Signature: ${expectedSignature}`);
-        console.log(`[Server Action] Received Signature: ${razorpay_signature}`);
-
-        const isAuthentic = expectedSignature === razorpay_signature;
-
-        if (isAuthentic) {
-            console.log('[Server Action] Payment Signature Verified Successfully for order:', razorpay_order_id);
-
-            // Generate QR Code Data
-            // The QR code will simply encode the Razorpay Order ID for this example.
-            // In a real app, you might want to encode a unique participation ID or a more complex object.
-            const qrDataString = JSON.stringify({
-              orderId: razorpay_order_id,
-              eventId: participantDetails.eventId,
-              userId: userId,
-              timestamp: Date.now() // Optional: for uniqueness or expiry
-            });
-            let qrCodeDataUri = '';
-            try {
-              qrCodeDataUri = await QRCode.toDataURL(qrDataString);
-              console.log('[Server Action] QR Code generated for order:', razorpay_order_id);
-            } catch (qrError: any) {
-              console.error('[Server Action Error] Failed to generate QR Code:', qrError.message);
-              // Proceed without QR code if generation fails, but log it.
-              // Or return an error if QR code is critical. For now, proceed.
-            }
-
-
-            // Payment is verified, now record participation
-            const participationResult = await participateInEvent({
-                userId: userId, // Pass the verified userId
-                ...participantDetails,
-                paymentDetails: { // Optional: Store payment info
-                    orderId: razorpay_order_id,
-                    paymentId: razorpay_payment_id,
-                    method: 'Razorpay'
-                },
-                qrCodeDataUri: qrCodeDataUri, // Pass the generated QR code data URI
-            });
-
-            if (participationResult.success) {
-                console.log('[Server Action] Participation recorded successfully for order:', razorpay_order_id);
-                return { success: true, message: 'Payment verified and participation recorded.' };
-            } else {
-                // Critical: Payment succeeded but DB write failed. Log this clearly.
-                const dbErrorMessage = `Payment verified BUT failed to record participation for order: ${razorpay_order_id}. Reason: ${participationResult.message || 'Unknown database error'}`;
-                console.error(`[Server Action Error] verifyPaymentAndParticipateAction: ${dbErrorMessage}`);
-                // Return specific error about DB failure after successful payment
-                return { success: false, message: `Payment successful, but failed to save participation record. Please contact support with Order ID: ${razorpay_order_id}.` };
-            }
-        } else {
-            const verificationFailMessage = `Payment Signature Verification Failed for order: ${razorpay_order_id}`;
-            console.warn(`[Server Action Warning] verifyPaymentAndParticipateAction: ${verificationFailMessage}`);
-            return { success: false, message: 'Payment verification failed: Invalid signature.' };
-        }
-    } catch (error: any) {
-        console.error('[Server Action Error] Error during payment verification or participation recording:', error.message, error.stack);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message: `Verification/Participation failed: ${errorMessage}` };
+      qrCodeDataUri = await QRCode.toDataURL(qrDataString);
+      console.log('[Server Action] QR Code generated for order:', order_id);
+    } catch (qrError: any) {
+      console.error('[Server Action Error] Failed to generate QR Code:', qrError.message);
+      // Proceed without QR code, but log.
     }
+
+    const participationResult = await participateInEvent({
+      userId: userId,
+      eventId: eventId,
+      eventName: participantDetails.eventName,
+      name: participantDetails.name,
+      email: participantDetails.email,
+      phone: participantDetails.phone,
+      branch: participantDetails.branch,
+      semester: participantDetails.semester,
+      registrationNumber: participantDetails.registrationNumber,
+      paymentDetails: {
+        orderId: order_id, // Cashfree order_id
+        paymentId: transactionId || 'N/A', // Cashfree transaction_id
+        method: 'Cashfree',
+      },
+      qrCodeDataUri: qrCodeDataUri,
+    });
+
+    if (participationResult.success) {
+      console.log('[Server Action] Participation recorded successfully for Cashfree order:', order_id);
+      return { success: true, message: 'Payment verified and participation recorded.' };
+    } else {
+      const dbErrorMessage = `Payment verified BUT failed to record participation for Cashfree order: ${order_id}. Reason: ${participationResult.message || 'Unknown database error'}`;
+      console.error(`[Server Action Error] verifyCashfreePaymentAndParticipateAction: ${dbErrorMessage}`);
+      return { success: false, message: `Payment successful, but failed to save participation. Contact support with Order ID: ${order_id}.` };
+    }
+  } catch (error: any) {
+    console.error('[Server Action Error] Error during Cashfree payment verification or participation recording:', error.message, error.stack);
+    return { success: false, message: `Verification/Participation failed: ${error.message || 'Unknown error'}` };
+  }
 }
