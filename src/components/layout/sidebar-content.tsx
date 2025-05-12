@@ -18,16 +18,15 @@ import {
   Sun,
   Moon,
   BarChart, 
-  Home, 
   Lightbulb, 
   MessageSquare, 
   Loader2, 
-  Link2, 
+  Link2 as Link2Icon, // Renamed to avoid conflict with Link component
   QrCode,
   Users as UsersIcon, // For Manage Users
   Image as ImageIcon, // For Homepage Images
   FileText, // For general content
-  Contact, // For contact edit
+  Contact as ContactIcon, // Renamed to avoid conflict
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -86,7 +85,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
 
   // Common navigation items
   const commonNavItems = [
-    { href: "/", label: "Home", Icon: Home },
+    { href: "/", label: "Home", Icon: Lightbulb }, // Using Lightbulb for Home as per original
     { href: "/ideas", label: "Ideas", Icon: Lightbulb },
     { href: "/programs", label: "Events", Icon: CalendarCheck },
     { href: "/about", label: "About Us", Icon: Info },
@@ -100,8 +99,8 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
     { href: "/admin/attendance", label: "Attendance Scanner", Icon: QrCode },
     { label: "Content Management", isSeparator: true },
     { href: "/admin/content/about", label: "Edit About Page", Icon: FileText },
-    { href: "/admin/content/contact", label: "Edit Contact Info", Icon: Contact },
-    { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2 },
+    { href: "/admin/content/contact", label: "Edit Contact Info", Icon: ContactIcon },
+    { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2Icon },
     { href: "/admin/content/help", label: "Edit Help/FAQ", Icon: HelpCircleIcon },
     { href: "/admin/content/homepage-images", label: "Homepage Images", Icon: ImageIcon },
     { label: "Site Configuration", isSeparator: true },
@@ -206,3 +205,4 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
     </div>
   );
 }
+
