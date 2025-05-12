@@ -269,11 +269,14 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 
 ### Supabase: "relation public.X does not exist"
 
-If you see an error like `relation "public.your_table_name" does not exist`, it means the required table (`your_table_name`) has not been created in your Supabase database.
+If you see an error like `relation "public.your_table_name" does not exist`, it means the required table (`your_table_name`) has not been created in your Supabase database. This is a common issue if you haven't run the SQL schema commands.
+
+**Especially for user registration issues, if you see `relation "public.users" does not exist`, you MUST run the `CREATE TABLE IF NOT EXISTS public.users (...)` command provided in the "Set Up Supabase Database Schema" section above.**
+
 **Solution:**
 1.  Go to your Supabase project dashboard.
 2.  Navigate to the **SQL Editor**.
-3.  Copy the SQL commands from the "Set Up Supabase Database Schema" section above for the missing table (and any other tables you haven't created) and run them.
+3.  Copy the SQL commands from the "Set Up Supabase Database Schema" section above for the missing table (e.g., `public.users`, `public.events`, etc.) and any other tables you haven't created, and run them.
 4.  Ensure the `uuid-ossp` extension is enabled by running `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";` if you haven't already.
 
 ### Supabase: RLS (Row Level Security) Issues
@@ -301,3 +304,4 @@ This project has primarily migrated to Supabase. If you encounter Firebase error
 *   `FirebaseError: Firebase: Error (auth/unauthorized-domain)` (Google Sign-In): `localhost` or your deployed domain not in Firebase authorized domains.
 
 **For all `.env.local` changes, remember to restart your Next.js development server (`npm run dev`).**
+
