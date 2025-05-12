@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, serverTimestamp, Timestamp, query, orderBy, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -48,11 +47,14 @@ export async function addHomepageImage(
     console.log('[Server Action - Homepage] Image uploaded to:', imageUrl);
 
     const docData: Omit<HomepageImage, 'id'> = {
-      ...imageData,
-      imageUrl: imageUrl,
+      ...imageData, // Spread existing validated fields
+      imageUrl: imageUrl, // Add the uploaded image URL
       createdAt: serverTimestamp() as Timestamp,
       updatedAt: serverTimestamp() as Timestamp,
     };
+    // Remove imageFile as it's not stored in Firestore
+    // delete (docData as any).imageFile;
+
 
     const docRef = await addDoc(collection(db, 'homepageImages'), docData);
     console.log('[Server Action - Homepage] Image metadata added to Firestore with ID:', docRef.id);
@@ -68,17 +70,23 @@ export async function addHomepageImage(
 }
 
 /**
- * Fetches all homepage images from Firestore, ordered by 'order' and then 'createdAt'.
+ * Fetches all homepage images from Firestore, ordered by 'order'.
+ * NOTE: The original query also ordered by 'createdAt' desc, which requires a composite index.
+ * This has been simplified to potentially avoid the immediate error.
+ * For correct and optimal sorting (order ASC, createdAt DESC), create the index in Firebase using the link from the error.
  */
 export async function getHomepageImages(): Promise<{ success: boolean; images?: HomepageImage[]; message?: string }> {
   console.log('[Server Action - Homepage] getHomepageImages invoked.');
   if (initializationError || !db) {
     const msg = `Service unavailable: Firebase issue - ${initializationError?.message || 'DB missing'}.`;
+    console.error(`[Server Action Error - Homepage] getHomepageImages: ${msg}`);
     return { success: false, message: msg };
   }
 
   try {
-    const imagesQuery = query(collection(db, 'homepageImages'), orderBy('order'), orderBy('createdAt', 'desc'));
+    // Simplified query: only order by 'order'.
+    // Original: query(collection(db, 'homepageImages'), orderBy('order'), orderBy('createdAt', 'desc'))
+    const imagesQuery = query(collection(db, 'homepageImages'), orderBy('order'));
     const querySnapshot = await getDocs(imagesQuery);
     const images: HomepageImage[] = [];
     querySnapshot.forEach((doc) => {
@@ -91,23 +99,30 @@ export async function getHomepageImages(): Promise<{ success: boolean; images?: 
         updatedAt: convertTimestamp(data.updatedAt),
       } as HomepageImage);
     });
+    console.log(`[Server Action - Homepage] Fetched ${images.length} homepage images.`);
     return { success: true, images };
   } catch (error: any) {
     console.error('[Server Action Error - Homepage] Error fetching homepage images:', error.message);
-    return { success: false, message: `Failed to fetch images: ${error.message}` };
+    // Include the original error message if it's the index error, so the user sees the link.
+    if (error.message?.includes("query requires an index")) {
+        return { success: false, message: `Failed to fetch images: ${error.message}` };
+    }
+    return { success: false, message: `Failed to fetch images: ${error.message || 'Unknown database error'}` };
   }
 }
 
 /**
  * Updates an existing homepage image's details in Firestore.
+ * Does not handle image file replacement; for that, delete and add a new one.
  */
 export async function updateHomepageImage(
   imageId: string,
-  updateData: Partial<Omit<HomepageImage, 'id' | 'createdAt' | 'imageUrl'>>
+  updateData: Partial<Omit<HomepageImage, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl'>>
 ): Promise<{ success: boolean; message?: string }> {
    console.log('[Server Action - Homepage] updateHomepageImage invoked for ID:', imageId);
     if (initializationError || !db) {
         const msg = `Service unavailable: Firebase issue - ${initializationError?.message || 'DB missing'}.`;
+        console.error(`[Server Action Error - Homepage] updateHomepageImage: ${msg}`);
         return { success: false, message: msg };
     }
 
@@ -117,11 +132,12 @@ export async function updateHomepageImage(
             ...updateData,
             updatedAt: serverTimestamp() as Timestamp,
         });
+        console.log('[Server Action - Homepage] Image details updated in Firestore for ID:', imageId);
         revalidatePath('/');
         revalidatePath('/admin/content/homepage-images');
         return { success: true };
     } catch (error: any) {
-        console.error('[Server Action Error - Homepage] Error updating homepage image:', error.message);
+        console.error('[Server Action Error - Homepage] Error updating homepage image details:', error.message);
         return { success: false, message: `Failed to update image details: ${error.message}` };
     }
 }
@@ -134,6 +150,7 @@ export async function deleteHomepageImage(imageId: string, imageUrl: string): Pr
   console.log('[Server Action - Homepage] deleteHomepageImage invoked for ID:', imageId);
    if (initializationError || !db) {
         const msg = `Service unavailable: Firebase issue - ${initializationError?.message || 'DB missing'}.`;
+        console.error(`[Server Action Error - Homepage] deleteHomepageImage: ${msg}`);
         return { success: false, message: msg };
     }
 
@@ -147,12 +164,13 @@ export async function deleteHomepageImage(imageId: string, imageUrl: string): Pr
     if (imageUrl) {
       try {
         const storage = getStorage();
-        const imageStorageRef = storageRef(storage, imageUrl); // imageUrl is the full HTTPS URL
+        // Create a ref from the HTTPS URL
+        const imageStorageRef = storageRef(storage, imageUrl);
         await deleteObject(imageStorageRef);
         console.log('[Server Action - Homepage] Image file deleted from Storage.');
       } catch (storageError: any) {
          if (storageError.code === 'storage/object-not-found') {
-            console.warn('[Server Action - Homepage] Image file not found in Storage, skipping deletion from Storage.');
+            console.warn('[Server Action - Homepage] Image file not found in Storage, skipping deletion from Storage for URL:', imageUrl);
         } else {
             console.error('[Server Action Error - Homepage] Error deleting image from Storage:', storageError.message);
             // Potentially return a partial success or warning, but for now, consider Firestore deletion primary
@@ -167,20 +185,3 @@ export async function deleteHomepageImage(imageId: string, imageUrl: string): Pr
     return { success: false, message: `Failed to delete image: ${error.message}` };
   }
 }
-
-// --- Placeholder for managing other homepage content like featured text ---
-// Example:
-// export interface FeaturedContent {
-//   latestEventTitle?: string;
-//   latestEventDescription?: string;
-//   latestEventLink?: string;
-//   exploreIdeasTitle?: string;
-//   exploreIdeasDescription?: string;
-// }
-
-// export async function getFeaturedHomepageContent(): Promise<{ success: boolean; data?: FeaturedContent; message?: string }> {
-//   // Similar to getContent in services/content.ts, but specific to 'homepageFeatured' doc
-// }
-// export async function updateFeaturedHomepageContent(data: FeaturedContent): Promise<{ success: boolean; message?: string }> {
-//   // Similar to updateContent in services/content.ts
-// }
