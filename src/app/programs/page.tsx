@@ -1,5 +1,5 @@
 
-'use client'; 
+'use client';
 
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,19 +15,23 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { getEvents } from '@/services/events'; 
-import type { EventData } from '@/services/events'; 
+import { getEvents } from '@/services/events';
+import type { EventData } from '@/services/events';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+<<<<<<< HEAD
 import { format, parseISO, isPast } from 'date-fns'; 
 <<<<<<< HEAD
 =======
+=======
+import { format, parseISO, isPast } from 'date-fns';
+>>>>>>> f6fe95d (Runtime Error)
 import Image from 'next/image';
 
 >>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
 
 export default function ProgramsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState<EventData | null>(null); 
+  const [selectedEvent, setSelectedEvent] = React.useState<EventData | null>(null);
   const [events, setEvents] = React.useState<EventData[]>([]);
   const [loadingEvents, setLoadingEvents] = React.useState(true);
   const [eventsError, setEventsError] = React.useState<string | null>(null);
@@ -40,7 +44,7 @@ export default function ProgramsPage() {
     async function loadEvents() {
       setLoadingEvents(true);
       setEventsError(null);
-      const result = await getEvents(); 
+      const result = await getEvents();
       if (result.success && result.events) {
         const sortedEvents = result.events.sort((a, b) => {
           const aIsPast = a.registration_deadline ? isPast(parseISO(a.registration_deadline)) : isPast(parseISO(a.start_date));
@@ -94,8 +98,8 @@ export default function ProgramsPage() {
   const isLoggedIn = !authLoading && (!!userId || isAdmin);
 
   const handleParticipateClick = (event: EventData) => {
-     if (isLoggedIn && !isAdmin) { 
-        
+     if (isLoggedIn && !isAdmin) {
+
         if (event.registrationDeadline && isPast(parseISO(event.registrationDeadline as string))) {
             toast({
                 title: "Registration Closed",
@@ -108,7 +112,7 @@ export default function ProgramsPage() {
         const formattedStartDate = event.startDate ? format(parseISO(event.startDate as string), 'PPP') : 'N/A';
         setSelectedEvent({
             ...event,
-            startDate: formattedStartDate, 
+            startDate: formattedStartDate,
         });
         setIsModalOpen(true);
      } else if (isAdmin) {
@@ -128,6 +132,7 @@ export default function ProgramsPage() {
     if (feeInPaisa === 0) return "Free";
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
   };
+<<<<<<< HEAD
 <<<<<<< HEAD
 
   if (authLoading || loadingEvents) { // Show skeleton if either auth or events are loading
@@ -162,6 +167,11 @@ export default function ProgramsPage() {
 =======
 >>>>>>> 591e8d1 (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
 
+=======
+  // Ensure all JavaScript statements above this line are correctly terminated.
+  // Explicit semicolon before return, though usually not strictly necessary for function declarations.
+  ;
+>>>>>>> f6fe95d (Runtime Error)
   return (
     <div className="space-y-12 max-w-5xl mx-auto px-4">
       <div className="text-center">
@@ -301,11 +311,11 @@ export default function ProgramsPage() {
             {/* Image Section */}
             <div className="w-full md:w-1/3 aspect-video md:aspect-auto bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
               {event.imageUrl ? (
-                <Image 
-                    src={event.imageUrl} 
+                <Image
+                    src={event.imageUrl}
                     alt={`Image for ${event.name}`}
-                    width={400} 
-                    height={225} 
+                    width={400}
+                    height={225}
                     className="object-cover w-full h-full"
                     data-ai-hint="conference team"
                 />
@@ -324,7 +334,7 @@ export default function ProgramsPage() {
                     {event.eventType === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
                     {event.name}
                 </CardTitle>
-                <CardDescription className="pt-1 line-clamp-3"> 
+                <CardDescription className="pt-1 line-clamp-3">
                     {event.description}
                 </CardDescription>
                 </CardHeader>
@@ -369,10 +379,10 @@ export default function ProgramsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6 mt-auto"> {/* mt-auto pushes button to bottom */}
                     {authLoading ? (
-                            <Skeleton className="h-10 w-40" /> 
+                            <Skeleton className="h-10 w-40" />
                     ) : (
-                        <Button 
-                            onClick={() => handleParticipateClick(event)} 
+                        <Button
+                            onClick={() => handleParticipateClick(event)}
                             className="flex-shrink-0 w-full sm:w-auto"
                             disabled={isDeadlinePast && !isAdmin} // Disable if deadline past for non-admins
                         >
@@ -387,7 +397,7 @@ export default function ProgramsPage() {
                 </CardContent>
             </div>
           </Card>
-        )})}
+        )})
       )}
 
       {!loadingEvents && !eventsError && events.length === 0 && (
@@ -402,15 +412,19 @@ export default function ProgramsPage() {
        {selectedEvent && (
          <ParticipationModal
             isOpen={isModalOpen}
-            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}} 
-            eventDetails={{ 
+            onClose={() => {setIsModalOpen(false); setSelectedEvent(null);}}
+            eventDetails={{
                 id: selectedEvent.id || 'unknown-event',
                 name: selectedEvent.name,
+<<<<<<< HEAD
 <<<<<<< HEAD
                 date: selectedEvent.start_date as string, 
 =======
                 date: selectedEvent.startDate as string, 
 >>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+=======
+                date: selectedEvent.startDate as string,
+>>>>>>> f6fe95d (Runtime Error)
                 fee: selectedEvent.fee
             }}
          />
