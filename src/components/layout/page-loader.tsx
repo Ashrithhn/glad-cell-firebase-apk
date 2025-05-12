@@ -6,11 +6,11 @@ import React, { useState, useEffect } from 'react';
 export function PageLoader() {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate loading delay
+  // Simulate loading delay or use actual app loading state
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500); // Adjust delay as needed (e.g., 1500ms)
+    }, 2000); // Adjust delay as needed
     return () => clearTimeout(timer);
   }, []);
 
@@ -20,7 +20,12 @@ export function PageLoader() {
 
   return (
     <div className="page-loader" aria-label="Loading page content" role="status">
-      <div className="spinner"></div>
+      <div className="bouncing-loader">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
     </div>
   );
 }
+
