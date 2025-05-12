@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, PlusCircle, UserCheck } from 'lucide-react';
 import { getEvents } from '@/services/events';
 import type { EventData } from '@/services/events'; 
@@ -15,6 +16,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 =======
 import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, ImageOff } from 'lucide-react';
+=======
+import { ArrowRight, Lightbulb, CalendarCheck, AlertCircle, MapPin, ImageOff, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
+>>>>>>> 957be92 (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
 import { getEvents } from '@/services/events'; 
 import type { EventData } from '@/services/events'; 
 import { getHomepageImages } from '@/services/homepage';
@@ -111,7 +115,7 @@ async function loadHomepageSectionImages(): Promise<{
 
 export default async function Home() {
   const { event, error: eventError } = await loadLatestEvent();
-  const { exploreIdeasImage, latestEventPromoImage, error: imageError } = await loadHomepageSectionImages();
+  const { error: imageError } = await loadHomepageSectionImages();
   const overallError = eventError || imageError;
 
   return (
@@ -143,6 +147,7 @@ export default async function Home() {
           </CardHeader>
           <CardContent className="space-y-4">
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
              {exploreIdeasImage && exploreIdeasImage.imageUrl ? (
                 <Image 
@@ -159,6 +164,11 @@ export default async function Home() {
                 </div>
              )}
 >>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+=======
+            <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
+                <ImageIcon className="h-16 w-16 text-muted-foreground"/>
+            </div>
+>>>>>>> 957be92 (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
             <p className="text-muted-foreground">
               Browse through the diverse collection of startup and ideathon concepts submitted by students.
             </p>
@@ -210,15 +220,6 @@ export default async function Home() {
                             height={300} 
                             className="rounded-md mb-3 object-cover aspect-video"
                             data-ai-hint="conference event"
-                        />
-                    ) : latestEventPromoImage && latestEventPromoImage.imageUrl ? (
-                         <Image 
-                            src={latestEventPromoImage.imageUrl} 
-                            alt={latestEventPromoImage.altText}
-                            width={600} 
-                            height={300} 
-                            className="rounded-md mb-3 object-cover aspect-video"
-                            data-ai-hint="event placeholder"
                         />
                     ) : (
                         <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
