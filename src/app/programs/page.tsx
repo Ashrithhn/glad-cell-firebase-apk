@@ -78,7 +78,7 @@ export default function ProgramsPage() {
 
   const formatFee = (feeInPaisa: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
-  }
+  };
 
   return (
     <div className="space-y-12 max-w-5xl mx-auto px-4">
