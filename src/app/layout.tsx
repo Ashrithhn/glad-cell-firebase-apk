@@ -47,7 +47,7 @@ export default function RootLayout({
             <AuthProvider>
                 <WelcomeHandler>
                     <GlobalStyles />
-                    {/* <PageLoader /> */} {/* Uncomment to simulate slow network loader */}
+                    <PageLoader /> {/* Uncommented to show animated loader */}
                     <div className="flex flex-col min-h-screen">
                       <MaintenanceBanner /> 
                       <Header />
@@ -68,3 +68,4 @@ export default function RootLayout({
     </html>
   );
 }
+
