@@ -1,10 +1,9 @@
-
-'use client'; // Added 'use client' directive
+'use client'; 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact as ContactIcon, Link2, LogOut, QrCode, Image as ImageIcon, Globe, ShieldCheck, ScrollText } from 'lucide-react'; // Renamed Contact to ContactIcon, added ScrollText
+import { PlusCircle, Users, Lightbulb, Activity, Settings, FileText, Contact as ContactIcon, Link2, LogOut, QrCode, Image as ImageIcon, Globe, ShieldCheck, ScrollText } from 'lucide-react'; 
 import { useAuth } from '@/hooks/use-auth'; 
 import { useRouter } from 'next/navigation'; 
 import { SiteSettingsManager } from '@/components/features/admin/site-settings-manager';
