@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -85,6 +86,22 @@ export function GlobalStyles() {
         }
         .idea-flash-animation {
           animation: idea-flash 2s ease-in-out infinite;
+        }
+
+        /* Maintenance Mode Banner Styles */
+        .maintenance-banner {
+          background-color: hsl(var(--destructive));
+          color: hsl(var(--destructive-foreground));
+          padding: 0.75rem 1rem;
+          text-align: center;
+          font-size: 0.875rem;
+          font-weight: 500;
+          position: sticky;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 1000; /* Ensure it's above other content */
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
      `}</style>
