@@ -10,15 +10,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { GoogleSignInButton } from '@/components/features/auth/google-signin-button'; // Import Google Sign-In button
-import { Separator } from '@/components/ui/separator'; // Import Separator
-import { toast } from '@/hooks/use-toast'; // Import toast
+// Google Sign-In button removed
+// import { Separator } from '@/components/ui/separator'; // Import Separator
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { user, userId, isAdmin, loading, authError, login: authLogin } = useAuth(); // Use auth context, include authError and login
+  const { user, userId, isAdmin, loading, authError } = useAuth();
   const isLoggedIn = !loading && (!!userId || isAdmin);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!loading) {
@@ -30,24 +31,7 @@ export default function RegisterPage() {
       }
   }, [loading, userId, isAdmin, router]);
 
-  const handleGoogleSuccess = async (uid: string) => {
-    await authLogin(uid); // Update auth context
-    toast({
-      title: 'Google Sign-In Successful!',
-      description: 'Welcome! Your account has been set up.',
-      variant: 'default',
-    });
-    router.push('/'); // Redirect to home or profile setup page
-    router.refresh();
-  };
-
-  const handleGoogleError = (errorMsg: string) => {
-    toast({
-      title: 'Google Sign-In Failed',
-      description: errorMsg,
-      variant: 'destructive',
-    });
-  };
+  // Google Sign-In was removed, so related handlers are also removed.
 
 
   if (loading || (isLoggedIn && !authError)) {
@@ -76,7 +60,7 @@ export default function RegisterPage() {
              </div>
              <div className="md:col-span-2 mt-4">
                 <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full mt-2" /> {/* For Google button */}
+                {/* Removed Skeleton for Google button */}
               </div>
           </CardContent>
         </Card>
@@ -97,29 +81,18 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {authError && (
+          {authError && ( // Display Supabase client init error or auth errors
              <Alert variant="destructive" className="mb-4">
                  <AlertCircle className="h-4 w-4" />
                  <AlertTitle>Configuration Error</AlertTitle>
                  <AlertDescription>
-                     {authError.message}. Please check the setup or contact support. Registration functionality is unavailable.
+                     {authError.message}. Please check the setup or contact support. Registration functionality may be unavailable.
                  </AlertDescription>
              </Alert>
           )}
           <RegistrationForm />
 
-          <div className="relative my-6">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              OR
-            </span>
-          </div>
-
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            disabled={!!authError}
-          />
+          {/* Removed Google Sign-In button and separator */}
         </CardContent>
       </Card>
     </div>

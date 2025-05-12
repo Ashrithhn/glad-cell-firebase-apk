@@ -1,29 +1,22 @@
 
 'use server';
 
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, initializationError } from '@/lib/firebase/config';
+import { supabase, supabaseError } from '@/lib/supabaseClient';
 import { revalidatePath } from 'next/cache';
 
 /**
- * Updates the user's profile picture in Firebase Storage and Firestore.
+ * Updates the user's profile picture in Supabase Storage and updates the 'photo_url' in the 'users' table.
  * Expects the image data as a Base64 encoded Data URI string.
  */
 export async function updateProfilePicture(
     userId: string,
     imageDataUri: string // e.g., "data:image/jpeg;base64,/9j/4AAQSkZ..."
 ): Promise<{ success: boolean; photoURL?: string; message?: string }> {
-    console.log('[Server Action] updateProfilePicture invoked for user:', userId);
+    console.log('[Supabase Server Action] updateProfilePicture invoked for user:', userId);
 
-    if (initializationError) {
-        const errorMessage = `Profile service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.error(`[Server Action Error] updateProfilePicture: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
-    if (!db) {
-        const errorMessage = 'Profile service unavailable: Firestore/Storage service instance missing.';
-        console.error(`[Server Action Error] updateProfilePicture: ${errorMessage}`);
+    if (supabaseError || !supabase) {
+        const errorMessage = `Profile service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+        console.error(`[Supabase Server Action Error] updateProfilePicture: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
@@ -35,81 +28,109 @@ export async function updateProfilePicture(
     }
 
     try {
-        const storage = getStorage();
-        const userDocRef = doc(db, 'users', userId);
+        // 1. Get current profile to check for existing picture path for deletion
+        let oldFileKey: string | null = null;
+        const { data: userProfile, error: fetchError } = await supabase
+            .from('users')
+            .select('photo_url')
+            .eq('id', userId)
+            .single();
 
-        // 1. Get current profile to check for existing picture
-        let oldPhotoPath: string | null = null;
-        try {
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                const currentData = userDocSnap.data();
-                if (currentData?.photoURL) {
-                     // Extract path from URL (basic extraction, might need refinement)
-                     const url = new URL(currentData.photoURL);
-                     // Path usually starts after /o/ and before ?alt=media
-                     const pathStartIndex = url.pathname.indexOf('/o/') + 3;
-                     const pathEndIndex = url.pathname.indexOf('?');
-                     if (pathStartIndex > 2 && pathEndIndex > pathStartIndex) {
-                         oldPhotoPath = decodeURIComponent(url.pathname.substring(pathStartIndex, pathEndIndex));
-                         console.log(`[Server Action] Found old photo path: ${oldPhotoPath}`);
-                     }
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: no rows found
+            console.warn("[Supabase Server Action] Could not get current profile to check for old photo:", fetchError.message);
+        } else if (userProfile?.photo_url) {
+            try {
+                // Supabase storage URLs are typically like: SUPABASE_URL/storage/v1/object/public/BUCKET_NAME/FILE_PATH
+                const urlParts = new URL(userProfile.photo_url);
+                const pathParts = urlParts.pathname.split('/');
+                // Assuming path is like /storage/v1/object/public/profile-pictures/user-id/profile.jpg
+                // The key would be 'user-id/profile.jpg' if bucket is 'profile-pictures'
+                // This parsing is brittle and depends on your storage URL structure and bucket name.
+                // A more robust way is to store the file key/path separately in your users table if needed for deletion.
+                // For simplicity, let's assume the path part after the bucket name is the key.
+                // You'll need to adjust this based on your bucket and file naming strategy.
+                // Example: if URL is .../profile-pictures/user123/avatar.png, key is user123/avatar.png
+                const bucketName = 'profile-pictures'; // Replace with your actual bucket name
+                const pathAfterBucket = pathParts.slice(pathParts.indexOf(bucketName) + 1).join('/');
+                if (pathAfterBucket) {
+                    oldFileKey = pathAfterBucket;
+                    console.log(`[Supabase Server Action] Found old photo path (key): ${oldFileKey}`);
                 }
+            } catch(e) {
+                console.warn("[Supabase Server Action] Could not parse old photo URL:", userProfile.photo_url);
             }
-        } catch (e) {
-            console.warn("[Server Action] Could not get current profile to check for old photo:", e);
-            // Continue upload even if checking old photo fails
         }
 
+        // Convert Data URI to Blob/File
+        const fetchRes = await fetch(imageDataUri);
+        const blob = await fetchRes.blob();
+        const mimeType = blob.type;
+        const extension = mimeType.split('/')[1] || 'jpg';
+        const fileName = `profile.${extension}`;
+        const filePath = `${userId}/${fileName}`; // Store in a folder named by user ID
 
-        // 2. Define storage path and upload new image
-        // Extract MIME type for file extension
-        const mimeType = imageDataUri.substring(imageDataUri.indexOf(':') + 1, imageDataUri.indexOf(';'));
-        const extension = mimeType.split('/')[1] || 'jpg'; // Default to jpg if extraction fails
-        const filePath = `profilePictures/${userId}/profile.${extension}`;
-        const storageRef = ref(storage, filePath);
+        console.log(`[Supabase Server Action] Uploading new profile picture to: profile-pictures/${filePath}`);
 
-        console.log(`[Server Action] Uploading new profile picture to: ${filePath}`);
-        // Use uploadString with 'data_url' format
-        const snapshot = await uploadString(storageRef, imageDataUri, 'data_url');
-        console.log('[Server Action] Image uploaded successfully.');
+        // 2. Upload new image to Supabase Storage (bucket: 'profile-pictures')
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('profile-pictures') // Ensure this bucket exists and has correct RLS policies
+            .upload(filePath, blob, {
+                cacheControl: '3600',
+                upsert: true, // Overwrite if exists
+                contentType: mimeType,
+            });
 
-        // 3. Get download URL
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        console.log('[Server Action] Download URL obtained:', downloadURL);
+        if (uploadError) {
+            console.error('[Supabase Server Action Error] Supabase Storage upload error:', uploadError.message);
+            throw new Error(`Storage upload failed: ${uploadError.message}`);
+        }
+        console.log('[Supabase Server Action] Image uploaded successfully to Supabase Storage:', uploadData.path);
 
-        // 4. Update Firestore document
-        await updateDoc(userDocRef, {
-            photoURL: downloadURL
-        });
-        console.log('[Server Action] Firestore profile updated with new photoURL.');
+        // 3. Get public URL for the new image
+        const { data: publicUrlData } = supabase.storage
+            .from('profile-pictures')
+            .getPublicUrl(uploadData.path);
 
-        // 5. Delete old profile picture (if exists and different path)
-        if (oldPhotoPath && oldPhotoPath !== filePath) {
-            console.log(`[Server Action] Deleting old profile picture from: ${oldPhotoPath}`);
-             try {
-                const oldStorageRef = ref(storage, oldPhotoPath);
-                await deleteObject(oldStorageRef);
-                console.log("[Server Action] Old profile picture deleted successfully.");
-             } catch(deleteError: any) {
-                 // Log deletion error but don't fail the whole operation
-                 if (deleteError.code === 'storage/object-not-found') {
-                    console.log("[Server Action] Old profile picture not found, skipping deletion.");
-                 } else {
-                    console.error("[Server Action Error] Failed to delete old profile picture:", deleteError);
-                 }
-             }
-        } else if (oldPhotoPath === filePath) {
-             console.log("[Server Action] New path is same as old, skipping deletion.");
+        if (!publicUrlData?.publicUrl) {
+            console.error('[Supabase Server Action Error] Could not get public URL for uploaded image.');
+            throw new Error('Failed to get public URL for profile picture.');
+        }
+        const newPhotoURL = publicUrlData.publicUrl;
+        console.log('[Supabase Server Action] Public URL obtained:', newPhotoURL);
+
+        // 4. Update 'users' table with the new photo_url
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ photo_url: newPhotoURL, updated_at: new Date().toISOString() })
+            .eq('id', userId);
+
+        if (updateError) {
+            console.error('[Supabase Server Action Error] Error updating user profile in table:', updateError.message);
+            throw new Error(`Failed to update profile in database: ${updateError.message}`);
+        }
+        console.log('[Supabase Server Action] User table updated with new photo_url.');
+
+        // 5. Delete old profile picture from Storage (if exists and path is different)
+        if (oldFileKey && oldFileKey !== uploadData.path) {
+            console.log(`[Supabase Server Action] Deleting old profile picture from Storage key: ${oldFileKey}`);
+            const { error: deleteError } = await supabase.storage
+                .from('profile-pictures')
+                .remove([oldFileKey]); // remove takes an array of keys
+
+            if (deleteError) {
+                console.error("[Supabase Server Action Error] Failed to delete old profile picture from Storage:", deleteError.message);
+                // Log deletion error but don't fail the whole operation
+            } else {
+                console.log("[Supabase Server Action] Old profile picture deleted successfully from Storage.");
+            }
         }
 
-        // Revalidate the profile page path
         revalidatePath('/profile');
 
-        return { success: true, photoURL: downloadURL };
+        return { success: true, photoURL: newPhotoURL };
 
     } catch (error: any) {
-        console.error('[Server Action Error] Error updating profile picture:', error);
+        console.error('[Supabase Server Action Error] Error updating profile picture:', error.message, error.stack);
         return { success: false, message: `Failed to update profile picture: ${error.message || 'Unknown error'}` };
     }
 }

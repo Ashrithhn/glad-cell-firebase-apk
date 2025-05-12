@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -16,20 +17,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { registerUser } from '@/services/auth';
+import { registerUser } from '@/services/auth'; // Supabase registerUser
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth'; // For authError
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }).max(100),
   branch: z.string().min(1, { message: 'Branch is required.' }).max(100),
   semester: z.coerce.number().min(1, { message: 'Semester must be between 1 and 8.' }).max(8, { message: 'Semester must be between 1 and 8.' }),
   registrationNumber: z.string().min(5, { message: 'Unique registration number is required and must be valid.' }).max(20),
-  email: z.string()
-    .email({ message: 'Please enter a valid email address.' })
-    .refine(email => email.endsWith('@gmail.com'), {
-      message: 'Only Gmail addresses (@gmail.com) are currently supported for registration.',
-    }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+    // Removed Gmail specific validation as Supabase handles various email providers
   collegeName: z.string().min(1, { message: 'College name is required.' }).max(150),
   city: z.string().min(1, { message: 'City is required.' }).max(100),
   pincode: z.string().regex(/^\d{6}$/, { message: 'Pincode must be 6 digits.' }),
@@ -41,18 +39,18 @@ type FormData = z.infer<typeof formSchema>;
 export function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
-  const { authError } = useAuth();
+  const { authError } = useAuth(); // Use authError from Supabase client
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       branch: '',
-      semester: undefined, // Initialize as undefined to avoid controlled/uncontrolled warning
+      semester: undefined,
       registrationNumber: '',
       email: '',
-      collegeName: '', // No longer prefilled
-      city: '', // No longer prefilled
+      collegeName: '',
+      city: '',
       pincode: '',
       password: '',
     },
@@ -60,29 +58,28 @@ export function RegistrationForm() {
 
   async function onSubmit(values: FormData) {
     setIsSubmitting(true);
-    console.log('[Client] Registration Data:', values);
+    console.log('[Client] Supabase Registration Data:', values);
 
     try {
-      if (authError) {
+      if (authError) { // Check for Supabase client initialization errors
           throw new Error(`Cannot register: ${authError.message}`);
       }
-      const result = await registerUser(values);
-      console.log('[Client] Registration Result:', result);
+      const result = await registerUser(values); // Calls Supabase registerUser
+      console.log('[Client] Supabase Registration Result:', result);
 
       if (result.success) {
         toast({
           title: 'Registration Successful!',
-          description: result.message || 'Your account has been created.', // Updated message
+          description: result.message || 'Your account has been created. Please check your email for verification.',
           variant: 'default',
           className: 'bg-accent text-accent-foreground',
         });
         router.push('/login'); // Redirect to login after successful registration
       } else {
-        // Throw error with the specific message from the service
         throw new Error(result.message || 'Registration failed.');
       }
     } catch (error) {
-      console.error('Registration Error:', error);
+      console.error('Supabase Registration Error:', error);
       toast({
         title: 'Registration Failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
@@ -118,9 +115,9 @@ export function RegistrationForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address (Gmail only)</FormLabel>
+                      <FormLabel>Email Address</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Enter your @gmail.com address" {...field} suppressHydrationWarning />
+                        <Input type="email" placeholder="Enter your email address" {...field} suppressHydrationWarning />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -240,4 +237,3 @@ export function RegistrationForm() {
       </Form>
   );
 }
-

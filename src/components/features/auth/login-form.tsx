@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -16,11 +17,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { loginUser } from '@/services/auth'; // Updated service
+import { loginUser } from '@/services/auth'; // Supabase loginUser
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth hook
 
-// Define the validation schema using Zod
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
@@ -31,7 +31,7 @@ type FormData = z.infer<typeof formSchema>;
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const router = useRouter();
-  const { login, authError } = useAuth(); // Use the login function and authError from useAuth
+  const { login, authError } = useAuth(); // Use the login function and authError from Supabase context
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -45,15 +45,14 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-        // Prevent submission if Firebase isn't configured
-      if (authError) {
-          throw new Error("Cannot log in due to Firebase configuration error.");
+      if (authError) { // Check for Supabase client initialization errors
+          throw new Error(`Cannot log in due to Supabase configuration error: ${authError.message}`);
       }
 
-      const result = await loginUser(values); // Call the backend service
+      const result = await loginUser(values); // Call the Supabase backend service
 
-      if (result.success && result.userId) {
-        await login(result.userId); // Use the login function from useAuth hook
+      if (result.success && result.userId && result.session) {
+        await login(result.session); // Use the login function from useAuth hook with Supabase session
 
         toast({
           title: 'Login Successful!',
@@ -63,31 +62,21 @@ export function LoginForm() {
 
         router.push('/'); // Redirect to home page
         router.refresh(); // Refresh to update header, etc.
-      // Email verification specific message removed
-      // } else if (result.message?.includes('Please verify your email address')) {
-      //    toast({
-      //     title: 'Email Verification Required',
-      //     description: result.message,
-      //     variant: 'destructive', 
-      //     duration: 9000, 
-      //   });
       } else {
         throw new Error(result.message || 'Invalid email or password.');
       }
     } catch (error) {
-      console.error('Login Error:', error);
+      console.error('Supabase Login Error:', error);
       toast({
         title: 'Login Failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
-      // No need to manually remove localStorage items here as useAuth handles it
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Disable the entire form if there's an auth error
   const isDisabled = isSubmitting || !!authError;
 
   return (
@@ -134,4 +123,3 @@ export function LoginForm() {
     </Form>
   );
 }
-

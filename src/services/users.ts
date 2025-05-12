@@ -1,96 +1,101 @@
 
 'use server';
 
-import { collection, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
-import { db, initializationError } from '@/lib/firebase/config';
-
-// Re-defining UserProfileData here to avoid circular dependencies if imported from events.ts or useAuth.tsx
-// Ensure this is consistent with the structure in Firestore and other parts of the app.
-export interface UserProfileData {
-    uid: string;
-    email?: string | null;
-    name?: string | null;
-    photoURL?: string | null;
-    branch?: string | null;
-    semester?: number | string | null; // Can be string or number from form/Firestore
-    registrationNumber?: string | null;
-    collegeName?: string | null;
-    city?: string | null;
-    pincode?: string | null;
-    createdAt?: string | Timestamp; // Stored as Timestamp, retrieved as string after serialization
-    updatedAt?: string | Timestamp;
-    lastLoginAt?: string | Timestamp;
-    authProvider?: string;
-    emailVerified?: boolean;
-}
+import { supabase, supabaseError } from '@/lib/supabaseClient';
+import type { UserProfileSupabase } from './auth'; // Import the Supabase user profile type
 
 /**
- * Fetches all user profiles from the 'users' collection in Firestore.
+ * Fetches all user profiles from the 'users' table in Supabase.
  * Orders users by creation date (newest first).
  */
-export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileData[]; message?: string }> {
-    console.log('[Server Action - Admin] getAllUsers invoked.');
+export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileSupabase[]; message?: string }> {
+    console.log('[Supabase Server Action - Admin] getAllUsers invoked.');
 
-    if (initializationError) {
-        const errorMessage = `User service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.error(`[Server Action Error - Admin] getAllUsers: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
-    if (!db) {
-        const errorMessage = 'User service unavailable: Firestore service instance missing.';
-        console.error(`[Server Action Error - Admin] getAllUsers: ${errorMessage}`);
+    if (supabaseError || !supabase) {
+        const errorMessage = `User service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+        console.error(`[Supabase Server Action Error - Admin] getAllUsers: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
     try {
-        const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-        const querySnapshot = await getDocs(usersQuery);
+        const { data, error } = await supabase
+            .from('users') // Assuming your table is named 'users'
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        const users: UserProfileData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        if (error) {
+            console.error('[Supabase Server Action Error - Admin] Error fetching users from Supabase:', error.message);
+            throw error;
+        }
 
-            // Helper to convert Timestamp to ISO string or return string/null
-            const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
-                if (timestamp instanceof Timestamp) {
-                    return timestamp.toDate().toISOString();
-                }
-                return typeof timestamp === 'string' ? timestamp : null;
-            };
-            
-            // Construct the user object, ensuring all fields are correctly typed
-            const userProfile: UserProfileData = {
-                uid: data.uid,
-                email: data.email || null,
-                name: data.name || null,
-                photoURL: data.photoURL || null,
-                branch: data.branch || null,
-                // Semester can be stored as string or number, handle appropriately
-                semester: data.semester !== undefined ? String(data.semester) : null, 
-                registrationNumber: data.registrationNumber || null,
-                collegeName: data.collegeName || null,
-                city: data.city || null,
-                pincode: data.pincode || null,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                lastLoginAt: convertTimestamp(data.lastLoginAt),
-                authProvider: data.authProvider || null,
-                emailVerified: typeof data.emailVerified === 'boolean' ? data.emailVerified : false,
-            };
-            users.push(userProfile);
-        });
+        const users: UserProfileSupabase[] = data || [];
 
-        console.log(`[Server Action - Admin] getAllUsers: Fetched ${users.length} users.`);
+        console.log(`[Supabase Server Action - Admin] getAllUsers: Fetched ${users.length} users.`);
         return { success: true, users };
 
     } catch (error: any) {
-        console.error('[Server Action Error - Admin] Error fetching users from Firestore:', error.code, error.message, error.stack);
+        console.error('[Supabase Server Action Error - Admin] Error fetching users from Supabase DB:', error.message, error.stack);
         return { success: false, message: `Could not fetch users due to a database error: ${error.message || 'Unknown error'}` };
     }
 }
 
+
+// Type specifically for data returned by Supabase which might have slightly different field names or types
+// until fully mapped to UserProfileData.
+// This is for the Supabase `auth.users` table, not necessarily your public `users` or `profiles` table.
+export interface SupabaseAuthUser {
+  id: string;
+  aud: string;
+  role?: string;
+  email?: string;
+  email_confirmed_at?: string;
+  phone?: string;
+  confirmed_at?: string;
+  last_sign_in_at?: string;
+  app_metadata?: {
+    provider?: string;
+    providers?: string[];
+    [key: string]: any;
+  };
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+    [key: string]: any;
+  };
+  identities?: Array<{
+    identity_id: string;
+    id: string;
+    user_id: string;
+    identity_data?: Record<string, any>;
+    provider: string;
+    last_sign_in_at?: string;
+    created_at?: string;
+    updated_at?: string;
+  }>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+// Example function to get user profile data (which you might already have in useAuth)
+export async function getUserProfileById(userId: string): Promise<{ success: boolean; data?: UserProfileSupabase; message?: string }> {
+    if (supabaseError || !supabase) {
+        return { success: false, message: `Supabase client error: ${supabaseError?.message || 'Client not initialized'}.` };
+    }
+    if (!userId) return { success: false, message: 'User ID is required.' };
+
+    const { data, error } = await supabase
+        .from('users') // Your public profiles table
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (error) return { success: false, message: error.message };
+    return { success: true, data: data as UserProfileSupabase };
+}
+
+
 // Placeholder for future admin actions like:
-// - updateUserRole(userId: string, newRole: string)
-// - deleteUserAccount(userId: string)
-// - suspendUserAccount(userId: string)
-// - etc.
+// - updateUserRole(userId: string, newRole: string) // Requires custom role management in Supabase
+// - deleteUserAccount(userId: string) // Involves deleting from auth.users and your public users table
+// - suspendUserAccount(userId: string) // Requires custom logic, e.g., setting an 'is_suspended' flag

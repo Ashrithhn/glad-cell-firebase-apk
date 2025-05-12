@@ -13,16 +13,21 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     # or
     pnpm install
     ```
-    **Note:** If you encounter "Module not found" errors (e.g., for `framer-motion`, `firebase`, etc.) after pulling changes or cloning, try running `npm install` again to ensure all dependencies are correctly installed in your `node_modules` directory.
+    **Note:** If you encounter "Module not found" errors (e.g., for `framer-motion`, `firebase`, `supabase`, etc.) after pulling changes or cloning, try running `npm install` again to ensure all dependencies are correctly installed in your `node_modules` directory.
 
 2.  **Set Up Environment Variables:**
 
-    This project uses Firebase for authentication and database services (Firestore), and Cashfree for payments. You need to configure environment variables for these services.
+    This project uses Supabase for authentication and database services, and Cashfree for payments. You need to configure environment variables for these services.
 
     *   Create a file named `.env.local` in the **root directory** of the project (the same level as `package.json`).
     *   Add the following variables to the `.env.local` file, replacing the placeholder values with your actual keys:
 
         ```dotenv
+        # Supabase Configuration (Get these from your Supabase project settings)
+        # ⚠️ IMPORTANT: These variables MUST start with NEXT_PUBLIC_ to be accessible in the browser!
+        NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+
         # Firebase Configuration (Get these from your Firebase project settings)
         # ⚠️ IMPORTANT: These variables MUST start with NEXT_PUBLIC_ to be accessible in the browser!
         NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
@@ -96,27 +101,26 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     ```bash
     npm run dev
     ```
-    Check the terminal output carefully for any Firebase configuration errors logged during startup.
+    Check the terminal output carefully for any Firebase or Supabase configuration errors logged during startup.
 
-4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the browser's developer console (F12) and the terminal where you ran `npm run dev` for any error messages, especially Firebase configuration errors.
+4.  Open [http://localhost:9002](http://localhost:9002) (or the specified port) with your browser to see the result. Check the browser's developer console (F12) and the terminal where you ran `npm run dev` for any error messages, especially Firebase/Supabase configuration errors.
 
 ## Project Structure
 
 *   `src/app/`: Contains the application pages using the Next.js App Router.
 *   `src/components/`: Shared UI components ( Shadcn UI, layout, features).
-*   `src/lib/`: Utility functions and Firebase configuration.
+*   `src/lib/`: Utility functions and Firebase/Supabase configuration.
 *   `src/hooks/`: Custom React hooks (e.g., `useAuth`, `useToast`).
 *   `src/services/`: Server Actions for backend logic (authentication, payments, database interactions).
 *   `src/ai/`: (Optional) Genkit configuration and flows for AI features.
 
 ## Key Features Implemented
 
-*   Student Registration & Login (Firebase Auth & Firestore)
+*   Student Registration & Login (Supabase Auth & Database)
     *   Email/Password
-    *   Google Sign-In
-*   Admin Login (Placeholder - Use Firebase Custom Claims for production)
+*   Admin Login (Placeholder - Implement proper role-based access for Supabase)
 *   Event Participation with Cashfree Payment Gateway
-*   Profile Page with Profile Picture Upload
+*   Profile Page with Profile Picture Upload (Supabase Storage)
 *   Idea Showcase (User-submitted and Admin-added)
 *   About & Contact Pages (Admin-editable)
 *   Dark/Light Theme Toggle
@@ -134,35 +138,16 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
 *   **Username:** `admin`
 *   **Password:** `adminpass`
 
-**Warning:** These credentials are for development testing only. Implement proper role-based access control using Firebase Custom Claims before deploying to production.
+**Warning:** These credentials are for development testing only. Implement proper role-based access control using Supabase RLS policies and potentially custom roles before deploying to production.
 
 ## Troubleshooting
 
-### Firestore Index Required Error
+### Firestore Index Required Error (Firebase Specific - Less relevant with Supabase)
 
-If you see an error in your Next.js terminal or browser console similar to:
+If you were using Firebase Firestore and saw an error like:
 `FirebaseError: The query requires an index. You can create it here: https://console.firebase.google.com/v1/r/project/YOUR_PROJECT_ID/firestore/indexes?create_composite=...`
+This means a query needs a composite index.
 
-This means that a query in the application (often involving sorting or filtering on multiple fields) needs a composite index in Firestore that has not been created yet.
+**For Supabase (PostgreSQL):**
+Database indexing is handled differently. If you encounter performance issues with Supabase queries, you'll need to add database indexes directly to your PostgreSQL tables via the Supabase dashboard (SQL Editor or Table Editor) or through migrations. Common fields to index include foreign keys, fields used in `WHERE` clauses frequently, and fields used for `ORDER BY`.
 
-**How to Fix:**
-1.  **Identify the Query:** The error message usually provides a link. **Copy this link and open it in your browser.**
-2.  **Create the Index:** The link will take you directly to the Firebase console page for creating the required index.
-    *   Review the suggested index fields and order.
-    *   Click the "Create Index" or "Save" button.
-3.  **Wait for Indexing:** Firestore will start building the index. This can take a few minutes, especially for large datasets (though for a new project, it's usually quick). You can monitor the status in the Firebase console under Firestore > Indexes.
-4.  **Restart Application (Optional but Recommended):** Once the index is built and active, it's a good idea to restart your Next.js development server.
-5.  **Retry the Operation:** Try accessing the page or performing the action that caused the error. It should now work.
-
-**Common Queries Requiring Indexes:**
-*   Fetching homepage images: `homepageImages` collection, ordered by `order` (ascending) and `createdAt` (descending).
-*   Fetching events: `events` collection, ordered by `createdAt` (descending).
-*   Other queries involving `orderBy()` on multiple fields or `where()` clauses on different fields than the `orderBy()` field.
-
-If the error persists or the link doesn't work, manually navigate to your Firebase project console:
-*   Go to **Firestore Database**.
-*   Click on the **Indexes** tab.
-*   Click **Add composite index**.
-*   Enter the **Collection ID** (e.g., `homepageImages`, `events`).
-*   Add the fields to index based on your query (e.g., for homepage images: `order` ASC, `createdAt` DESC).
-*   Save the index.

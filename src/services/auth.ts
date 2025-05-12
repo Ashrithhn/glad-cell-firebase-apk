@@ -1,303 +1,238 @@
+
 'use server';
 
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut as firebaseSignOut, // Rename to avoid conflict
-    sendPasswordResetEmail,
-    // sendEmailVerification, // Removed
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { auth, db, initializationError } from '@/lib/firebase/config';
+import { supabase, supabaseError } from '@/lib/supabaseClient'; // Import Supabase client
+import type { UserCredentials, SignUpWithPasswordCredentials } from '@supabase/supabase-js';
+
+// User profile data structure for your 'users' table in Supabase
+// Ensure this matches the columns in your Supabase 'users' table
+export interface UserProfileSupabase {
+  id: string; // This will be the Supabase auth user ID
+  email?: string | null;
+  name?: string | null;
+  branch?: string | null;
+  semester?: number | string | null;
+  registration_number?: string | null; // Using snake_case as is common in Postgres
+  college_name?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  photo_url?: string | null;
+  auth_provider?: string | null; // e.g., 'email', 'google'
+  created_at?: string; // Supabase timestamps are typically ISO strings
+  updated_at?: string;
+}
+
 
 /**
- * Registers a user with Firebase Authentication and stores profile data in Firestore.
+ * Registers a user with Supabase Authentication and stores profile data in a 'users' table.
  */
 export async function registerUser(userData: any): Promise<{ success: boolean; userId?: string; message?: string }> {
-  console.log('[Server Action] registerUser invoked.');
+  console.log('[Supabase Server Action] registerUser invoked.');
 
-  if (initializationError) {
-    const errorMessage = `Registration service unavailable: Firebase initialization error - ${initializationError.message}. Check setup.`;
-    console.error(`[Server Action Error] registerUser: ${errorMessage}`);
+  if (supabaseError || !supabase) {
+    const errorMessage = `Registration service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}. Check setup.`;
+    console.error(`[Supabase Server Action Error] registerUser: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
-  if (!auth || !db) {
-    const errorMessage = 'Registration service temporarily unavailable: Firebase Auth or Firestore service instance missing. Check configuration.';
-    console.error(`[Server Action Error] registerUser: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-
 
   const { email, password, name, branch, semester, registrationNumber, collegeName, city, pincode } = userData;
-  console.log('[Server Action] Attempting Firebase registration for user:', email);
+  console.log('[Supabase Server Action] Attempting Supabase registration for user:', email);
 
   try {
     // Check if registration number already exists
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where("registrationNumber", "==", registrationNumber), limit(1));
-    const querySnapshot = await getDocs(q);
+    const { data: existingUserByReg, error: regCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('registration_number', registrationNumber)
+      .limit(1)
+      .single();
 
-    if (!querySnapshot.empty) {
-      console.warn('[Server Action] Registration number already exists:', registrationNumber);
+    if (regCheckError && regCheckError.code !== 'PGRST116') { // PGRST116: no rows found
+      console.error('[Supabase Server Action] Error checking registration number:', regCheckError.message);
+      return { success: false, message: `Error checking registration number: ${regCheckError.message}` };
+    }
+    if (existingUserByReg) {
+      console.warn('[Supabase Server Action] Registration number already exists:', registrationNumber);
       return { success: false, message: 'This registration number is already in use. Please use a different one.' };
     }
 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    console.log('[Server Action] Firebase Auth user created:', user.uid);
-
-    // Email verification step removed
-    // await sendEmailVerification(user);
-    // console.log('[Server Action] Verification email sent to:', user.email);
-
-
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
-      uid: user.uid,
-      email: user.email,
-      name: name,
-      branch: branch,
-      semester: semester,
-      registrationNumber: registrationNumber,
-      collegeName: collegeName,
-      city: city,
-      pincode: pincode,
-      createdAt: serverTimestamp() as Timestamp,
-      authProvider: 'email/password', // Track auth provider
-      emailVerified: false, // Set to false as verification is skipped
+    // Sign up the user with Supabase Auth
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { // Metadata that can be useful, but full profile stored separately
+          full_name: name,
+        }
+      }
     });
-    console.log('[Server Action] User profile stored in Firestore for UID:', user.uid);
 
-    return { success: true, userId: user.uid, message: 'Registration successful!' }; // Updated message
-  } catch (error: any) {
-    console.error('[Server Action Error] Firebase Registration Error:', error.code, error.message);
-    let message = 'Registration failed. Please try again.';
-    if (error.code === 'auth/email-already-in-use') {
-      message = 'This email address is already registered.';
-    } else if (error.code === 'auth/weak-password') {
-      message = 'Password is too weak. It should be at least 8 characters long.';
-    } else if (error.code === 'auth/invalid-api-key') {
-        message = 'Invalid Firebase configuration (API Key). Please contact support.';
-    } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-        message = 'Registration failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-    } else if (error.code) {
-        message = `Registration failed: ${error.code}`;
-    } else {
-        message = `Registration failed: ${error.message || 'An unknown error occurred.'}`;
+    if (signUpError) {
+      console.error('[Supabase Server Action Error] Supabase SignUp Error:', signUpError.message);
+      return { success: false, message: signUpError.message || 'Failed to sign up with Supabase Auth.' };
     }
-    return { success: false, message: message };
+
+    if (!authData.user) {
+      return { success: false, message: 'User not created in Supabase Auth despite no error.' };
+    }
+    const user = authData.user;
+    console.log('[Supabase Server Action] Supabase Auth user created:', user.id);
+
+    // Store additional user profile information in your 'users' table
+    const profileData: Omit<UserProfileSupabase, 'created_at' | 'updated_at' | 'auth_provider'> = {
+      id: user.id, // Link to the auth.users table
+      email: user.email,
+      name,
+      branch,
+      semester,
+      registration_number: registrationNumber,
+      college_name: collegeName,
+      city,
+      pincode,
+      photo_url: user.user_metadata?.avatar_url, // If available from social sign-up options
+    };
+
+    const { error: insertError } = await supabase.from('users').insert(profileData);
+
+    if (insertError) {
+      console.error('[Supabase Server Action Error] Error inserting user profile:', insertError.message);
+      // Potentially try to clean up the auth user if profile insertion fails, though this can be complex.
+      return { success: false, message: `User authenticated, but profile creation failed: ${insertError.message}` };
+    }
+    console.log('[Supabase Server Action] User profile stored in Supabase table for ID:', user.id);
+
+    return { success: true, userId: user.id, message: 'Registration successful! Please check your email to verify your account.' };
+  } catch (error: any) {
+    console.error('[Supabase Server Action Error] Unexpected error during registration:', error.message);
+    return { success: false, message: `Registration failed: ${error.message || 'An unknown error occurred.'}` };
   }
 }
 
 /**
- * Logs in a user using Firebase Authentication.
+ * Logs in a user using Supabase Authentication.
  */
-export async function loginUser(credentials: any): Promise<{ success: boolean; userId?: string; message?: string }> {
-   console.log('[Server Action] loginUser invoked.');
+export async function loginUser(credentials: UserCredentials): Promise<{ success: boolean; userId?: string; session?: Session | null; message?: string }> {
+   console.log('[Supabase Server Action] loginUser invoked.');
 
-   if (initializationError) {
-    const errorMessage = `Login service unavailable: Firebase initialization error - ${initializationError.message}. Check setup.`;
-    console.error(`[Server Action Error] loginUser: ${errorMessage}`);
+   if (supabaseError || !supabase) {
+    const errorMessage = `Login service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}. Check setup.`;
+    console.error(`[Supabase Server Action Error] loginUser: ${errorMessage}`);
     return { success: false, message: errorMessage };
-   }
-   if (!auth) {
-     const errorMessage = 'Login service temporarily unavailable: Firebase Auth service instance missing. Check configuration.';
-     console.error(`[Server Action Error] loginUser: ${errorMessage}`);
-     return { success: false, message: errorMessage };
    }
 
   const { email, password } = credentials;
-  console.log('[Server Action] Attempting Firebase login for user:', email);
+  console.log('[Supabase Server Action] Attempting Supabase login for user:', email);
 
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    console.log('[Server Action] Firebase Login Successful:', user.uid);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    // Email verification check removed
-    // if (user.providerData.some(provider => provider.providerId === 'password') && !user.emailVerified) {
-        // return { success: false, userId: user.uid, message: 'Login failed: Please verify your email address. Check your inbox for the verification link.' };
-    // }
-
-    return { success: true, userId: user.uid };
-  } catch (error: any) {
-    console.error('[Server Action Error] Firebase Login Error:', error.code, error.message);
-    let message = 'Login failed. Please check your credentials.';
-     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-       message = 'Invalid email or password.';
-     } else if (error.code === 'auth/invalid-api-key') {
-         message = 'Invalid Firebase configuration (API Key). Please contact support.';
-     } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-         message = 'Login failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-     } else if (error.code) {
-         message = `Login failed: ${error.code}`;
-     } else {
-         message = `Login failed: ${error.message || 'An unknown error occurred.'}`;
-     }
-    return { success: false, message: message };
-  }
-}
-
-/**
- * Handles user data from Google Sign-In, creates or updates user in Firestore.
- */
-export async function handleGoogleSignInUserData(googleUserData: {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-}): Promise<{ success: boolean; userId?: string; message?: string }> {
-  console.log('[Server Action] handleGoogleSignInUserData invoked for UID:', googleUserData.uid);
-
-  if (initializationError) {
-    const errorMessage = `Google Sign-In service unavailable: Firebase initialization error - ${initializationError.message}.`;
-    console.error(`[Server Action Error] handleGoogleSignInUserData: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-  if (!db) {
-    const errorMessage = 'Google Sign-In service unavailable: Firestore instance missing.';
-    console.error(`[Server Action Error] handleGoogleSignInUserData: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-
-  const { uid, email, displayName, photoURL } = googleUserData;
-
-  if (!uid || !email) {
-    return { success: false, message: 'Google Sign-In failed: Missing UID or email.' };
-  }
-
-  try {
-    const userDocRef = doc(db, 'users', uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (userDocSnap.exists()) {
-      // User exists, update their profile with latest Google info (if needed)
-      await setDoc(userDocRef, {
-        name: displayName || userDocSnap.data()?.name || 'N/A', // Keep existing name if Google's is null
-        photoURL: photoURL || userDocSnap.data()?.photoURL, // Keep existing photoURL if Google's is null
-        lastLoginAt: serverTimestamp() as Timestamp,
-        authProvider: 'google.com', // Update auth provider
-        emailVerified: true, // Google sign-in implies email is verified by Google
-      }, { merge: true });
-      console.log('[Server Action] Existing Google user profile updated in Firestore:', uid);
-    } else {
-      // New user, create profile
-      // For Google Sign-In, some fields like branch, semester might be missing.
-      // The user might need to fill these in later via a profile completion step.
-      await setDoc(userDocRef, {
-        uid: uid,
-        email: email,
-        name: displayName || 'N/A',
-        photoURL: photoURL,
-        branch: '', // Placeholder, user to update
-        semester: '', // Placeholder
-        registrationNumber: `GOOGLE_${uid.substring(0,10)}`, // Create a unique placeholder for Google users
-        collegeName: '', // Placeholder, user to update
-        city: '', // Placeholder
-        pincode: '', // Placeholder
-        createdAt: serverTimestamp() as Timestamp,
-        lastLoginAt: serverTimestamp() as Timestamp,
-        authProvider: 'google.com', // Track auth provider
-        emailVerified: true, // Google sign-in implies email is verified by Google
-      });
-      console.log('[Server Action] New Google user profile created in Firestore:', uid);
+    if (error) {
+      console.error('[Supabase Server Action Error] Supabase Login Error:', error.message);
+      return { success: false, message: error.message || 'Invalid email or password.' };
     }
 
-    return { success: true, userId: uid };
+    if (!data.user || !data.session) {
+        return { success: false, message: 'Login failed: No user or session returned.' };
+    }
+    console.log('[Supabase Server Action] Supabase Login Successful:', data.user.id);
+    return { success: true, userId: data.user.id, session: data.session };
+
   } catch (error: any) {
-    console.error('[Server Action Error] Error handling Google Sign-In user data in Firestore:', error.message, error.stack);
-    return { success: false, message: `Server error during Google Sign-In: ${error.message || 'Unknown error'}` };
+    console.error('[Supabase Server Action Error] Unexpected error during login:', error.message);
+    return { success: false, message: `Login failed: ${error.message || 'An unknown error occurred.'}` };
   }
 }
 
 
 /**
- * Logs out the currently signed-in user using Firebase Authentication.
+ * Logs out the currently signed-in Supabase user.
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
-    console.log('[Server Action] logoutUser invoked.');
+    console.log('[Supabase Server Action] logoutUser invoked.');
 
-    if (initializationError) {
-        const errorMessage = `Logout service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.warn(`[Server Action Warning] logoutUser: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
-    if (!auth) {
-        const errorMessage = 'Logout service unavailable: Firebase Auth service instance missing.';
-        console.warn(`[Server Action Warning] logoutUser: ${errorMessage}`);
+    if (supabaseError || !supabase) {
+        const errorMessage = `Logout service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+        console.warn(`[Supabase Server Action Warning] logoutUser: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
-
-    console.log('[Server Action] Attempting Firebase logout');
+    console.log('[Supabase Server Action] Attempting Supabase logout');
     try {
-        await firebaseSignOut(auth);
-        console.log('[Server Action] Firebase Logout Successful');
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('[Supabase Server Action Error] Supabase Logout Error:', error.message);
+            return { success: false, message: error.message || 'Logout failed.' };
+        }
+        console.log('[Supabase Server Action] Supabase Logout Successful');
         return { success: true };
     } catch (error: any) {
-        console.error('[Server Action Error] Firebase Logout Error:', error.code, error.message);
+        console.error('[Supabase Server Action Error] Unexpected error during logout:', error.message);
         return { success: false, message: error.message || 'Logout failed.' };
     }
 }
 
 
 /**
- * Placeholder service for admin login.
+ * Placeholder service for admin login. This needs to be adapted for Supabase roles/permissions.
  */
 export async function loginAdmin(credentials: any): Promise<{ success: boolean; message?: string }> {
-  console.log('[Server Action] loginAdmin invoked.');
-  console.log('[Server Action] Attempting to login admin:', credentials.username);
+  console.log('[Supabase Server Action] loginAdmin invoked (placeholder).');
+  // Implement proper admin authentication. This is NOT secure.
+  // For Supabase, you'd typically check a user's role after they log in normally,
+  // or have a separate admin user system.
   await new Promise(resolve => setTimeout(resolve, 500));
 
   if (credentials.username === 'admin' && credentials.password === 'adminpass') {
-     console.log('[Server Action] Admin login successful (placeholder).');
+     console.log('[Supabase Server Action] Admin login successful (placeholder).');
      return { success: true };
   } else {
-     console.warn('[Server Action] Admin login failed (placeholder): Invalid credentials.');
+     console.warn('[Supabase Server Action] Admin login failed (placeholder): Invalid credentials.');
      return { success: false, message: 'Invalid admin credentials.' };
   }
 }
 
 /**
- * Sends a password reset email to the given email address.
+ * Sends a password reset email to the given email address using Supabase.
  */
 export async function sendPasswordReset(email: string): Promise<{ success: boolean; message?: string }> {
-    console.log('[Server Action] sendPasswordReset invoked for email:', email);
+    console.log('[Supabase Server Action] sendPasswordReset invoked for email:', email);
 
-    if (initializationError) {
-        const errorMessage = `Password reset service unavailable: Firebase initialization error - ${initializationError.message}.`;
-        console.error(`[Server Action Error] sendPasswordReset: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
-    if (!auth) {
-        const errorMessage = 'Password reset service unavailable: Firebase Auth instance missing.';
-        console.error(`[Server Action Error] sendPasswordReset: ${errorMessage}`);
+    if (supabaseError || !supabase) {
+        const errorMessage = `Password reset service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+        console.error(`[Supabase Server Action Error] sendPasswordReset: ${errorMessage}`);
         return { success: false, message: errorMessage };
     }
 
     try {
-        await sendPasswordResetEmail(auth, email);
-        console.log('[Server Action] Password reset email sent to:', email);
+        // For password reset, Supabase typically sends a magic link or OTP depending on project settings.
+        // The redirectTo option is important to guide the user back to your app.
+        const redirectTo = process.env.NEXT_PUBLIC_APP_BASE_URL ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/update-password` : undefined;
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectTo,
+        });
+
+        if (error) {
+            console.error('[Supabase Server Action Error] Error sending password reset email:', error.message);
+            return { success: false, message: error.message || 'Failed to send password reset email.' };
+        }
+        console.log('[Supabase Server Action] Password reset email sent to:', email);
         return { success: true, message: 'If an account exists for this email, a password reset link has been sent.' };
     } catch (error: any) {
-        console.error('[Server Action Error] Error sending password reset email:', error.code, error.message);
-        let message = 'Failed to send password reset email. Please try again.';
-        if (error.code === 'auth/invalid-email') {
-            message = 'Invalid email address format.';
-        } else if (error.code === 'auth/user-not-found') {
-            // For security, you might not want to explicitly say the user wasn't found.
-            // The generic message "If an account exists..." handles this well.
-            message = 'If an account exists for this email, a password reset link has been sent.';
-        } else if (error.code === 'auth/missing-ios-bundle-id' || error.code === 'auth/missing-continue-uri') {
-            message = 'Password reset configuration error. Please contact support.';
-        } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-             message = 'Password reset failed: Email/Password sign-in or password reset is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-        } else if (error.code) {
-            message = `Password reset failed: ${error.code}`;
-        } else {
-            message = `Password reset failed: ${error.message || 'An unknown error occurred.'}`;
-        }
-        return { success: false, message };
+        console.error('[Supabase Server Action Error] Unexpected error sending password reset email:', error.message);
+        return { success: false, message: `Password reset failed: ${error.message || 'An unknown error occurred.'}` };
     }
 }
 
+// Note: Google Sign-In was removed previously. If re-added, implement with supabase.auth.signInWithOAuth({ provider: 'google' })
+// and handle the callback to store user profile in your 'users' table.
+// The handleGoogleSignInUserData function would need to be adapted.
+// It would involve:
+// 1. Client-side: `supabase.auth.signInWithOAuth({ provider: 'google' })`
+// 2. Client-side: onAuthStateChange to detect successful Google login.
+// 3. Server-side (optional, or client can do it): If new Google user, insert/update their profile into your `users` table.
+//    Supabase's `auth.users` table stores basic auth info. Your `users` (or `profiles`) table stores additional app-specific info.
+type Session = import('@supabase/supabase-js').Session;

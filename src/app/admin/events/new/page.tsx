@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AddEventForm } from '@/components/features/admin/add-event-form';
+import { AddEventForm } from '@/components/features/admin/add-event-form'; // This form will use Supabase service
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';

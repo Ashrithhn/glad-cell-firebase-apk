@@ -2,16 +2,15 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, List, ArrowLeft, AlertCircle, Calendar } from 'lucide-react';
-import { getEvents } from '@/services/events'; // Import the renamed service function
-import type { EventData } from '@/services/events'; // Import the renamed type
+import { PlusCircle, List, ArrowLeft, AlertCircle } from 'lucide-react';
+import { getEvents } from '@/services/events'; // Uses Supabase
+import type { EventData } from '@/services/events'; // Supabase type
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { EventListClient } from '@/components/features/admin/event-list-client'; // Import the new client component
+import { EventListClient } from '@/components/features/admin/event-list-client'; // Uses Supabase service for delete
 
-// Fetch event data from Firestore on the server
 async function loadEvents(): Promise<{ events?: EventData[], error?: string }> {
-    const result = await getEvents(); // Use the renamed function
-    if (result.success) {
+    const result = await getEvents(); // Fetches from Supabase
+    if (result.success && result.events) { // Check events array directly
         return { events: result.events };
     } else {
         return { error: result.message || 'Failed to load events.' };
@@ -52,10 +51,10 @@ export default async function AdminManageEventsPage() {
         </CardHeader>
         <CardContent>
           {!error && events ? (
-            <EventListClient events={events} /> // Use client component to display list and handle delete
+            <EventListClient events={events} />
           ) : !error ? (
             <p className="text-muted-foreground text-center">No items found.</p>
-          ) : null /* Don't show 'No items' if there was an error */}
+          ) : null }
         </CardContent>
       </Card>
     </div>

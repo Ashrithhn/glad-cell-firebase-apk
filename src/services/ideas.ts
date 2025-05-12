@@ -1,116 +1,99 @@
 
 'use server';
 
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  Timestamp,
-  query,
-  orderBy,
-} from 'firebase/firestore';
-import { db, initializationError } from '@/lib/firebase/config';
+import { supabase, supabaseError } from '@/lib/supabaseClient';
 import { revalidatePath } from 'next/cache';
 
+// Ensure your 'ideas' table in Supabase has columns matching this interface.
+// Timestamps are stored as 'timestamptz' in Supabase and retrieved as ISO strings.
+// Tags might be stored as an array of text (text[]) or jsonb. Assuming text[] for now.
 export interface IdeaData {
-  id?: string; // Firestore document ID
+  id?: string; // Supabase typically uses 'id' (UUID) as primary key, auto-generated
   title: string;
   description: string;
-  submitterName?: string; // Optional: if submitted by a user or admin enters it
-  submitterId?: string; // Optional: Firebase UID of the submitter if a registered user
-  department?: string;
-  tags?: string[];
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Implemented'; // Status of the idea
-  createdAt?: Timestamp | string;
-  updatedAt?: Timestamp | string;
+  submitter_name?: string | null;
+  submitter_id?: string | null; // Foreign key to users.id if applicable
+  department?: string | null;
+  tags?: string[] | null;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Implemented';
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**
- * Adds a new idea to the 'ideas' collection in Firestore.
+ * Adds a new idea to the 'ideas' table in Supabase.
  */
 export async function addIdea(
-  ideaData: Omit<IdeaData, 'id' | 'createdAt' | 'updatedAt'>
+  ideaData: Omit<IdeaData, 'id' | 'created_at' | 'updated_at'>
 ): Promise<{ success: boolean; ideaId?: string; message?: string }> {
-  console.log('[Server Action - Ideas] addIdea invoked.');
+  console.log('[Supabase Service - Ideas] addIdea invoked.');
 
-  if (initializationError) {
-    const errorMessage = `Idea service unavailable: Firebase initialization error - ${initializationError.message}.`;
+  if (supabaseError || !supabase) {
+    const errorMessage = `Idea service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
     return { success: false, message: errorMessage };
-  }
-  if (!db) {
-    return { success: false, message: 'Idea service unavailable: Firestore instance missing.' };
   }
 
   try {
     const docData = {
       ...ideaData,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp,
+      // Supabase handles created_at and updated_at automatically if columns are configured with defaults like now()
     };
 
-    const docRef = await addDoc(collection(db, 'ideas'), docData);
-    console.log('[Server Action - Ideas] Idea added successfully with ID:', docRef.id);
+    const { data, error } = await supabase
+      .from('ideas')
+      .insert(docData)
+      .select('id') // Select the ID of the newly inserted row
+      .single(); // Expect a single row back
+
+    if (error) {
+      console.error('[Supabase Service Error - Ideas] Error adding idea:', error.message);
+      throw error;
+    }
+    
+    if (!data || !data.id) {
+        console.error('[Supabase Service Error - Ideas] Idea added but no ID returned.');
+        return { success: false, message: 'Idea added but failed to retrieve ID.' };
+    }
+
+    console.log('[Supabase Service - Ideas] Idea added successfully with ID:', data.id);
 
     revalidatePath('/admin/ideas');
-    revalidatePath('/ideas'); // Revalidate user-facing ideas page
+    revalidatePath('/ideas');
 
-    return { success: true, ideaId: docRef.id };
+    return { success: true, ideaId: data.id };
   } catch (error: any) {
-    console.error('[Server Action Error - Ideas] Error adding idea:', error.message, error.stack);
+    console.error('[Supabase Service Error - Ideas] Catch block error adding idea:', error.message, error.stack);
     return { success: false, message: `Could not add idea: ${error.message || 'Unknown database error'}` };
   }
 }
 
 /**
- * Fetches all ideas from the 'ideas' collection, ordered by creation date.
+ * Fetches all ideas from the 'ideas' table, ordered by creation date.
  */
 export async function getIdeas(): Promise<{ success: boolean; ideas?: IdeaData[]; message?: string }> {
-  console.log('[Server Action - Ideas] getIdeas invoked.');
+  console.log('[Supabase Service - Ideas] getIdeas invoked.');
 
-  if (initializationError) {
-    const errorMessage = `Idea service unavailable: Firebase initialization error - ${initializationError.message}.`;
+  if (supabaseError || !supabase) {
+    const errorMessage = `Idea service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
     return { success: false, message: errorMessage };
-  }
-  if (!db) {
-    return { success: false, message: 'Idea service unavailable: Firestore instance missing.' };
   }
 
   try {
-    const ideasQuery = query(collection(db, 'ideas'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(ideasQuery);
+    const { data, error } = await supabase
+      .from('ideas')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    const ideas: IdeaData[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
-        if (timestamp instanceof Timestamp) {
-          return timestamp.toDate().toISOString();
-        }
-        return typeof timestamp === 'string' ? timestamp : null;
-      };
-      ideas.push({
-        id: docSnap.id,
-        title: data.title,
-        description: data.description,
-        submitterName: data.submitterName,
-        submitterId: data.submitterId,
-        department: data.department,
-        tags: data.tags || [],
-        status: data.status,
-        createdAt: convertTimestamp(data.createdAt),
-        updatedAt: convertTimestamp(data.updatedAt),
-      } as IdeaData);
-    });
+    if (error) {
+      console.error('[Supabase Service Error - Ideas] Error fetching ideas:', error.message);
+      throw error;
+    }
 
-    console.log(`[Server Action - Ideas] Fetched ${ideas.length} ideas.`);
+    const ideas: IdeaData[] = data || [];
+    console.log(`[Supabase Service - Ideas] Fetched ${ideas.length} ideas.`);
     return { success: true, ideas };
   } catch (error: any) {
-    console.error('[Server Action Error - Ideas] Error fetching ideas:', error.message, error.stack);
+    console.error('[Supabase Service Error - Ideas] Catch block error fetching ideas:', error.message, error.stack);
     return { success: false, message: `Could not fetch ideas: ${error.message || 'Unknown database error'}` };
   }
 }
@@ -119,62 +102,57 @@ export async function getIdeas(): Promise<{ success: boolean; ideas?: IdeaData[]
  * Fetches a single idea by its ID.
  */
 export async function getIdeaById(ideaId: string): Promise<{ success: boolean; idea?: IdeaData; message?: string }> {
-    console.log(`[Server Action - Ideas] getIdeaById invoked for ID: ${ideaId}`);
-    if (initializationError) return { success: false, message: `Firebase error: ${initializationError.message}` };
-    if (!db) return { success: false, message: 'Firestore instance missing.' };
+    console.log(`[Supabase Service - Ideas] getIdeaById invoked for ID: ${ideaId}`);
+    if (supabaseError || !supabase) return { success: false, message: `Supabase error: ${supabaseError?.message || 'Client not initialized'}` };
     if (!ideaId) return { success: false, message: 'Idea ID is required.' };
 
     try {
-        const ideaDocRef = doc(db, 'ideas', ideaId);
-        const docSnap = await getDoc(ideaDocRef);
+        const { data, error } = await supabase
+            .from('ideas')
+            .select('*')
+            .eq('id', ideaId)
+            .single();
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const convertTimestamp = (timestamp: Timestamp | string | null | undefined): string | null => {
-                if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
-                return typeof timestamp === 'string' ? timestamp : null;
-            };
-            const idea: IdeaData = {
-                id: docSnap.id,
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-            } as IdeaData;
-            return { success: true, idea };
-        } else {
-            return { success: false, message: 'Idea not found.' };
+        if (error) {
+             if (error.code === 'PGRST116') return { success: false, message: 'Idea not found.' }; // No rows found
+            console.error(`[Supabase Service Error - Ideas] Error fetching idea ${ideaId}:`, error.message);
+            throw error;
         }
+        return { success: true, idea: data as IdeaData };
     } catch (error: any) {
-        console.error(`[Server Action Error - Ideas] Error fetching idea ${ideaId}:`, error.message);
+        console.error(`[Supabase Service Error - Ideas] Catch block error fetching idea ${ideaId}:`, error.message);
         return { success: false, message: `Failed to fetch idea: ${error.message}` };
     }
 }
 
-
 /**
- * Updates an existing idea in Firestore.
+ * Updates an existing idea in the 'ideas' table.
  */
 export async function updateIdea(
   ideaId: string,
-  ideaData: Partial<Omit<IdeaData, 'id' | 'createdAt'>>
+  ideaData: Partial<Omit<IdeaData, 'id' | 'created_at'>> // `updated_at` will be set by Supabase trigger or here
 ): Promise<{ success: boolean; message?: string }> {
-  console.log(`[Server Action - Ideas] updateIdea invoked for ID: ${ideaId}`);
+  console.log(`[Supabase Service - Ideas] updateIdea invoked for ID: ${ideaId}`);
 
-  if (initializationError) {
-    return { success: false, message: `Firebase error: ${initializationError.message}` };
-  }
-  if (!db) {
-    return { success: false, message: 'Firestore instance missing.' };
+  if (supabaseError || !supabase) {
+    return { success: false, message: `Supabase error: ${supabaseError?.message || 'Client not initialized'}` };
   }
 
   try {
-    const ideaDocRef = doc(db, 'ideas', ideaId);
     const dataToUpdate = {
       ...ideaData,
-      updatedAt: serverTimestamp() as Timestamp,
+      updated_at: new Date().toISOString(), // Manually set updated_at
     };
-    await updateDoc(ideaDocRef, dataToUpdate);
-    console.log(`[Server Action - Ideas] Idea ${ideaId} updated successfully.`);
+    const { error } = await supabase
+      .from('ideas')
+      .update(dataToUpdate)
+      .eq('id', ideaId);
+
+    if (error) {
+      console.error(`[Supabase Service Error - Ideas] Error updating idea ${ideaId}:`, error.message);
+      throw error;
+    }
+    console.log(`[Supabase Service - Ideas] Idea ${ideaId} updated successfully.`);
 
     revalidatePath('/admin/ideas');
     revalidatePath(`/admin/ideas/edit/${ideaId}`);
@@ -182,35 +160,39 @@ export async function updateIdea(
 
     return { success: true };
   } catch (error: any) {
-    console.error(`[Server Action Error - Ideas] Error updating idea ${ideaId}:`, error.message);
+    console.error(`[Supabase Service Error - Ideas] Catch block error updating idea ${ideaId}:`, error.message);
     return { success: false, message: `Could not update idea: ${error.message}` };
   }
 }
 
 /**
- * Deletes an idea from Firestore.
+ * Deletes an idea from the 'ideas' table.
  */
 export async function deleteIdea(ideaId: string): Promise<{ success: boolean; message?: string }> {
-  console.log(`[Server Action - Ideas] deleteIdea invoked for ID: ${ideaId}`);
+  console.log(`[Supabase Service - Ideas] deleteIdea invoked for ID: ${ideaId}`);
 
-  if (initializationError) {
-    return { success: false, message: `Firebase error: ${initializationError.message}` };
-  }
-  if (!db) {
-    return { success: false, message: 'Firestore instance missing.' };
+  if (supabaseError || !supabase) {
+    return { success: false, message: `Supabase error: ${supabaseError?.message || 'Client not initialized'}` };
   }
 
   try {
-    const ideaDocRef = doc(db, 'ideas', ideaId);
-    await deleteDoc(ideaDocRef);
-    console.log(`[Server Action - Ideas] Idea ${ideaId} deleted successfully.`);
+    const { error } = await supabase
+      .from('ideas')
+      .delete()
+      .eq('id', ideaId);
+
+    if (error) {
+      console.error(`[Supabase Service Error - Ideas] Error deleting idea ${ideaId}:`, error.message);
+      throw error;
+    }
+    console.log(`[Supabase Service - Ideas] Idea ${ideaId} deleted successfully.`);
 
     revalidatePath('/admin/ideas');
     revalidatePath('/ideas');
 
     return { success: true };
   } catch (error: any) {
-    console.error(`[Server Action Error - Ideas] Error deleting idea ${ideaId}:`, error.message);
+    console.error(`[Supabase Service Error - Ideas] Catch block error deleting idea ${ideaId}:`, error.message);
     return { success: false, message: `Could not delete idea: ${error.message}` };
   }
 }

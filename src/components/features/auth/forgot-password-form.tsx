@@ -17,8 +17,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Mail } from 'lucide-react';
-import { sendPasswordReset } from '@/services/auth'; // New server action
-import { useAuth } from '@/hooks/use-auth';
+import { sendPasswordReset } from '@/services/auth'; // Supabase server action
+import { useAuth } from '@/hooks/use-auth'; // To check for Supabase client initialization errors
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -28,7 +28,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export function ForgotPasswordForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { authError } = useAuth(); // To check for Firebase initialization errors
+  const { authError } = useAuth(); // To check for Supabase client initialization errors
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -41,10 +41,10 @@ export function ForgotPasswordForm() {
     setIsSubmitting(true);
 
     try {
-      if (authError) {
+      if (authError) { // Check for Supabase client initialization errors
         throw new Error(`Cannot proceed: ${authError.message}`);
       }
-      const result = await sendPasswordReset(values.email);
+      const result = await sendPasswordReset(values.email); // Calls Supabase service
 
       if (result.success) {
         toast({
@@ -57,7 +57,7 @@ export function ForgotPasswordForm() {
         throw new Error(result.message || 'Failed to send password reset email.');
       }
     } catch (error) {
-      console.error('Forgot Password Error:', error);
+      console.error('Supabase Forgot Password Error:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
