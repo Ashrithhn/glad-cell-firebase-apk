@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
+import Link from 'next/link'; // Added import for Link
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck, Save, ExternalLink } from 'lucide-react';
+import { Loader2, AlertTriangle, Globe, Palette, ShieldCheck, Save, ExternalLink, UserCog } from 'lucide-react'; // Added UserCog
 import { getSiteSettings, updateSiteSettings } from '@/services/site-settings';
 import type { SiteSettings } from '@/services/site-settings';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -280,3 +281,4 @@ export function SiteSettingsManager() {
     </div>
   );
 }
+
