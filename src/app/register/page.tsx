@@ -10,14 +10,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+<<<<<<< HEAD
 // Google Sign-In button removed
 // import { Separator } from '@/components/ui/separator'; // Import Separator
 import { useToast } from '@/hooks/use-toast';
+=======
+import { Separator } from '@/components/ui/separator'; 
+import { toast } from '@/hooks/use-toast'; 
+>>>>>>> b65b534 (remove login with google option)
 
 
 export default function RegisterPage() {
   const router = useRouter();
+<<<<<<< HEAD
   const { user, userId, isAdmin, loading, authError } = useAuth();
+=======
+  const { user, userId, isAdmin, loading, authError } = useAuth(); 
+>>>>>>> b65b534 (remove login with google option)
   const isLoggedIn = !loading && (!!userId || isAdmin);
   const { toast } = useToast();
 
@@ -31,8 +40,11 @@ export default function RegisterPage() {
       }
   }, [loading, userId, isAdmin, router]);
 
+<<<<<<< HEAD
   // Google Sign-In was removed, so related handlers are also removed.
 
+=======
+>>>>>>> b65b534 (remove login with google option)
 
   if (loading || (isLoggedIn && !authError)) {
     return (
@@ -92,7 +104,12 @@ export default function RegisterPage() {
           )}
           <RegistrationForm />
 
+<<<<<<< HEAD
           {/* Removed Google Sign-In button and separator */}
+=======
+          {/* Removed OR Separator and GoogleSignInButton */}
+          
+>>>>>>> b65b534 (remove login with google option)
         </CardContent>
       </Card>
     </div>

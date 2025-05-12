@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+<<<<<<< HEAD
 import { AlertCircle, ShieldAlert } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +19,17 @@ export default function LoginPage() {
   const { user, userId, isAdmin, loading, authError } = useAuth();
   const isLoggedIn = !loading && (!!userId || isAdmin);
   const { toast } = useToast();
+=======
+import { AlertCircle, ShieldAlert } from 'lucide-react'; 
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast'; 
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { user, userId, isAdmin, loading, authError } = useAuth(); 
+  const isLoggedIn = !loading && (!!userId || isAdmin);
+  const { toast } = useToast(); 
+>>>>>>> b65b534 (remove login with google option)
 
   useEffect(() => {
     if (!loading) {
@@ -29,7 +41,10 @@ export default function LoginPage() {
     }
   }, [loading, userId, isAdmin, router]);
 
+<<<<<<< HEAD
   // Google Sign-In was removed, so related handlers are also removed.
+=======
+>>>>>>> b65b534 (remove login with google option)
 
   if (loading || (isLoggedIn && !authError)) {
     return (
@@ -82,9 +97,15 @@ export default function LoginPage() {
             </Link>
           </div>
 
+<<<<<<< HEAD
           {/* Removed Google Sign-In button and separator */}
 
            <div className="text-center mt-6">
+=======
+          {/* Removed OR Separator and GoogleSignInButton */}
+
+           <div className="text-center mt-6"> 
+>>>>>>> b65b534 (remove login with google option)
              <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
                <ShieldAlert className="h-4 w-4" />
                Admin Login
