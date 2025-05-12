@@ -128,6 +128,7 @@ export default function ProgramsPage() {
     if (feeInPaisa === 0) return "Free";
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
   };
+<<<<<<< HEAD
 
   if (authLoading || loadingEvents) { // Show skeleton if either auth or events are loading
     return (
@@ -158,6 +159,8 @@ export default function ProgramsPage() {
       </div>
     );
   }
+=======
+>>>>>>> 591e8d1 (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
 
   return (
     <div className="space-y-12 max-w-5xl mx-auto px-4">
