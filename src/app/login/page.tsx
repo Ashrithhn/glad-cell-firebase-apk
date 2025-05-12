@@ -9,16 +9,15 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ShieldAlert, KeyRound } from 'lucide-react'; // Added KeyRound
-import { GoogleSignInButton } from '@/components/features/auth/google-signin-button'; // Import Google Sign-In button
+import { AlertCircle, ShieldAlert } from 'lucide-react'; 
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useToast } from '@/hooks/use-toast'; 
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, userId, isAdmin, loading, authError, login: authLogin } = useAuth(); // Use auth context, include authError and login
+  const { user, userId, isAdmin, loading, authError } = useAuth(); 
   const isLoggedIn = !loading && (!!userId || isAdmin);
-  const { toast } = useToast(); // Initialize toast
+  const { toast } = useToast(); 
 
   useEffect(() => {
     if (!loading) {
@@ -29,25 +28,6 @@ export default function LoginPage() {
       }
     }
   }, [loading, userId, isAdmin, router]);
-
-  const handleGoogleSuccess = async (uid: string) => {
-    await authLogin(uid); // Update auth context
-    toast({
-      title: 'Google Sign-In Successful!',
-      description: 'Welcome!',
-      variant: 'default',
-    });
-    router.push('/');
-    router.refresh();
-  };
-
-  const handleGoogleError = (errorMsg: string) => {
-    toast({
-      title: 'Google Sign-In Failed',
-      description: errorMsg,
-      variant: 'destructive',
-    });
-  };
 
 
   if (loading || (isLoggedIn && !authError)) {
@@ -63,7 +43,7 @@ export default function LoginPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full mt-2" /> {/* For Google button */}
+            {/* Removed Skeleton for Google button */}
             <Skeleton className="h-8 w-1/3 mx-auto mt-2" />
           </CardContent>
         </Card>
@@ -101,20 +81,9 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="relative my-4"> {/* Reduced margin for separator */}
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              OR
-            </span>
-          </div>
+          {/* Removed OR Separator and GoogleSignInButton */}
 
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            disabled={!!authError}
-          />
-
-           <div className="text-center mt-6"> {/* Increased margin for admin login */}
+           <div className="text-center mt-6"> 
              <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
                <ShieldAlert className="h-4 w-4" />
                Admin Login

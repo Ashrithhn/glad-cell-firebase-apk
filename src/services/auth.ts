@@ -1,11 +1,11 @@
+
 'use server';
 
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    signOut as firebaseSignOut, // Rename to avoid conflict
+    signOut as firebaseSignOut, 
     sendPasswordResetEmail,
-    // sendEmailVerification, // Removed
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db, initializationError } from '@/lib/firebase/config';
@@ -46,10 +46,6 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     const user = userCredential.user;
     console.log('[Server Action] Firebase Auth user created:', user.uid);
 
-    // Email verification step removed
-    // await sendEmailVerification(user);
-    // console.log('[Server Action] Verification email sent to:', user.email);
-
 
     const userDocRef = doc(db, 'users', user.uid);
     await setDoc(userDocRef, {
@@ -63,12 +59,12 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
       city: city,
       pincode: pincode,
       createdAt: serverTimestamp() as Timestamp,
-      authProvider: 'email/password', // Track auth provider
-      emailVerified: false, // Set to false as verification is skipped
+      authProvider: 'email/password', 
+      emailVerified: false, 
     });
     console.log('[Server Action] User profile stored in Firestore for UID:', user.uid);
 
-    return { success: true, userId: user.uid, message: 'Registration successful!' }; // Updated message
+    return { success: true, userId: user.uid, message: 'Registration successful!' }; 
   } catch (error: any) {
     console.error('[Server Action Error] Firebase Registration Error:', error.code, error.message);
     let message = 'Registration failed. Please try again.';
@@ -114,11 +110,6 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
     const user = userCredential.user;
     console.log('[Server Action] Firebase Login Successful:', user.uid);
 
-    // Email verification check removed
-    // if (user.providerData.some(provider => provider.providerId === 'password') && !user.emailVerified) {
-        // return { success: false, userId: user.uid, message: 'Login failed: Please verify your email address. Check your inbox for the verification link.' };
-    // }
-
     return { success: true, userId: user.uid };
   } catch (error: any) {
     console.error('[Server Action Error] Firebase Login Error:', error.code, error.message);
@@ -137,79 +128,6 @@ export async function loginUser(credentials: any): Promise<{ success: boolean; u
     return { success: false, message: message };
   }
 }
-
-/**
- * Handles user data from Google Sign-In, creates or updates user in Firestore.
- */
-export async function handleGoogleSignInUserData(googleUserData: {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-}): Promise<{ success: boolean; userId?: string; message?: string }> {
-  console.log('[Server Action] handleGoogleSignInUserData invoked for UID:', googleUserData.uid);
-
-  if (initializationError) {
-    const errorMessage = `Google Sign-In service unavailable: Firebase initialization error - ${initializationError.message}.`;
-    console.error(`[Server Action Error] handleGoogleSignInUserData: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-  if (!db) {
-    const errorMessage = 'Google Sign-In service unavailable: Firestore instance missing.';
-    console.error(`[Server Action Error] handleGoogleSignInUserData: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
-
-  const { uid, email, displayName, photoURL } = googleUserData;
-
-  if (!uid || !email) {
-    return { success: false, message: 'Google Sign-In failed: Missing UID or email.' };
-  }
-
-  try {
-    const userDocRef = doc(db, 'users', uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    if (userDocSnap.exists()) {
-      // User exists, update their profile with latest Google info (if needed)
-      await setDoc(userDocRef, {
-        name: displayName || userDocSnap.data()?.name || 'N/A', // Keep existing name if Google's is null
-        photoURL: photoURL || userDocSnap.data()?.photoURL, // Keep existing photoURL if Google's is null
-        lastLoginAt: serverTimestamp() as Timestamp,
-        authProvider: 'google.com', // Update auth provider
-        emailVerified: true, // Google sign-in implies email is verified by Google
-      }, { merge: true });
-      console.log('[Server Action] Existing Google user profile updated in Firestore:', uid);
-    } else {
-      // New user, create profile
-      // For Google Sign-In, some fields like branch, semester might be missing.
-      // The user might need to fill these in later via a profile completion step.
-      await setDoc(userDocRef, {
-        uid: uid,
-        email: email,
-        name: displayName || 'N/A',
-        photoURL: photoURL,
-        branch: '', // Placeholder, user to update
-        semester: '', // Placeholder
-        registrationNumber: `GOOGLE_${uid.substring(0,10)}`, // Create a unique placeholder for Google users
-        collegeName: '', // Placeholder, user to update
-        city: '', // Placeholder
-        pincode: '', // Placeholder
-        createdAt: serverTimestamp() as Timestamp,
-        lastLoginAt: serverTimestamp() as Timestamp,
-        authProvider: 'google.com', // Track auth provider
-        emailVerified: true, // Google sign-in implies email is verified by Google
-      });
-      console.log('[Server Action] New Google user profile created in Firestore:', uid);
-    }
-
-    return { success: true, userId: uid };
-  } catch (error: any) {
-    console.error('[Server Action Error] Error handling Google Sign-In user data in Firestore:', error.message, error.stack);
-    return { success: false, message: `Server error during Google Sign-In: ${error.message || 'Unknown error'}` };
-  }
-}
-
 
 /**
  * Logs out the currently signed-in user using Firebase Authentication.
@@ -285,8 +203,6 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
         if (error.code === 'auth/invalid-email') {
             message = 'Invalid email address format.';
         } else if (error.code === 'auth/user-not-found') {
-            // For security, you might not want to explicitly say the user wasn't found.
-            // The generic message "If an account exists..." handles this well.
             message = 'If an account exists for this email, a password reset link has been sent.';
         } else if (error.code === 'auth/missing-ios-bundle-id' || error.code === 'auth/missing-continue-uri') {
             message = 'Password reset configuration error. Please contact support.';
@@ -300,4 +216,3 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
         return { success: false, message };
     }
 }
-
