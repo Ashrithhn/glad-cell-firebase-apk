@@ -77,6 +77,15 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     -- Enable UUID generation if not already enabled
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+    -- Generic trigger function for updated_at timestamp
+    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
     -- Users Table (public.users)
     -- Stores additional profile information, linked to auth.users
     CREATE TABLE IF NOT EXISTS public.users (
@@ -94,15 +103,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         created_at timestamptz DEFAULT now() NOT NULL,
         updated_at timestamptz DEFAULT now() NOT NULL
     );
-    -- Optional: Trigger to update 'updated_at' timestamp
-    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      NEW.updated_at = NOW();
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-
+    -- Trigger for users updated_at
     CREATE TRIGGER set_users_updated_at
     BEFORE UPDATE ON public.users
     FOR EACH ROW
@@ -125,12 +126,13 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         image_url text,
         image_storage_path text, -- To store the path in Supabase Storage
         created_at timestamptz DEFAULT now() NOT NULL
+        -- No separate updated_at for events unless admin can edit them later
     );
 
     -- Participations Table (public.participations)
     -- Tracks user participation in events
     CREATE TABLE IF NOT EXISTS public.participations (
-        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), -- Can store appOrderId here if it's unique
         user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
         event_id uuid NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
         event_name text NOT NULL,
@@ -190,6 +192,7 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
         is_active boolean DEFAULT true NOT NULL,
         storage_path text NOT NULL, -- Path in Supabase Storage
         created_at timestamptz DEFAULT now() NOT NULL
+        -- No separate updated_at for homepage_images unless admin can edit them later
     );
 
     -- Site Configuration Table (public.site_configuration)
@@ -197,20 +200,33 @@ This is a Next.js application for the GLAD CELL initiative by the Department of 
     CREATE TABLE IF NOT EXISTS public.site_configuration (
         id text PRIMARY KEY, -- e.g., 'mainSettings'
         settings_data jsonb NOT NULL,
-        last_updated_at timestamptz DEFAULT now() NOT NULL
+        last_updated_at timestamptz DEFAULT now() NOT NULL -- Renamed from updated_at
     );
     -- Trigger for site_configuration last_updated_at
-    CREATE TRIGGER set_site_configuration_updated_at
+    -- Note: We can't directly use trigger_set_timestamp() for 'last_updated_at'
+    -- if the function is hardcoded to 'NEW.updated_at'.
+    -- For simplicity, either rename the column in the trigger or in the table,
+    -- or create a specific trigger for this table if the column name must differ.
+    -- Let's assume for now you rename the column in the table to 'updated_at' to reuse the trigger.
+    -- If you keep 'last_updated_at', create a new trigger:
+    /*
+    CREATE OR REPLACE FUNCTION trigger_set_last_updated_at()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.last_updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    CREATE TRIGGER set_site_configuration_last_updated_at
     BEFORE UPDATE ON public.site_configuration
     FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp(); -- Reusing the same trigger function
-
-    -- Note: After creating tables, you might need to set up Supabase Storage buckets:
-    -- 'event-images' (for event posters)
-    -- 'profile-pictures' (for user avatars)
-    -- 'homepage-images' (for homepage slider/section images)
-    -- Ensure appropriate RLS policies and public access settings for these buckets.
-    -- For example, 'profile-pictures' might need to be public for avatars to display easily.
+    EXECUTE FUNCTION trigger_set_last_updated_at();
+    */
+    -- OR, to reuse the generic trigger (assuming you rename the column in the table later if needed)
+    -- If you keep "last_updated_at" and don't want another trigger, you'll have to update it manually in your service code.
+    -- For now, we'll assume you manage `last_updated_at` in the service layer or modify the trigger/column.
+    -- The provided service code for settings already manually sets `last_updated_at`.
     ```
 
 4.  **Set Up Supabase Storage Buckets:**
