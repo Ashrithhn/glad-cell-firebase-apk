@@ -7,10 +7,10 @@ import { Footer } from '@/components/layout/footer'; // Import Footer
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/layout/theme-provider';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
 import { WelcomeHandler } from '@/components/layout/welcome-handler';
 import { GlobalStyles } from '@/components/layout/global-styles';
-import { GlobalLoadingIndicator } from '@/components/layout/global-loading-indicator';
+import { MaintenanceBanner } from '@/components/layout/maintenance-banner'; // Import MaintenanceBanner
 
 // Initialize Inter font with subsets
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -38,8 +38,8 @@ export default function RootLayout({
             <AuthProvider>
                 <WelcomeHandler>
                     <GlobalStyles />
-                    <GlobalLoadingIndicator />
                     <div className="flex flex-col min-h-screen">
+                      <MaintenanceBanner /> {/* Add Maintenance Banner here */}
                       <Header />
                       <main className="flex-grow container mx-auto py-8 px-4">
                         {children}
