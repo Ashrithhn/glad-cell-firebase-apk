@@ -3,8 +3,9 @@
 
 import crypto from 'crypto';
 import QRCode from 'qrcode';
-import { participateInEvent, getUserProfile, getEvents } from './events'; 
-import type { EventData, ParticipationData } from './events'; // Using Supabase-compatible types
+import { participateInEvent, getUserProfile, getEventById } from './events'; 
+import type { EventData, ParticipationData } from './events'; 
+import type { UserProfileSupabase } from './auth'; // Ensure this is the correct profile type
 import axios from 'axios';
 
 // Load environment variables
@@ -39,7 +40,7 @@ export async function createCashfreeOrderAction(orderData: {
 
   const HEADERS = {
     'x-client-id': CASHFREE_APP_ID,
-    'x-client-secret': CASHFREE_SECRET_KEY, // Corrected header name for new APIs (check Cashfree docs)
+    'x-client-secret': CASHFREE_SECRET_KEY, 
     'Content-Type': 'application/json',
     'x-api-version': CASHFREE_API_VERSION,
   };
@@ -98,18 +99,17 @@ export async function processSuccessfulCashfreePayment(details: {
   const { appOrderId, cfOrderId, eventId, userId, cfPaymentId } = details;
 
   try {
-    const profileResult = await getUserProfile(userId); // Uses Supabase
+    const profileResult = await getUserProfile(userId); 
     if (!profileResult.success || !profileResult.data) {
       throw new Error("Failed to fetch user profile for participation.");
     }
-    const userDetails = profileResult.data;
+    const userDetails: UserProfileSupabase = profileResult.data;
 
-    const eventsResult = await getEvents(); // Uses Supabase
-    if (!eventsResult.success || !eventsResult.events) {
-      throw new Error("Failed to fetch event details for participation.");
+    const eventResult = await getEventById(eventId); 
+    if (!eventResult.success || !eventResult.event) {
+      throw new Error(`Event with ID ${eventId} not found.`);
     }
-    const eventDetails = eventsResult.events.find((e: EventData) => e.id === eventId);
-    if (!eventDetails) throw new Error(`Event with ID ${eventId} not found.`);
+    const eventDetails: EventData = eventResult.event;
 
     const qrDataString = JSON.stringify({ orderId: appOrderId, eventId, userId, timestamp: Date.now() });
     let qrCodeDataUri = '';
@@ -137,7 +137,7 @@ export async function processSuccessfulCashfreePayment(details: {
       qr_code_data_uri: qrCodeDataUri || null,
     };
 
-    const participationResult = await participateInEvent(participationPayload); // Uses Supabase
+    const participationResult = await participateInEvent(participationPayload); 
 
     if (participationResult.success) {
       return { success: true, message: 'Payment successful and participation recorded.' };
@@ -153,4 +153,67 @@ export async function processSuccessfulCashfreePayment(details: {
       message: `Error processing payment confirmation: ${error.message}. Contact support with Order ID: ${appOrderId}.`,
     };
   }
+}
+
+
+export async function registerFreeParticipationAction(details: {
+    appOrderId: string;
+    eventId: string;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    userPhone: string;
+    userBranch: string;
+    userSemester: number;
+    userRegistrationNumber: string;
+    eventName: string;
+}): Promise<{ success: boolean; message?: string }> {
+    console.log('[Register Free Participation] Received details:', details);
+    const { appOrderId, eventId, userId, userName, userEmail, userPhone, userBranch, userSemester, userRegistrationNumber, eventName } = details;
+
+    try {
+        const qrDataString = JSON.stringify({ orderId: appOrderId, eventId, userId, timestamp: Date.now() });
+        let qrCodeDataUri = '';
+        try {
+            qrCodeDataUri = await QRCode.toDataURL(qrDataString);
+        } catch (qrError: any) {
+            console.warn('[Register Free Participation] QR Code generation failed:', qrError.message);
+            // Proceed without QR if generation fails, but log it
+        }
+
+        const participationPayload: Omit<ParticipationData, 'id' | 'participated_at' | 'attended_at'> = {
+            user_id: userId,
+            event_id: eventId,
+            event_name: eventName,
+            user_name: userName,
+            user_email: userEmail,
+            user_phone: userPhone,
+            user_branch: userBranch,
+            user_semester: userSemester,
+            user_registration_number: userRegistrationNumber,
+            payment_details: { // For free events
+                order_id: appOrderId,
+                method: 'Free Registration',
+                payment_id: null,
+            },
+            qr_code_data_uri: qrCodeDataUri || null,
+        };
+
+        const participationResult = await participateInEvent(participationPayload);
+
+        if (participationResult.success) {
+            return { success: true, message: 'Successfully registered for the free event.' };
+        } else {
+            return {
+                success: false,
+                message: `Registration failed: ${participationResult.message}. Please try again or contact support.`,
+            };
+        }
+    } catch (error: any) {
+        console.error('[Register Free Participation] Error:', error.message, error.stack);
+        return {
+            success: false,
+            message: `Error processing free registration: ${error.message}. Please try again or contact support.`,
+        };
+    }
 }
