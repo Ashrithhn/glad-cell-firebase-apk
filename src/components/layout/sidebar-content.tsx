@@ -29,6 +29,8 @@ import {
   ShieldCheck, 
   ScrollText,  
   Image as ImageIcon, 
+  LogIn as LogInIcon,
+  UserPlus
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -37,17 +39,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/hooks/use-toast'; 
 
 interface SidebarContentProps {
-  isLoggedIn: boolean;
-  isAdmin: boolean;
-  handleLogout: () => void;
   closeSheet: () => void;
-  authError: Error | null;
 }
 
-export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, authError }: SidebarContentProps) {
+export function SidebarContent({ closeSheet }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
   const [links, setLinks] = useState<SiteLinks | null>(null);
   const [loadingLinks, setLoadingLinks] = useState(true);
+  const { isLoggedIn, isAdmin, logout: authLogout, loading: authLoading, authError } = useAuth(); // Ensure authLogout is destructured
+
 
   useEffect(() => {
     async function fetchLinks() {
@@ -70,7 +70,9 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
   };
 
    const handleCombinedLogout = () => {
-     handleLogout();
+     if (authLogout) { // Check if authLogout is defined
+        authLogout(); 
+     }
      closeSheet();
    };
 
@@ -88,7 +90,7 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
   return (
     <div className="flex flex-col h-full pt-6">
       <nav className="flex-grow space-y-2">
-         {!isAdmin && ( // Only show Home link if not admin
+         {!isAdmin && ( 
             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
                 <Link href="/">
                 <Home className="mr-2 h-4 w-4" />
@@ -204,7 +206,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Link>
         </Button>
 
-        {/* Legal Links */}
         <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
             <Link href="/terms-and-conditions">
               <ScrollText className="mr-2 h-4 w-4" /> Terms & Conditions
@@ -215,7 +216,6 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
               <ShieldCheck className="mr-2 h-4 w-4" /> Privacy Policy
             </Link>
         </Button>
-
 
         {loadingLinks ? (
              <Button variant="ghost" className="w-full justify-start" disabled>
@@ -230,14 +230,11 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
             </Button>
         ) : null }
 
-
         <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
             <MessageSquare className="mr-2 h-4 w-4" />
             Feedback
         </Button>
-
          <Separator />
-
       </nav>
 
       <div className="mt-auto pb-4 px-2 space-y-4">
@@ -260,24 +257,30 @@ export function SidebarContent({ isLoggedIn, isAdmin, handleLogout, closeSheet, 
                     />
                 </div>
             </div>
-        {isLoggedIn && (
-            <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
+        
+        {authLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : null}
+
+        {!authLoading && isLoggedIn ? (
+          <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        ) : null}
+
+        {!authLoading && !isLoggedIn && !authError ? (
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/login"><LogInIcon className="mr-2 h-4 w-4"/>Login</Link>
             </Button>
-        )}
-        {!isLoggedIn && !authError && (
-            <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                        <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
-                    </Button>
-                    <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                        <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
-                    </Button>
-            </div>
-        )}
+            <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
+              <Link href="/register"><UserPlus className="mr-2 h-4 w-4"/>Register</Link>
+            </Button>
+          </div>
+        ) : null}
+        
       </div>
     </div>
   );
 }
-

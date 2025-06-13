@@ -23,7 +23,7 @@ export default function ProgramsPage() {
   const [loadingEvents, setLoadingEvents] = React.useState(true);
   const [eventsError, setEventsError] = React.useState<string | null>(null);
 
-  const { user, userId, isAdmin, loading: authLoading } = useAuth();
+  const { userId, isAdmin, loading: authLoading } = useAuth(); // Removed 'user' as it's not directly used here
   const { toast } = useToast();
   const router = useRouter();
 
@@ -33,15 +33,13 @@ export default function ProgramsPage() {
       setEventsError(null);
       const result = await getEvents(); 
       if (result.success && result.events) {
-        // Sort events: upcoming first, then by start date (newest first for past events if needed)
         const sortedEvents = result.events.sort((a, b) => {
           const aIsPast = a.registration_deadline ? isPast(parseISO(a.registration_deadline)) : isPast(parseISO(a.start_date));
           const bIsPast = b.registration_deadline ? isPast(parseISO(b.registration_deadline)) : isPast(parseISO(b.start_date));
           
-          if (aIsPast && !bIsPast) return 1; // b comes first
-          if (!aIsPast && bIsPast) return -1; // a comes first
+          if (aIsPast && !bIsPast) return 1;
+          if (!aIsPast && bIsPast) return -1;
           
-          // If both are upcoming or both are past, sort by start date (most recent/upcoming first)
           return parseISO(b.start_date).getTime() - parseISO(a.start_date).getTime();
         });
         setEvents(sortedEvents);
@@ -53,7 +51,7 @@ export default function ProgramsPage() {
     loadEvents();
   }, []);
 
-  const isLoggedIn = !authLoading && (!!userId || isAdmin);
+  const isLoggedIn = !authLoading && !!userId; // Simplified: if userId exists after loading, user is logged in
 
   const handleParticipateClick = (event: EventData) => {
      const registrationDeadline = event.registration_deadline ? parseISO(event.registration_deadline) : parseISO(event.start_date);
@@ -73,13 +71,44 @@ export default function ProgramsPage() {
      } else if (isAdmin) {
          toast({ title: "Admin View", description: "Admins cannot participate.", variant: "default" });
      } else {
-         router.push('/login');
+         toast({ title: "Login Required", description: "Please login to participate in events.", variant: "default" });
+         router.push('/login?redirect=/programs');
      }
   };
 
   const formatFee = (feeInPaisa: number) => {
     if (feeInPaisa === 0) return "Free";
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
+  }
+
+  if (authLoading) {
+    return (
+      <div className="space-y-12 max-w-4xl mx-auto px-4 py-8">
+        <div className="text-center space-y-2">
+          <Skeleton className="h-8 w-1/2 mx-auto" />
+          <Skeleton className="h-4 w-3/4 mx-auto" />
+        </div>
+        <div className="space-y-6">
+          {[1, 2].map(i => (
+            <Card key={i} className="overflow-hidden shadow-lg">
+              <Skeleton className="w-full h-56 sm:h-64 md:h-72" />
+              <CardHeader className="border-b bg-muted/30">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full mt-1" />
+                <Skeleton className="h-4 w-5/6 mt-1" />
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                  <Skeleton className="h-5 w-2/3" /> <Skeleton className="h-5 w-1/2" />
+                  <Skeleton className="h-5 w-1/2" /> <Skeleton className="h-5 w-2/3" />
+                </div>
+                <Skeleton className="h-10 w-40 mt-4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -91,7 +120,7 @@ export default function ProgramsPage() {
         </p>
       </div>
 
-       {loadingEvents && (
+       {loadingEvents && !authLoading && ( // Show event loading skeleton only if auth is done
          <div className='space-y-6'>
              <Skeleton className="h-72 w-full rounded-lg" />
              <Skeleton className="h-56 w-full rounded-lg" />
@@ -112,7 +141,7 @@ export default function ProgramsPage() {
           const isRegistrationOver = isPast(registrationDeadline);
 
           return (
-            <Card key={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card key={event.id} id={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-mt-20"> {/* Added scroll-mt-20 for anchor linking */}
               {event.image_url && (
                 <div className="relative w-full h-56 sm:h-64 md:h-72">
                   <NextImage
@@ -183,9 +212,7 @@ export default function ProgramsPage() {
                 )}
 
                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
-                     {authLoading ? (
-                          <Skeleton className="h-10 w-40" /> 
-                     ) : isRegistrationOver ? (
+                     {isRegistrationOver ? (
                         <Button disabled className="flex-shrink-0">
                             Registration Closed
                         </Button>
@@ -229,7 +256,3 @@ export default function ProgramsPage() {
                 fee: selectedEvent.fee
             }}
          />
-       )}
-    </div>
-  );
-}

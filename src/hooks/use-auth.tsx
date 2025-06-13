@@ -1,40 +1,36 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase, supabaseError } from '@/lib/supabaseClient'; // Import Supabase client
-import { logoutUser as serverLogout } from '@/services/auth'; // Server action for logout
+import { supabase, supabaseError } from '@/lib/supabaseClient';
+import { logoutUser as serverLogout } from '@/services/auth';
 
-// Define a more detailed User type for our context
 export interface UserProfile {
-  id: string; // Supabase uses 'id' for user UID
+  id: string;
   email?: string | null;
   name?: string | null;
-  photo_url?: string | null; // Supabase typically uses snake_case for columns
+  photo_url?: string | null;
   branch?: string | null;
   semester?: number | string | null;
-  registration_number?: string | null; // snake_case
-  // Add other fields from your Supabase 'users' table (or 'profiles' table)
+  registration_number?: string | null;
   college_name?: string | null;
   city?: string | null;
   pincode?: string | null;
   auth_provider?: string | null;
-  created_at?: string; // Timestamps from Supabase are usually ISO strings
+  created_at?: string;
   updated_at?: string;
   last_sign_in_at?: string;
 }
 
-
 interface AuthContextType {
-  user: SupabaseUser | null; // Supabase auth user object
-  userProfile: UserProfile | null; // User profile data from Supabase table
-  userId: string | null; // Supabase user ID
+  user: SupabaseUser | null;
+  userProfile: UserProfile | null;
+  userId: string | null;
   loading: boolean;
-  isAdmin: boolean; // Keep admin logic for now, may need rework with Supabase roles
-  login: (session: Session | null) => Promise<void>; // Adjusted for Supabase session
+  isAdmin: boolean;
+  login: (session: Session | null) => Promise<void>;
   logout: () => Promise<void>;
-  authError: Error | null; // For Supabase client init errors or auth errors
+  authError: Error | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,33 +44,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false); // This needs a Supabase-specific implementation
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<Error | null>(supabaseError);
 
-  useEffect(() => {
-    setAuthError(supabaseError); // Set initial error state from Supabase client
-
-    if (!supabase) {
-      console.error('[useAuth] Supabase client is not available. Authentication will not work.');
-      setLoading(false);
-      return;
-    }
-
-    let profileListener: any = null;
-
-    const fetchUserProfile = async (sbUser: SupabaseUser | null) => {
-      if (sbUser && supabase) {
-        console.log('[useAuth] Fetching user profile for Supabase user:', sbUser.id);
+  const fetchUserProfile = async (sbUser: SupabaseUser | null) => {
+    if (sbUser && supabase) {
+      console.log('[useAuth] Fetching user profile for Supabase user:', sbUser.id);
+      try {
         const { data, error } = await supabase
-          .from('users') // Assuming your profiles table is named 'users'
+          .from('users')
           .select('*')
           .eq('id', sbUser.id)
           .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // PGRST116: No rows found, not necessarily an "error" for profile
           console.error('[useAuth] Error fetching user profile from Supabase:', error.message);
           setUserProfile(null);
-          // You might want to set an authError here if profile fetching is critical
+          // Potentially set authError if profile is critical and missing
         } else if (data) {
           setUserProfile({
             id: data.id,
@@ -87,119 +73,143 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             college_name: data.college_name,
             city: data.city,
             pincode: data.pincode,
-            auth_provider: sbUser.app_metadata.provider,
+            auth_provider: sbUser.app_metadata.provider || 'email', // Default to email if provider is undefined
             created_at: data.created_at,
             updated_at: data.updated_at,
             last_sign_in_at: sbUser.last_sign_in_at,
           });
-
-          // Listen for changes to the user's profile (optional, if needed for real-time updates)
-          // profileListener = supabase
-          //   .channel(`public:users:id=eq.${sbUser.id}`)
-          //   .on('postgres_changes', { event: '*', schema: 'public', table: 'users', filter: `id=eq.${sbUser.id}` }, payload => {
-          //     console.log('[useAuth] Profile change received:', payload);
-          //     if (payload.new) {
-          //       setUserProfile(payload.new as UserProfile);
-          //     }
-          //   })
-          //   .subscribe();
-
         } else {
           setUserProfile(null);
-           console.warn(`[useAuth] User profile not found in Supabase for ID: ${sbUser.id}.`);
+          console.warn(`[useAuth] User profile not found in Supabase for ID: ${sbUser.id}. This may be normal if it's a new user yet to complete profile setup, or if the user is an admin without a 'users' table entry.`);
         }
-      } else {
+      } catch (profileError: any) {
+        console.error('[useAuth] Catch block error fetching user profile:', profileError.message);
         setUserProfile(null);
       }
+    } else {
+      setUserProfile(null);
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    setAuthError(supabaseError);
+
+    if (!supabase) {
+      console.error('[useAuth] Supabase client is not available. Authentication will not work.');
       setLoading(false);
-    };
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setUserId(session?.user?.id ?? null);
-      fetchUserProfile(session?.user ?? null);
-      setIsAdmin(localStorage.getItem('isAdminLoggedIn') === 'true'); // Still using localStorage for admin demo
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
-    });
+      return;
+    }
 
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('[useAuth] Supabase onAuthStateChange event:', _event, 'Session:', !!session);
+    const processAuthStateChange = async (session: Session | null) => {
+      setLoading(true); // Set loading true at the beginning of processing
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setUserId(currentUser?.id ?? null);
       await fetchUserProfile(currentUser);
-      // Admin state based on localStorage - for demo purposes. Replace with Supabase roles.
-      setIsAdmin(localStorage.getItem('isAdminLoggedIn') === 'true');
+      
+      const adminLoggedIn = typeof window !== 'undefined' && localStorage.getItem('isAdminLoggedIn') === 'true';
+      setIsAdmin(adminLoggedIn);
+
+      if (adminLoggedIn && currentUser) {
+        // If admin is logged in via localStorage flag, ensure regular user state is cleared
+        // This handles cases where an admin might have also logged in as a regular user previously
+        // or if a regular user logs in, then an admin logs in on the same browser.
+        // However, proper admin role via Supabase Auth is preferred.
+        console.log("[useAuth] Admin is logged in (localStorage). Clearing regular user if any was set from session.");
+        // setUser(null); // Keep admin user if they are a Supabase user
+        // setUserId(null);
+        // setUserProfile(null);
+      }
+      
+      setLoading(false); // Set loading false after all processing is done
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
+    };
+    
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      await processAuthStateChange(session);
+    }).catch(error => {
+      console.error("[useAuth] Error in initial getSession:", error);
+      setLoading(false); // Ensure loading is false even on error
     });
 
-    // For admin flag based on localStorage (demo)
-    const handleStorageChange = () => {
-      if (typeof window !== 'undefined') {
-        const adminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
-        setIsAdmin(adminLoggedIn);
-        if (adminLoggedIn && user) { // If admin logs in, clear regular user session
-          setUser(null);
-          setUserId(null);
-          setUserProfile(null);
-        }
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('[useAuth] Supabase onAuthStateChange event:', _event, 'Session:', !!session);
+      await processAuthStateChange(session);
+    });
+
+    const handleStorageChange = async () => {
+      console.log("[useAuth] Storage or authChange event triggered.");
+      setLoading(true);
+      const adminLoggedIn = typeof window !== 'undefined' && localStorage.getItem('isAdminLoggedIn') === 'true';
+      setIsAdmin(adminLoggedIn);
+      
+      // Re-fetch current session to ensure user state is consistent with admin flag
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user ?? null;
+
+      if (adminLoggedIn && currentUser) {
+         // If an admin is logged in, and there's a Supabase session,
+         // we might want to decide if this Supabase user IS the admin.
+         // For now, the localStorage flag takes precedence for isAdmin.
+      } else if (!adminLoggedIn && currentUser) {
+        // If admin logs out, but a Supabase session exists, ensure user state is set
+        setUser(currentUser);
+        setUserId(currentUser.id);
+        await fetchUserProfile(currentUser);
+      } else if (!adminLoggedIn && !currentUser) {
+        // No admin, no user
+        setUser(null);
+        setUserId(null);
+        setUserProfile(null);
       }
+      setLoading(false);
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authChange', handleStorageChange); // Custom event
+    window.addEventListener('authChange', handleStorageChange);
 
     return () => {
       authListener?.subscription.unsubscribe();
-      if (profileListener) {
-        supabase.removeChannel(profileListener);
-      }
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('authChange', handleStorageChange);
     };
-  }, [supabaseError]); // Rerun if supabaseError changes (e.g., from null to an error)
-
+  }, []); // Removed supabaseError from dependency array to avoid re-triggering on initial non-error
 
   const login = async (session: Session | null) => {
+    setLoading(true);
     if (authError || !supabase) {
       console.error("[useAuth Login] Cannot login, Supabase client error:", authError?.message);
+      setLoading(false);
       return;
     }
-    // Supabase onAuthStateChange will handle setting user and profile
-    console.log('[useAuth Login] Auth state will be updated by Supabase listener.');
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('authChange'));
-    }
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+    setUserId(currentUser?.id ?? null);
+    await fetchUserProfile(currentUser);
+    setIsAdmin(typeof window !== 'undefined' && localStorage.getItem('isAdminLoggedIn') === 'true');
+    setLoading(false);
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
   };
 
   const logout = async () => {
     setLoading(true);
     if (supabase && !authError) {
       try {
-        await serverLogout(); // Call server action which should call supabase.auth.signOut()
+        await serverLogout(); // This calls supabase.auth.signOut()
       } catch (error) {
         console.error('Error during server logout for Supabase:', error);
       }
-    } else {
-      console.warn(`[useAuth Logout] Cannot logout. Supabase client error: ${authError?.message} or client instance missing.`);
     }
-
     if (typeof window !== 'undefined') {
       localStorage.removeItem('isAdminLoggedIn');
     }
-    // onAuthStateChange handles setting user, userId, userProfile to null
-    if (!supabase || authError) {
-        setUser(null);
-        setUserId(null);
-        setUserProfile(null);
-        setLoading(false);
-    }
-    setIsAdmin(false);
-     if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('authChange'));
-    }
+    // onAuthStateChange will handle setting user, userId, userProfile to null & isAdmin to false
+    // and setLoading to false.
+    // Dispatch event just in case for immediate UI updates elsewhere.
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
+    // If onAuthStateChange is slow or doesn't fire, explicitly clear:
+    // setUser(null); setUserId(null); setUserProfile(null); setIsAdmin(false); setLoading(false);
   };
 
   return (
