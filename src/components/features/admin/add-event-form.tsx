@@ -124,8 +124,9 @@ export function AddEventForm() {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, fieldName: 'eventImage' | 'rulesPdf') => {
     const file = event.target.files?.[0];
+    const isImageField = fieldName === 'eventImage'; // Define isImageField in the outer scope
+
     if (file) {
-      const isImageField = fieldName === 'eventImage';
       const allowedTypes = isImageField ? ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] : ['application/pdf'];
       const fieldTypeMessage = isImageField ? "PNG, JPG, GIF or WEBP image" : "PDF";
 
@@ -133,13 +134,15 @@ export function AddEventForm() {
           toast({ title: "Invalid File Type", description: `Please select a ${fieldTypeMessage}.`, variant: "destructive" });
           form.setValue(fieldName, null); 
           if (isImageField) setImagePreview(null); else setPdfPreviewName(null);
-          if (event.target) event.target.value = ''; return;
+          if (event.target) event.target.value = ''; 
+          return;
       }
       if (file.size > MAX_FILE_SIZE_BYTES) { 
           toast({ title: "File Too Large", description: `File size should be less than ${MAX_FILE_SIZE_MB}MB.`, variant: "destructive" });
           form.setValue(fieldName, null);
           if (isImageField) setImagePreview(null); else setPdfPreviewName(null);
-          if (event.target) event.target.value = ''; return;
+          if (event.target) event.target.value = ''; 
+          return;
       }
 
       form.setValue(fieldName, file);
@@ -152,7 +155,15 @@ export function AddEventForm() {
       }
     } else {
       form.setValue(fieldName, null);
-      if (isImageField) setImagePreview(null); else setPdfPreviewName(null);
+      if (isImageField) {
+        setImagePreview(null); 
+      } else {
+        setPdfPreviewName(null);
+      }
+      // Clear the file input visually if a file was cleared
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
