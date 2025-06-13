@@ -2,7 +2,7 @@
 'use server';
 
 import { supabase, supabaseError } from '@/lib/supabaseClient'; // Import Supabase client
-import type { UserCredentials, SignUpWithPasswordCredentials } from '@supabase/supabase-js';
+import type { UserCredentials, SignUpWithPasswordCredentials, Session } from '@supabase/supabase-js';
 
 // User profile data structure for your 'users' table in Supabase
 // Ensure this matches the columns in your Supabase 'users' table
@@ -131,7 +131,14 @@ export async function loginUser(credentials: UserCredentials): Promise<{ success
 
     if (error) {
       console.error('[Supabase Server Action Error] Supabase Login Error:', error.message);
-      return { success: false, message: error.message || 'Invalid email or password.' };
+      // Check for specific Supabase auth errors
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        return { success: false, message: 'Email not confirmed. Please check your inbox for a verification link.' };
+      }
+      if (error.message.toLowerCase().includes('invalid login credentials')) {
+         return { success: false, message: 'Invalid email or password. Please try again.' };
+      }
+      return { success: false, message: error.message || 'Login failed due to an unknown error.' };
     }
 
     if (!data.user || !data.session) {
@@ -235,4 +242,4 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
 // 2. Client-side: onAuthStateChange to detect successful Google login.
 // 3. Server-side (optional, or client can do it): If new Google user, insert/update their profile into your `users` table.
 //    Supabase's `auth.users` table stores basic auth info. Your `users` (or `profiles`) table stores additional app-specific info.
-type Session = import('@supabase/supabase-js').Session;
+// type Session = import('@supabase/supabase-js').Session; // Already imported at the top

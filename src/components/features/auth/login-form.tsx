@@ -63,7 +63,12 @@ export function LoginForm() {
         router.push('/'); // Redirect to home page
         router.refresh(); // Refresh to update header, etc.
       } else {
-        throw new Error(result.message || 'Invalid email or password.');
+        // Display the specific message from the service layer (e.g., "Email not confirmed" or "Invalid email or password")
+        toast({
+          title: 'Login Failed',
+          description: result.message || 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Supabase Login Error:', error);
