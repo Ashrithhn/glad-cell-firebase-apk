@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cwqcmichnpadroggzira.supabase.co',
+        port: '',
+        pathname: '/**', // Allows images from any path under this Supabase hostname
+      },
     ],
   },
   // Razorpay Key ID removed from here
