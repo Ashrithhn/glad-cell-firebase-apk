@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { loginUser } from '@/services/auth'; // Supabase loginUser
-import { useRouter } from 'next/navigation';
+// useRouter is not needed here anymore, LoginPage will handle redirection.
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth hook
 
 const formSchema = z.object({
@@ -30,7 +30,7 @@ type FormData = z.infer<typeof formSchema>;
 
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const router = useRouter();
+  // const router = useRouter(); // Removed, LoginPage handles redirection
   const { login, authError } = useAuth(); // Use the login function and authError from Supabase context
 
   const form = useForm<FormData>({
@@ -45,25 +45,23 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      if (authError) { // Check for Supabase client initialization errors
+      if (authError) { 
           throw new Error(`Cannot log in due to Supabase configuration error: ${authError.message}`);
       }
 
-      const result = await loginUser(values); // Call the Supabase backend service
+      const result = await loginUser(values); 
 
       if (result.success && result.userId && result.session) {
-        await login(result.session); // Use the login function from useAuth hook with Supabase session
+        await login(result.session); // Update auth context. This will set loading to false eventually.
 
         toast({
           title: 'Login Successful!',
           description: 'Welcome back!',
           variant: 'default',
         });
-
-        router.push('/'); // Redirect to home page
-        router.refresh(); // Refresh to update header, etc.
+        // LoginPage's useEffect will handle the redirection to '/' once auth state is updated.
+        // No router.push('/') or router.refresh() here.
       } else {
-        // Display the specific message from the service layer (e.g., "Email not confirmed" or "Invalid email or password")
         toast({
           title: 'Login Failed',
           description: result.message || 'An unexpected error occurred. Please try again.',
