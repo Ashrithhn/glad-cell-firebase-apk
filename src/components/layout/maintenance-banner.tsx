@@ -1,5 +1,5 @@
 
-import { getSiteSettings } from '@/services/settings'; // Corrected: Use Supabase settings service
+import { getSiteSettings } from '@/services/settings'; // Ensure this uses Supabase settings service
 import { AlertTriangle } from 'lucide-react';
 
 export async function MaintenanceBanner() {

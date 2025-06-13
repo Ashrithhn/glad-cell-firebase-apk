@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firest
 import { db, initializationError } from '@/lib/firebase/config';
 import { revalidatePath } from 'next/cache';
 
-export interface SiteSettings_DEPRECATED { // Renamed interface
+export interface SiteSettings_DEPRECATED {
   maintenanceMode: boolean;
   theme?: string;
 }
