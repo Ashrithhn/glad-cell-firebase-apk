@@ -1,7 +1,7 @@
 
 'use server';
 
-import { supabase, supabaseError } from '@/lib/supabaseClient';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type { EventData } from './events'; // Using the Supabase-compatible EventData type
 
@@ -24,19 +24,37 @@ export interface AddEventInput { // Renamed to avoid conflict with Supabase type
   imageDataUri?: string | null;
 }
 
+// Admin-specific Supabase client using the service_role key
+let adminSupabase: SupabaseClient | null = null;
+let adminSupabaseError: string | null = null;
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  adminSupabaseError = 'Supabase URL or Service Role Key is missing for admin actions. Ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local.';
+  console.error(`[Admin Service Error] Initialization failed: ${adminSupabaseError}`);
+} else {
+  adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+  console.log('[Admin Service] Supabase client initialized with service_role key.');
+}
+
 /**
  * Adds a new event to the 'events' table and uploads image to Supabase Storage.
+ * Uses admin client with service_role key to bypass RLS.
  */
 export async function addEvent(eventData: AddEventInput): Promise<{ success: boolean; eventId?: string; message?: string }> {
-  console.log('[Supabase Admin Service] addEvent invoked.');
+  console.log('[Supabase Admin Service - Service Role] addEvent invoked.');
 
-  if (supabaseError || !supabase) {
-    const errorMessage = `Admin service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+  if (adminSupabaseError || !adminSupabase) {
+    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized'}.`;
     return { success: false, message: errorMessage };
   }
-
-  // TODO: Add robust server-side admin role check using Supabase Auth context if available
-  // For now, assuming this action is protected by route-level middleware or similar.
 
   try {
     let imageUrl: string | null = null;
@@ -49,22 +67,22 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
         const mimeType = blob.type;
         const extension = mimeType.split('/')[1] || 'jpg';
         const uniqueId = crypto.randomUUID();
-        const storagePath = `public/${uniqueId}.${extension}`; // Path within the bucket
+        const storagePath = `public/${uniqueId}.${extension}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(EVENTS_BUCKET) // Ensure this bucket exists
+        const { data: uploadData, error: uploadError } = await adminSupabase.storage
+          .from(EVENTS_BUCKET)
           .upload(storagePath, blob, { contentType: mimeType, upsert: false });
 
         if (uploadError) throw uploadError;
         
-        const { data: publicUrlData } = supabase.storage.from(EVENTS_BUCKET).getPublicUrl(uploadData.path);
+        const { data: publicUrlData } = adminSupabase.storage.from(EVENTS_BUCKET).getPublicUrl(uploadData.path);
         if (!publicUrlData?.publicUrl) throw new Error('Failed to get public URL for event image.');
         
         imageUrl = publicUrlData.publicUrl;
         imageStoragePath = uploadData.path;
-        console.log('[Supabase Admin Service] Event image uploaded to:', imageStoragePath);
+        console.log('[Supabase Admin Service - Service Role] Event image uploaded to:', imageStoragePath);
       } else {
-        console.warn('[Supabase Admin Service] Invalid or missing imageDataUri for event:', eventData.name);
+        console.warn('[Supabase Admin Service - Service Role] Invalid or missing imageDataUri for event:', eventData.name);
       }
     }
 
@@ -73,8 +91,8 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
       description: eventData.description,
       venue: eventData.venue,
       rules: eventData.rules,
-      start_date: eventData.start_date, // Assumes already ISO string
-      end_date: eventData.end_date,     // Assumes already ISO string
+      start_date: eventData.start_date,
+      end_date: eventData.end_date,
       registration_deadline: eventData.registration_deadline,
       event_type: eventData.event_type,
       min_team_size: eventData.event_type === 'group' ? eventData.min_team_size : null,
@@ -82,10 +100,9 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
       fee: eventData.fee,
       image_url: imageUrl,
       image_storage_path: imageStoragePath,
-      // created_at will be set by Supabase (default now())
     };
 
-    const { data: newEvent, error: insertError } = await supabase
+    const { data: newEvent, error: insertError } = await adminSupabase
       .from('events')
       .insert(docDataToInsert)
       .select('id')
@@ -94,7 +111,7 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
     if (insertError) throw insertError;
     if (!newEvent?.id) throw new Error('Event created but ID not returned.');
 
-    console.log('[Supabase Admin Service] Event added successfully to table with ID:', newEvent.id);
+    console.log('[Supabase Admin Service - Service Role] Event added successfully to table with ID:', newEvent.id);
 
     revalidatePath('/admin/events');
     revalidatePath('/programs');
@@ -103,56 +120,50 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
     return { success: true, eventId: newEvent.id };
 
   } catch (error: any) {
-    console.error('[Supabase Admin Service Error] Error adding event:', error.message, error.stack);
+    console.error('[Supabase Admin Service Error - Service Role] Error adding event:', error.message, error.stack);
     let detailedMessage = `Could not add event: ${error.message || 'Unknown error'}`;
-    // Add more specific error handling for storage or DB errors if needed
     return { success: false, message: detailedMessage };
   }
 }
 
 /**
  * Deletes an event from the 'events' table and its associated image from Supabase Storage.
+ * Uses admin client with service_role key to bypass RLS.
  */
 export async function deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
-  console.log('[Supabase Admin Service] deleteEvent invoked for ID:', eventId);
+  console.log('[Supabase Admin Service - Service Role] deleteEvent invoked for ID:', eventId);
 
-  if (supabaseError || !supabase) {
-    const errorMessage = `Admin service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
+  if (adminSupabaseError || !adminSupabase) {
+    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized'}.`;
     return { success: false, message: errorMessage };
   }
   if (!eventId) return { success: false, message: 'Event ID is required for deletion.' };
 
-  // TODO: Add robust server-side admin role check
-
   try {
-    // First, get event details to find image_storage_path
-    const { data: eventToDelete, error: fetchError } = await supabase
+    const { data: eventToDelete, error: fetchError } = await adminSupabase
       .from('events')
       .select('image_storage_path')
       .eq('id', eventId)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // PGRST116: no rows found
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-    // Delete from 'events' table
-    const { error: deleteDbError } = await supabase
+    const { error: deleteDbError } = await adminSupabase
       .from('events')
       .delete()
       .eq('id', eventId);
 
     if (deleteDbError) throw deleteDbError;
-    console.log('[Supabase Admin Service] Event metadata deleted successfully from table:', eventId);
+    console.log('[Supabase Admin Service - Service Role] Event metadata deleted successfully from table:', eventId);
 
-    // Delete image from Supabase Storage if path exists
     if (eventToDelete?.image_storage_path) {
-      const { error: storageError } = await supabase.storage
+      const { error: storageError } = await adminSupabase.storage
         .from(EVENTS_BUCKET)
         .remove([eventToDelete.image_storage_path]);
       if (storageError) {
-        console.warn(`[Supabase Admin Service] Error deleting image ${eventToDelete.image_storage_path} from Storage:`, storageError.message);
-        // Decide if this is critical or a warning. For now, proceed.
+        console.warn(`[Supabase Admin Service - Service Role] Error deleting image ${eventToDelete.image_storage_path} from Storage:`, storageError.message);
       } else {
-        console.log(`[Supabase Admin Service] Image ${eventToDelete.image_storage_path} deleted successfully from Storage.`);
+        console.log(`[Supabase Admin Service - Service Role] Image ${eventToDelete.image_storage_path} deleted successfully from Storage.`);
       }
     }
 
@@ -163,7 +174,7 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
     return { success: true, message: 'Event and associated image (if any) deleted successfully.' };
 
   } catch (error: any) {
-    console.error('[Supabase Admin Service Error] Error deleting event:', error.message, error.stack);
+    console.error('[Supabase Admin Service Error - Service Role] Error deleting event:', error.message, error.stack);
     return { success: false, message: `Could not delete event: ${error.message || 'Unknown error'}` };
   }
 }
