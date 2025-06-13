@@ -88,35 +88,29 @@ export function UserListClient({ users }: UserListClientProps) {
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}> {/* Changed from user.uid to user.id for Supabase */}
-                  <TableCell>
+                <TableRow key={user.id}><TableCell>
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.photo_url || undefined} alt={user.name || 'User avatar'} />
                       <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
                     </Avatar>
-                  </TableCell>
-                  <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
-                  <TableCell>
+                  </TableCell><TableCell className="font-medium">{user.name || 'N/A'}
+                  </TableCell><TableCell>
                     <div className="flex items-center gap-1">
                         <Mail className="h-3 w-3 text-muted-foreground"/> {user.email || 'N/A'}
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  </TableCell><TableCell className="hidden md:table-cell">
                      <div className="flex items-center gap-1">
                         <Building className="h-3 w-3 text-muted-foreground"/> {user.branch || 'N/A'}
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  </TableCell><TableCell className="hidden lg:table-cell">
                      <div className="flex items-center gap-1">
                         <Hash className="h-3 w-3 text-muted-foreground"/> {user.registration_number || 'N/A'}
                     </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <Badge variant={user.auth_provider === 'google' ? 'default' : 'secondary'}> {/* Adjusted provider name */}
-                        {user.auth_provider || 'email'} {/* Adjusted default value */}
+                  </TableCell><TableCell className="hidden lg:table-cell">
+                    <Badge variant={user.auth_provider === 'google' ? 'default' : 'secondary'}>
+                        {user.auth_provider || 'email'}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </TableCell><TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="icon" onClick={() => handleViewDetails(user.id!)} title="View Details" disabled={isProcessing === user.id}>
                         <Eye className="h-4 w-4" />
@@ -128,8 +122,7 @@ export function UserListClient({ users }: UserListClientProps) {
                         {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </TableCell></TableRow>
               ))}
             </TableBody>
           </Table>
