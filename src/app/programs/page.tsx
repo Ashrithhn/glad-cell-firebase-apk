@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Target, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee, Download } from 'lucide-react'; 
+import { CalendarCheck, Target, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee, Download, FileText } from 'lucide-react'; 
 import NextImage from 'next/image'; 
 import { ParticipationModal } from '@/components/features/programs/participation-modal';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +23,7 @@ export default function ProgramsPage() {
   const [loadingEvents, setLoadingEvents] = React.useState(true);
   const [eventsError, setEventsError] = React.useState<string | null>(null);
 
-  const { userId, isAdmin, loading: authLoading } = useAuth(); // Removed 'user' as it's not directly used here
+  const { userId, isAdmin, loading: authLoading } = useAuth(); 
   const { toast } = useToast();
   const router = useRouter();
 
@@ -40,7 +40,13 @@ export default function ProgramsPage() {
           if (aIsPast && !bIsPast) return 1;
           if (!aIsPast && bIsPast) return -1;
           
-          return parseISO(b.start_date).getTime() - parseISO(a.start_date).getTime();
+          // Sort by start_date descending, then by registration_deadline descending if start_dates are same
+          const startDateComparison = parseISO(b.start_date).getTime() - parseISO(a.start_date).getTime();
+          if (startDateComparison !== 0) return startDateComparison;
+
+          const regDeadlineA = a.registration_deadline ? parseISO(a.registration_deadline).getTime() : 0;
+          const regDeadlineB = b.registration_deadline ? parseISO(b.registration_deadline).getTime() : 0;
+          return regDeadlineB - regDeadlineA;
         });
         setEvents(sortedEvents);
       } else {
@@ -51,37 +57,37 @@ export default function ProgramsPage() {
     loadEvents();
   }, []);
 
-  const isLoggedIn = !authLoading && !!userId; // Simplified: if userId exists after loading, user is logged in
+  const isLoggedIn = !authLoading && !!userId;
 
   const handleParticipateClick = (event: EventData) => {
-     const registrationDeadline = event.registration_deadline ? parseISO(event.registration_deadline) : parseISO(event.start_date);
-     if (isPast(registrationDeadline)) {
-        toast({
-            title: "Registration Closed",
-            description: "The registration deadline for this event has passed.",
-            variant: "destructive",
-        });
-        return;
-     }
+    const registrationDeadline = event.registration_deadline ? parseISO(event.registration_deadline) : parseISO(event.start_date);
+    if (isPast(registrationDeadline)) {
+      toast({
+        title: "Registration Closed",
+        description: "The registration deadline for this event has passed.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-     if (isLoggedIn && !isAdmin) { 
-        const formattedStartDate = event.start_date ? format(parseISO(event.start_date as string), 'PPP') : 'N/A';
-        setSelectedEvent({ ...event, start_date: formattedStartDate });
-        setIsModalOpen(true);
-     } else if (isAdmin) {
-         toast({ title: "Admin View", description: "Admins cannot participate.", variant: "default" });
-     } else {
-         toast({ title: "Login Required", description: "Please login to participate in events.", variant: "default" });
-         router.push('/login?redirect=/programs');
-     }
+    if (isLoggedIn && !isAdmin) {
+      const formattedStartDate = event.start_date ? format(parseISO(event.start_date as string), 'PPP') : 'N/A';
+      setSelectedEvent({ ...event, start_date: formattedStartDate });
+      setIsModalOpen(true);
+    } else if (isAdmin) {
+      toast({ title: "Admin View", description: "Admins cannot participate.", variant: "default" });
+    } else { // Not logged in
+      toast({ title: "Login Required", description: "Please login to participate in events.", variant: "default" });
+      router.push('/login?redirect=/programs');
+    }
   };
 
   const formatFee = (feeInPaisa: number) => {
     if (feeInPaisa === 0) return "Free";
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
-  }
+  };
 
-  if (authLoading) {
+  if (authLoading || loadingEvents) { // Show skeleton if either auth or events are loading
     return (
       <div className="space-y-12 max-w-4xl mx-auto px-4 py-8">
         <div className="text-center space-y-2">
@@ -120,13 +126,6 @@ export default function ProgramsPage() {
         </p>
       </div>
 
-       {loadingEvents && !authLoading && ( // Show event loading skeleton only if auth is done
-         <div className='space-y-6'>
-             <Skeleton className="h-72 w-full rounded-lg" />
-             <Skeleton className="h-56 w-full rounded-lg" />
-         </div>
-       )}
-
        {eventsError && (
          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -141,7 +140,7 @@ export default function ProgramsPage() {
           const isRegistrationOver = isPast(registrationDeadline);
 
           return (
-            <Card key={event.id} id={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-mt-20"> {/* Added scroll-mt-20 for anchor linking */}
+            <Card key={event.id} id={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-mt-20">
               {event.image_url && (
                 <div className="relative w-full h-56 sm:h-64 md:h-72">
                   <NextImage
@@ -196,7 +195,7 @@ export default function ProgramsPage() {
                   <div className="space-y-2 pt-4 border-t">
                     <h3 className="text-base font-semibold flex items-center gap-2"><Target className="h-5 w-5 text-primary"/> Rules/Guidelines (Text)</h3>
                      <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm pl-2">
-                       {event.rules.split('\n').map((rule, index) => rule.trim() && <li key={index}>{rule.trim()}</li>)}
+                       {event.rules.split('\\n').map((rule, index) => rule.trim() && <li key={index}>{rule.trim()}</li>)}
                      </ul>
                   </div>
                 )}
@@ -234,7 +233,7 @@ export default function ProgramsPage() {
                  </div>
               </CardContent>
             </Card>
-          )
+          );
         })
       )}
 
@@ -256,3 +255,8 @@ export default function ProgramsPage() {
                 fee: selectedEvent.fee
             }}
          />
+       )}
+    </div>
+  );
+}
+    
