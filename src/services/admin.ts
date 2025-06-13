@@ -32,16 +32,27 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
-  adminSupabaseError = 'Supabase URL or Service Role Key is missing for admin actions. Ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local.';
-  console.error(`[Admin Service Error] Initialization failed: ${adminSupabaseError}`);
+  adminSupabaseError = 'Supabase URL or Service Role Key is missing for admin actions. Ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local. Admin actions will fail.';
+  console.error(`🔴 [CRITICAL ADMIN SERVICE ERROR] Initialization failed: ${adminSupabaseError}`);
 } else {
-  adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-  console.log('[Admin Service] Supabase client initialized with service_role key.');
+  try {
+    adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    if (adminSupabase) {
+        console.log('✅ [Admin Service] Supabase client for admin actions initialized successfully with service_role key.');
+    } else {
+        // This case should ideally not happen if createClient is called with valid params
+        throw new Error("createClient returned null for adminSupabase unexpectedly.");
+    }
+  } catch (e: any) {
+    adminSupabaseError = `Failed to create admin Supabase client: ${e.message}`;
+    console.error(`🔴 [CRITICAL ADMIN SERVICE ERROR] Client creation failed: ${adminSupabaseError}`);
+    adminSupabase = null; // Ensure it's null on error
+  }
 }
 
 /**
@@ -52,7 +63,8 @@ export async function addEvent(eventData: AddEventInput): Promise<{ success: boo
   console.log('[Supabase Admin Service - Service Role] addEvent invoked.');
 
   if (adminSupabaseError || !adminSupabase) {
-    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized'}.`;
+    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized due to missing/invalid SERVICE_ROLE_KEY or URL.'}.`;
+    console.error(`[Admin Service Error - addEvent]: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
 
@@ -134,7 +146,8 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
   console.log('[Supabase Admin Service - Service Role] deleteEvent invoked for ID:', eventId);
 
   if (adminSupabaseError || !adminSupabase) {
-    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized'}.`;
+    const errorMessage = `Admin service unavailable: ${adminSupabaseError || 'Admin Supabase client not initialized due to missing/invalid SERVICE_ROLE_KEY or URL.'}.`;
+    console.error(`[Admin Service Error - deleteEvent]: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
   if (!eventId) return { success: false, message: 'Event ID is required for deletion.' };
@@ -146,7 +159,7 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
       .eq('id', eventId)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // PGRST116 means no rows found, which is okay if we're just deleting.
 
     const { error: deleteDbError } = await adminSupabase
       .from('events')
@@ -162,6 +175,7 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
         .remove([eventToDelete.image_storage_path]);
       if (storageError) {
         console.warn(`[Supabase Admin Service - Service Role] Error deleting image ${eventToDelete.image_storage_path} from Storage:`, storageError.message);
+        // Do not re-throw; allow DB deletion to be considered a partial success.
       } else {
         console.log(`[Supabase Admin Service - Service Role] Image ${eventToDelete.image_storage_path} deleted successfully from Storage.`);
       }
