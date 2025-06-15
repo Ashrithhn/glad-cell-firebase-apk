@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<Error | null>(supabaseError);
 
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (profileError && profileError.code !== 'PGRST116') {
           console.error('[useAuth fetchUserProfile] Error fetching profile:', profileError.message);
-          setUserProfile(null); // Clear profile on error
+          setUserProfile(null);
         } else if (data) {
           setUserProfile({
             id: data.id,
@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const processAuthStateChange = useCallback(async (session: Session | null) => {
-    setLoading(true);
+    setLoading(true); // Set loading true at the very beginning of processing
     console.log('[useAuth processAuthStateChange] Start. Session present:', !!session);
     const currentUser = session?.user ?? null;
     setUser(currentUser);
@@ -106,73 +106,86 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (currentUser && !adminLoggedIn) {
         console.log('[useAuth processAuthStateChange] User is present and not admin, fetching profile for:', currentUser.id);
-        await fetchUserProfile(currentUser);
+        await fetchUserProfile(currentUser); // Await profile fetching
       } else {
         console.log('[useAuth processAuthStateChange] No user or is admin, clearing profile.');
-        setUserProfile(null);
+        setUserProfile(null); // Ensure profile is cleared if no user or if admin
       }
     } catch (error) {
-      console.error('[useAuth processAuthStateChange] Error during profile fetch step:', error);
-      setUserProfile(null);
+        console.error('[useAuth processAuthStateChange] Error during profile fetch step (this should be caught by fetchUserProfile ideally):', error);
+        setUserProfile(null); // Ensure profile is cleared on error
     } finally {
-      setLoading(false);
-      console.log('[useAuth processAuthStateChange] End. Loading set to false.');
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
+        setLoading(false); // Set loading false after all state updates, including profile
+        console.log('[useAuth processAuthStateChange] End. Loading set to false.');
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
     }
   }, [fetchUserProfile]);
 
   const login = useCallback(async (session: Session | null) => {
     if (authError || !supabase) {
       console.error("[useAuth Login] Cannot login, Supabase client error:", authError?.message);
+      // Ensure states are reset and loading is false if login can't proceed
+      setUserProfile(null);
+      setUser(null);
+      setUserId(null);
+      setIsAdmin(false);
+      setLoading(false); // Critical: ensure loading is false if we abort
       return;
     }
-    // setLoading(true) will be handled by processAuthStateChange
-    await processAuthStateChange(session);
+    await processAuthStateChange(session); // processAuthStateChange now manages its own loading states
   }, [processAuthStateChange, authError]);
 
   const logout = useCallback(async () => {
-    // setLoading(true) will be handled by processAuthStateChange
+    // processAuthStateChange will handle loading states when triggered by onAuthStateChange
     if (supabase && !authError) {
       try {
-        await serverLogout(); // This calls supabase.auth.signOut() -> triggers onAuthStateChange -> processAuthStateChange
+        await serverLogout(); // This calls supabase.auth.signOut()
       } catch (error) {
         console.error('[useAuth Logout] Error during server logout:', error);
-        await processAuthStateChange(null); // Manually process if serverLogout fails to trigger event
+        await processAuthStateChange(null); // Manually reset if serverLogout fails to trigger event
       }
     } else {
-      await processAuthStateChange(null);
+      await processAuthStateChange(null); // Manually reset if Supabase client isn't available
     }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('isAdminLoggedIn');
-      // processAuthStateChange will dispatch 'authChange'
+      // The processAuthStateChange call (either direct or via onAuthStateChange) will dispatch 'authChange'
     }
   }, [authError, processAuthStateChange]);
 
   useEffect(() => {
-    setLoading(true); // Set loading true at the very start of the initial effect
-    setAuthError(supabaseError);
+    setAuthError(supabaseError); // Set Supabase client error once on mount
 
     if (!supabase) {
       console.error('[useAuth Initial Effect] Supabase client NOT available. Auth will not work.');
-      processAuthStateChange(null); // This will set loading to false
+      (async () => { // IIFE to call async function
+        await processAuthStateChange(null); // This will set loading to false eventually
+      })();
       return;
     }
 
     console.log('[useAuth Initial Effect] Subscribing to onAuthStateChange and fetching initial session.');
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('[useAuth Initial Effect] Initial getSession response. Session present:', !!session);
-      await processAuthStateChange(session); // processAuthStateChange will set loading to false
-    }).catch(error => {
-      console.error("[useAuth Initial Effect] Error in initial getSession:", error);
-      processAuthStateChange(null); // processAuthStateChange will set loading to false
-    });
+    
+    const initialAuthSetup = async () => {
+      // setLoading(true) is already true by default, but explicitly set here for clarity if called again.
+      // processAuthStateChange will handle its own setLoading(true) at start and setLoading(false) at end.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[useAuth Initial Effect] Initial getSession response. Session present:', !!session);
+        await processAuthStateChange(session);
+      } catch (error) {
+        console.error("[useAuth Initial Effect] Error in initial getSession:", error);
+        await processAuthStateChange(null);
+      }
+    };
+
+    initialAuthSetup();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('[useAuth onAuthStateChange] Event:', _event, 'Session present:', !!session);
-      await processAuthStateChange(session); // processAuthStateChange will handle loading state
+      await processAuthStateChange(session);
     });
 
-    // This listener handles the admin login/logout which uses localStorage
     const handleExternalAuthChanges = async () => {
       console.log("[useAuth handleExternalAuthChanges] Storage or authChange event triggered, re-evaluating auth state.");
       if (!supabase) {
@@ -182,7 +195,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        // processAuthStateChange will be called, which also handles admin state via localStorage
         await processAuthStateChange(session);
       } catch (e) {
         console.error("[useAuth handleExternalAuthChanges] Error during getSession:", e);
@@ -191,14 +203,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     window.addEventListener('storage', handleExternalAuthChanges);
-    window.addEventListener('authChange', handleExternalAuthChanges); // Listens to its own dispatches and Supabase's
+    window.addEventListener('authChange', handleExternalAuthChanges);
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      if (authListener?.subscription) {
+        authListener.subscription.unsubscribe();
+      }
       window.removeEventListener('storage', handleExternalAuthChanges);
       window.removeEventListener('authChange', handleExternalAuthChanges);
     };
-  }, [processAuthStateChange]); // Ensure processAuthStateChange is stable
+  }, [processAuthStateChange, supabaseError]); // Added supabaseError
 
   return (
     <AuthContext.Provider value={{ user, userProfile, userId, loading, isAdmin, login, logout, authError }}>
