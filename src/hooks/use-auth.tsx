@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
@@ -32,6 +31,7 @@ interface AuthContextType {
   login: (session: Session | null) => Promise<void>;
   logout: () => Promise<void>;
   authError: Error | null;
+  profileError: Error | null; // Added for specific profile fetch errors
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,25 +44,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // Start with loading true
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<Error | null>(supabaseError);
+  const [profileError, setProfileError] = useState<Error | null>(null); // New state
 
-  const fetchUserProfile = useCallback(async (sbUser: SupabaseUser | null) => {
-    if (sbUser && supabase) {
-      console.log('[useAuth fetchUserProfile] Fetching profile for Supabase user:', sbUser.id);
-      try {
-        const { data, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', sbUser.id)
-          .single();
+  const fetchUserProfile = useCallback(async (sbUser: SupabaseUser) => {
+    if (!supabase) {
+      console.error("[useAuth fetchUserProfile] Supabase client not available.");
+      throw new Error("Supabase client not available for profile fetch.");
+    }
+    console.log('[useAuth fetchUserProfile] Fetching profile for Supabase user:', sbUser.id);
+    // Clear previous profile error before attempting to fetch
+    // setProfileError(null); // Let the caller manage this based on try/catch
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('[useAuth fetchUserProfile] Error fetching profile:', profileError.message);
-          setUserProfile(null);
-        } else if (data) {
-          setUserProfile({
+    // try/catch is removed here; caller (processAuthStateChange) will handle it
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', sbUser.id)
+        .single();
+
+    if (error) {
+        if (error.code === 'PGRST116') { // Profile not found
+            console.warn(`[useAuth fetchUserProfile] User profile not found for ID: ${sbUser.id}.`);
+            setUserProfile(null); // Set profile to null if not found
+            return; // Not a critical error to throw, just means no profile
+        }
+        // For other errors, throw them to be caught by the caller
+        console.error('[useAuth fetchUserProfile] Error fetching profile:', error.message);
+        throw error;
+    }
+    
+    if (data) {
+        setUserProfile({
             id: data.id,
             email: data.email || sbUser.email,
             name: data.name || data.user_metadata?.full_name || sbUser.user_metadata?.full_name,
@@ -77,25 +92,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             created_at: data.created_at,
             updated_at: data.updated_at,
             last_sign_in_at: sbUser.last_sign_in_at,
-          });
-          console.log('[useAuth fetchUserProfile] Profile set for:', sbUser.id);
-        } else {
-          setUserProfile(null);
-          console.warn(`[useAuth fetchUserProfile] User profile not found for ID: ${sbUser.id}.`);
-        }
-      } catch (catchError: any) {
-        console.error('[useAuth fetchUserProfile] Catch block error:', catchError.message);
-        setUserProfile(null);
-      }
+        });
+        console.log('[useAuth fetchUserProfile] Profile set for:', sbUser.id);
     } else {
-      setUserProfile(null);
+        console.warn(`[useAuth fetchUserProfile] No data returned for profile ID: ${sbUser.id}, setting profile to null.`);
+        setUserProfile(null);
     }
-  }, []);
+  }, [supabase]); // Added supabase dependency
 
   const processAuthStateChange = useCallback(async (session: Session | null) => {
-    setLoading(true); // Set loading true at the very beginning of processing
     console.log('[useAuth processAuthStateChange] Start. Session present:', !!session);
+    setLoading(true);
+    setProfileError(null); // Clear profile-specific error at the start
+
     const currentUser = session?.user ?? null;
+    
     setUser(currentUser);
     setUserId(currentUser?.id ?? null);
 
@@ -103,72 +114,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAdmin(adminLoggedIn);
     console.log(`[useAuth processAuthStateChange] User: ${currentUser?.id}, Admin: ${adminLoggedIn}`);
 
-    try {
-      if (currentUser && !adminLoggedIn) {
-        console.log('[useAuth processAuthStateChange] User is present and not admin, fetching profile for:', currentUser.id);
+    if (currentUser && !adminLoggedIn) {
+      try {
+        console.log('[useAuth processAuthStateChange] Attempting to fetch profile for:', currentUser.id);
         await fetchUserProfile(currentUser); // Await profile fetching
-      } else {
-        console.log('[useAuth processAuthStateChange] No user or is admin, clearing profile.');
-        setUserProfile(null); // Ensure profile is cleared if no user or if admin
+      } catch (errorFetchingProfile: any) {
+        console.error('[useAuth processAuthStateChange] Error caught during profile fetch:', errorFetchingProfile.message);
+        setUserProfile(null); // Ensure profile is null on error
+        setProfileError(errorFetchingProfile instanceof Error ? errorFetchingProfile : new Error(String(errorFetchingProfile)));
       }
-    } catch (error) {
-        console.error('[useAuth processAuthStateChange] Error during profile fetch step (this should be caught by fetchUserProfile ideally):', error);
-        setUserProfile(null); // Ensure profile is cleared on error
-    } finally {
-        setLoading(false); // Set loading false after all state updates, including profile
-        console.log('[useAuth processAuthStateChange] End. Loading set to false.');
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
+    } else {
+      setUserProfile(null); // Ensure profile is cleared if no user or if admin
     }
+
+    setLoading(false); // CRITICAL: Set loading false after ALL state updates for this auth event
+    console.log('[useAuth processAuthStateChange] End. Loading set to false.');
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('authChange'));
   }, [fetchUserProfile]);
 
   const login = useCallback(async (session: Session | null) => {
     if (authError || !supabase) {
       console.error("[useAuth Login] Cannot login, Supabase client error:", authError?.message);
-      // Ensure states are reset and loading is false if login can't proceed
       setUserProfile(null);
       setUser(null);
       setUserId(null);
       setIsAdmin(false);
-      setLoading(false); // Critical: ensure loading is false if we abort
+      setLoading(false); // Ensure loading is false if we abort early
       return;
     }
-    await processAuthStateChange(session); // processAuthStateChange now manages its own loading states
-  }, [processAuthStateChange, authError]);
+    console.log('[useAuth login] Calling processAuthStateChange with session:', !!session);
+    await processAuthStateChange(session);
+    console.log('[useAuth login] processAuthStateChange completed.');
+  }, [processAuthStateChange, authError, supabase]); // Added supabase dependency
 
   const logout = useCallback(async () => {
-    // processAuthStateChange will handle loading states when triggered by onAuthStateChange
     if (supabase && !authError) {
       try {
-        await serverLogout(); // This calls supabase.auth.signOut()
+        await serverLogout(); // This calls supabase.auth.signOut() which should trigger onAuthStateChange
       } catch (error) {
-        console.error('[useAuth Logout] Error during server logout:', error);
-        await processAuthStateChange(null); // Manually reset if serverLogout fails to trigger event
+        console.error('[useAuth Logout] Error during server logout, manually resetting state:', error);
+        await processAuthStateChange(null); // Manually reset if serverLogout fails or doesn't trigger event
       }
     } else {
       await processAuthStateChange(null); // Manually reset if Supabase client isn't available
     }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('isAdminLoggedIn');
-      // The processAuthStateChange call (either direct or via onAuthStateChange) will dispatch 'authChange'
+      // The onAuthStateChange listener or the direct call to processAuthStateChange will handle UI updates
     }
-  }, [authError, processAuthStateChange]);
+  }, [authError, processAuthStateChange, supabase]); // Added supabase dependency
 
   useEffect(() => {
-    setAuthError(supabaseError); // Set Supabase client error once on mount
+    setAuthError(supabaseError); // Set initial Supabase client error status
 
     if (!supabase) {
       console.error('[useAuth Initial Effect] Supabase client NOT available. Auth will not work.');
-      (async () => { // IIFE to call async function
-        await processAuthStateChange(null); // This will set loading to false eventually
-      })();
+      processAuthStateChange(null).finally(() => {
+         // setLoading(false) is handled by processAuthStateChange
+      });
       return;
     }
 
     console.log('[useAuth Initial Effect] Subscribing to onAuthStateChange and fetching initial session.');
     
     const initialAuthSetup = async () => {
-      // setLoading(true) is already true by default, but explicitly set here for clarity if called again.
-      // processAuthStateChange will handle its own setLoading(true) at start and setLoading(false) at end.
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log('[useAuth Initial Effect] Initial getSession response. Session present:', !!session);
@@ -212,10 +221,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.removeEventListener('storage', handleExternalAuthChanges);
       window.removeEventListener('authChange', handleExternalAuthChanges);
     };
-  }, [processAuthStateChange, supabaseError]); // Added supabaseError
+  }, [processAuthStateChange, supabaseError, supabase]); // Added supabase dependency
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, userId, loading, isAdmin, login, logout, authError }}>
+    <AuthContext.Provider value={{ user, userProfile, userId, loading, isAdmin, login, logout, authError, profileError }}>
       {children}
     </AuthContext.Provider>
   );
@@ -228,4 +237,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
