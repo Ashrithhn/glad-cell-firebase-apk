@@ -1,7 +1,6 @@
 
 'use server';
 
-<<<<<<< HEAD
 import { supabase, supabaseError } from '@/lib/supabaseClient'; // Import Supabase client
 import type { UserCredentials, SignUpWithPasswordCredentials, Session } from '@supabase/supabase-js';
 
@@ -22,17 +21,6 @@ export interface UserProfileSupabase {
   created_at?: string; // Supabase timestamps are typically ISO strings
   updated_at?: string;
 }
-
-=======
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut as firebaseSignOut, 
-    sendPasswordResetEmail,
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { auth, db, initializationError } from '@/lib/firebase/config';
->>>>>>> b65b534 (remove login with google option)
 
 /**
  * Registers a user with Supabase Authentication and stores profile data in a 'users' table.
@@ -67,7 +55,6 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
       return { success: false, message: 'This registration number is already in use. Please use a different one.' };
     }
 
-<<<<<<< HEAD
     // Sign up the user with Supabase Auth
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -77,51 +64,11 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
           full_name: name,
         }
       }
-=======
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    console.log('[Server Action] Firebase Auth user created:', user.uid);
-
-
-    const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
-      uid: user.uid,
-      email: user.email,
-      name: name,
-      branch: branch,
-      semester: semester,
-      registrationNumber: registrationNumber,
-      collegeName: collegeName,
-      city: city,
-      pincode: pincode,
-      createdAt: serverTimestamp() as Timestamp,
-      authProvider: 'email/password', 
-      emailVerified: false, 
->>>>>>> b65b534 (remove login with google option)
     });
 
-<<<<<<< HEAD
     if (signUpError) {
       console.error('[Supabase Server Action Error] Supabase SignUp Error:', signUpError.message);
       return { success: false, message: signUpError.message || 'Failed to sign up with Supabase Auth.' };
-=======
-    return { success: true, userId: user.uid, message: 'Registration successful!' }; 
-  } catch (error: any) {
-    console.error('[Server Action Error] Firebase Registration Error:', error.code, error.message);
-    let message = 'Registration failed. Please try again.';
-    if (error.code === 'auth/email-already-in-use') {
-      message = 'This email address is already registered.';
-    } else if (error.code === 'auth/weak-password') {
-      message = 'Password is too weak. It should be at least 8 characters long.';
-    } else if (error.code === 'auth/invalid-api-key') {
-        message = 'Invalid Firebase configuration (API Key). Please contact support.';
-    } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-        message = 'Registration failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-    } else if (error.code) {
-        message = `Registration failed: ${error.code}`;
-    } else {
-        message = `Registration failed: ${error.message || 'An unknown error occurred.'}`;
->>>>>>> b65b534 (remove login with google option)
     }
 
     if (!authData.user) {
@@ -181,7 +128,6 @@ export async function loginUser(credentials: UserCredentials): Promise<{ success
       password,
     });
 
-<<<<<<< HEAD
     if (error) {
       console.error('[Supabase Server Action Error] Supabase Login Error:', error.message);
       // Check for specific Supabase auth errors
@@ -209,29 +155,6 @@ export async function loginUser(credentials: UserCredentials): Promise<{ success
 
 /**
  * Logs out the currently signed-in Supabase user.
-=======
-    return { success: true, userId: user.uid };
-  } catch (error: any) {
-    console.error('[Server Action Error] Firebase Login Error:', error.code, error.message);
-    let message = 'Login failed. Please check your credentials.';
-     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-       message = 'Invalid email or password.';
-     } else if (error.code === 'auth/invalid-api-key') {
-         message = 'Invalid Firebase configuration (API Key). Please contact support.';
-     } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-         message = 'Login failed: Email/Password sign-in is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-     } else if (error.code) {
-         message = `Login failed: ${error.code}`;
-     } else {
-         message = `Login failed: ${error.message || 'An unknown error occurred.'}`;
-     }
-    return { success: false, message: message };
-  }
-}
-
-/**
- * Logs out the currently signed-in user using Firebase Authentication.
->>>>>>> b65b534 (remove login with google option)
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
     console.log('[Supabase Server Action] logoutUser invoked.');
@@ -305,7 +228,6 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
         console.log('[Supabase Server Action] Password reset email sent to:', email);
         return { success: true, message: 'If an account exists for this email, a password reset link has been sent.' };
     } catch (error: any) {
-<<<<<<< HEAD
         console.error('[Supabase Server Action Error] Unexpected error sending password reset email:', error.message);
         return { success: false, message: `Password reset failed: ${error.message || 'An unknown error occurred.'}` };
     }
@@ -319,24 +241,4 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
 // 2. Client-side: onAuthStateChange to detect successful Google login.
 // 3. Server-side (optional, or client can do it): If new Google user, insert/update their profile into your `users` table.
 //    Supabase's `auth.users` table stores basic auth info. Your `users` (or `profiles`) table stores additional app-specific info.
-// type Session = import('@supabase/supabase-js').Session; // Already imported at the top
-=======
-        console.error('[Server Action Error] Error sending password reset email:', error.code, error.message);
-        let message = 'Failed to send password reset email. Please try again.';
-        if (error.code === 'auth/invalid-email') {
-            message = 'Invalid email address format.';
-        } else if (error.code === 'auth/user-not-found') {
-            message = 'If an account exists for this email, a password reset link has been sent.';
-        } else if (error.code === 'auth/missing-ios-bundle-id' || error.code === 'auth/missing-continue-uri') {
-            message = 'Password reset configuration error. Please contact support.';
-        } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-             message = 'Password reset failed: Email/Password sign-in or password reset is not enabled for this project. Please enable it in the Firebase Console (Authentication > Sign-in method).';
-        } else if (error.code) {
-            message = `Password reset failed: ${error.code}`;
-        } else {
-            message = `Password reset failed: ${error.message || 'An unknown error occurred.'}`;
-        }
-        return { success: false, message };
-    }
-}
->>>>>>> b65b534 (remove login with google option)
+

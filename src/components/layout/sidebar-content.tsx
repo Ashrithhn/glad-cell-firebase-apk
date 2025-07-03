@@ -12,10 +12,7 @@ import {
   CalendarCheck,
   MessageCircle, 
   Info,
-<<<<<<< HEAD
-=======
-  HelpCircle as HelpCircleIcon, // Renamed to avoid conflict
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+  HelpCircle as HelpCircleIcon,
   Settings,
   LogOut,
   Sun,
@@ -24,32 +21,17 @@ import {
   Lightbulb, 
   MessageSquare, 
   Loader2, 
-<<<<<<< HEAD
-  Link2, 
-<<<<<<< HEAD
-  QrCode, 
-  Users as UsersIcon, 
-  FileText, 
+  Link2 as Link2Icon,
+  QrCode,
+  Users as UsersIcon,
+  Image as ImageIcon,
+  FileText,
   Contact as ContactIcon,
   ShieldCheck, 
   ScrollText,  
-  Image as ImageIcon, 
   LogIn as LogInIcon,
-  UserPlus
-=======
-=======
-  Link2 as Link2Icon, // Renamed to avoid conflict with Link component
->>>>>>> 2d08f22 (and remove home button in admin dashboard)
-  QrCode,
-  Users as UsersIcon, // For Manage Users
-  Image as ImageIcon, // For Homepage Images
-  FileText, // For general content
-<<<<<<< HEAD
-  Contact, // For contact edit
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-=======
-  Contact as ContactIcon, // Renamed to avoid conflict
->>>>>>> 2d08f22 (and remove home button in admin dashboard)
+  UserPlus,
+  Home
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'; 
 import { getContent } from '@/services/content'; 
@@ -108,26 +90,27 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
 
   // Common navigation items
   const commonNavItems = [
-    { href: "/", label: "Home", Icon: Lightbulb }, // Using Lightbulb for Home as per original
+    { href: "/", label: "Home", Icon: Home },
     { href: "/ideas", label: "Ideas", Icon: Lightbulb },
-    { href: "/programs", label: "Events", Icon: CalendarCheck },
+    { href: "/programs", label: "Our Programs", Icon: CalendarCheck },
     { href: "/about", label: "About Us", Icon: Info },
-    { href: "/contact", label: "Contact & Help", Icon: HelpCircleIcon },
+    { href: "/contact", label: "Contact", Icon: ContactIcon },
+    { href: "/terms-and-conditions", label: "Terms", Icon: ScrollText},
+    { href: "/privacy-policy", label: "Privacy", Icon: ShieldCheck},
   ];
 
   const adminNavItems = [
     { href: "/admin/dashboard", label: "Admin Dashboard", Icon: BarChart },
     { href: "/admin/events", label: "Manage Events", Icon: CalendarCheck },
     { href: "/admin/users", label: "Manage Users", Icon: UsersIcon },
+    { href: "/admin/ideas", label: "Manage Ideas", Icon: Lightbulb },
     { href: "/admin/attendance", label: "Attendance Scanner", Icon: QrCode },
-    { label: "Content Management", isSeparator: true },
-    { href: "/admin/content/about", label: "Edit About Page", Icon: FileText },
+    { label: "Content & Settings", isSeparator: true },
+    { href: "/admin/content/about", label: "Edit About Page", Icon: Info },
     { href: "/admin/content/contact", label: "Edit Contact Info", Icon: ContactIcon },
     { href: "/admin/content/links", label: "Manage Site Links", Icon: Link2Icon },
-    { href: "/admin/content/help", label: "Edit Help/FAQ", Icon: HelpCircleIcon },
     { href: "/admin/content/homepage-images", label: "Homepage Images", Icon: ImageIcon },
-    { label: "Site Configuration", isSeparator: true },
-    { href: "/admin/dashboard#site-settings", label: "Site Settings", Icon: Settings }, // Link to section in dashboard
+    { href: "/admin/settings", label: "Site Settings", Icon: Settings }, 
   ];
 
   const navItemsToRender = isAdmin ? adminNavItems : commonNavItems;
@@ -135,33 +118,6 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
 
   return (
     <div className="flex flex-col h-full pt-6">
-<<<<<<< HEAD
-      <nav className="flex-grow space-y-2">
-         {!isAdmin && ( 
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                <Link href="/">
-                <Home className="mr-2 h-4 w-4" />
-                Home
-                </Link>
-            </Button>
-         )}
-
-          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/ideas">
-              <Lightbulb className="mr-2 h-4 w-4" />
-              Ideas
-            </Link>
-          </Button>
-          
-          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/programs">
-                <CalendarCheck className="mr-2 h-4 w-4" /> Our Programs
-            </Link>
-          </Button>
-
-        {isLoggedIn && !isAdmin && ( 
-          <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-=======
       <nav className="flex-grow space-y-1">
         {navItemsToRender.map((item, index) => {
           if (item.isSeparator) {
@@ -178,117 +134,22 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
           );
         })}
 
-        {/* User-specific links (not admin) */}
+        {/* User-specific profile link (not admin) */}
         {!isAdmin && isLoggedIn && (
-          <Button variant="ghost" className="w-full justify-start text-sm" asChild onClick={handleLinkClick}>
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-            <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </Button>
-        )}
-
-<<<<<<< HEAD
-        {isAdmin && ( 
           <>
             <Separator />
-             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-1 px-2 pt-2">
-               <Settings className="mr-2 h-4 w-4" /> Admin Tools
-             </Label>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/dashboard">
-                <BarChart className="mr-2 h-4 w-4" /> Dashboard
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/events">
-                <CalendarCheck className="mr-2 h-4 w-4" /> Manage Events
-              </Link>
-            </Button>
-             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/users">
-                <UsersIcon className="mr-2 h-4 w-4" /> Manage Users
-              </Link>
-            </Button>
-             <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/ideas">
-                <Lightbulb className="mr-2 h-4 w-4" /> Manage Ideas
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/attendance">
-                <QrCode className="mr-2 h-4 w-4" /> Attendance Scanner
-              </Link>
-            </Button>
-            
-             <Separator />
-             <Label className="flex items-center text-sm font-medium text-muted-foreground mb-1 px-2 pt-2">
-               <FileText className="mr-2 h-4 w-4" /> Content &amp; Settings
-             </Label>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/about">
-                <Info className="mr-2 h-4 w-4" /> Edit About Us
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/contact">
-                <ContactIcon className="mr-2 h-4 w-4"/> Edit Contact Info
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/privacy">
-                <ShieldCheck className="mr-2 h-4 w-4"/> Edit Privacy Policy
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/terms">
-                <ScrollText className="mr-2 h-4 w-4"/> Edit Terms & Conditions
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/links">
-                <Link2 className="mr-2 h-4 w-4" /> Manage Site Links
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/content/homepage-images">
-                <ImageIcon className="mr-2 h-4 w-4" /> Manage Carousel Images
-              </Link>
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-              <Link href="/admin/settings">
-                <Settings className="mr-2 h-4 w-4" /> Site Settings
+            <Button variant="ghost" className="w-full justify-start text-sm" asChild onClick={handleLinkClick}>
+              <Link href="/profile">
+                <User className="mr-2 h-4 w-4" />
+                Profile
               </Link>
             </Button>
           </>
         )}
+        
         <Separator/>
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/about">
-              <Info className="mr-2 h-4 w-4" /> About Us
-            </Link>
-        </Button>
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/contact">
-              <ContactIcon className="mr-2 h-4 w-4" /> Contact
-            </Link>
-        </Button>
 
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/terms-and-conditions">
-              <ScrollText className="mr-2 h-4 w-4" /> Terms & Conditions
-            </Link>
-        </Button>
-        <Button variant="ghost" className="w-full justify-start" asChild onClick={handleLinkClick}>
-            <Link href="/privacy-policy">
-              <ShieldCheck className="mr-2 h-4 w-4" /> Privacy Policy
-            </Link>
-        </Button>
-
-=======
         {/* Dynamic WhatsApp Community Link (for all users if available) */}
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
         {loadingLinks ? (
              <Button variant="ghost" className="w-full justify-start text-sm" disabled>
                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Link...
@@ -300,43 +161,6 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
                   WhatsApp Community
                 </a>
             </Button>
-<<<<<<< HEAD
-        ) : null }
-
-        <Button variant="ghost" className="w-full justify-start" onClick={handleFeedbackClick}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Feedback
-        </Button>
-         <Separator />
-      </nav>
-
-      <div className="mt-auto pb-4 px-2 space-y-4">
-        <div className="px-2 py-1">
-                <Label className="flex items-center text-sm font-medium text-muted-foreground mb-2">
-                    <Settings className="mr-2 h-4 w-4" /> Settings
-                </Label>
-                <div className="flex items-center justify-between space-x-2 mt-2 pl-2">
-                    <div className="flex items-center space-x-2">
-                    {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                    <Label htmlFor="theme-switch-mobile" className="text-sm"> 
-                        {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                    </Label>
-                    </div>
-                    <Switch
-                        id="theme-switch-mobile" 
-                        checked={theme === 'dark'}
-                        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-                        aria-label="Toggle theme"
-                    />
-                </div>
-            </div>
-        
-        {authLoading ? (
-          <Skeleton className="h-10 w-full" />
-        ) : null}
-
-        {!authLoading && isLoggedIn ? (
-=======
         ) : null}
 
         {/* Feedback Button (for all users) */}
@@ -344,9 +168,6 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
             <MessageSquare className="mr-2 h-4 w-4" />
             Feedback
         </Button>
-        
-        {!isAdmin && <Separator />}
-
       </nav>
 
       {/* Settings and Auth Section */}
@@ -372,13 +193,15 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
         </div>
         <Separator />
 
-        {isLoggedIn && (
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+         {authLoading ? (
+          <Skeleton className="h-10 w-full" />
+        ) : null}
+
+        {!authLoading && isLoggedIn ? (
           <Button variant="outline" className="w-full justify-start" onClick={handleCombinedLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
-<<<<<<< HEAD
         ) : null}
 
         {!authLoading && !isLoggedIn && !authError ? (
@@ -391,23 +214,7 @@ export function SidebarContent({ closeSheet }: SidebarContentProps) {
             </Button>
           </div>
         ) : null}
-        
-      </div>
-=======
-        )}
-       {!isLoggedIn && !authError && (
-           <>
-                <Button variant="outline" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                    <Link href="/login"><User className="mr-2 h-4 w-4"/>Login</Link>
-                 </Button>
-                 <Button variant="default" className="w-full justify-start" asChild onClick={handleLinkClick}>
-                     <Link href="/register"><User className="mr-2 h-4 w-4"/>Register</Link>
-                 </Button>
-           </>
-       )}
        </div>
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
     </div>
   );
 }
-
