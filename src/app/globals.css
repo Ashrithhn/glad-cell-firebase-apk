@@ -8,63 +8,6 @@ body {
 
 @layer base {
   :root {
-<<<<<<< HEAD
-    /* Light Theme Variables (Instagram-inspired: Light, Clean, Vibrant Accents) */
-    --background: 0 0% 100%; /* White */
-    --foreground: 240 10% 3.9%; /* Near Black */
-
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 240 10% 3.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-
-    --primary: 262 80% 58%; /* Vibrant Purple/Pink (Instagram-like) */
-    --primary-foreground: 0 0% 98%; /* Light text on primary */
-
-    --secondary: 240 4.8% 95.9%; /* Light Gray */
-    --secondary-foreground: 240 10% 3.9%;
-
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%; /* Mid Gray */
-
-    --accent: 38 92% 50%; /* Vibrant Orange/Yellow (Instagram-like) */
-    --accent-foreground: 240 10% 3.9%; /* Dark text on accent */
-
-    --destructive: 0 84.2% 60.2%; /* Red */
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 5.9% 90%; /* Light Gray Border */
-    --input: 240 5.9% 90%;
-    --ring: 262 80% 58%; /* Primary color for rings */
-
-    --radius: 0.5rem; /* Standard radius */
-
-    /* Chart colors - can be vibrant like Instagram stories */
-    --chart-1: 262 80% 60%; /* Primary-like */
-    --chart-2: 38 92% 55%;  /* Accent-like */
-    --chart-3: 180 70% 50%; /* Teal */
-    --chart-4: 330 85% 60%; /* Pink */
-    --chart-5: 210 90% 55%; /* Bright Blue */
-
-    /* Sidebar - can be clean white or light gray */
-    --sidebar-background: 0 0% 98%; /* Very Light Gray or White */
-    --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-primary: 262 80% 58%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 38 92% 90%; /* Lighter Accent for hover */
-    --sidebar-accent-foreground: 38 92% 30%;
-    --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 262 80% 58%;
-  }
-
-  .dark {
-    /* Dark Theme Variables (Instagram Dark Mode-inspired: Deep, Vibrant Accents) */
-    --background: 240 10% 3.9%; /* Near Black */
-    --foreground: 0 0% 98%; /* Light Gray Text */
-
-    --card: 240 5% 8%; /* Very Dark Gray */
-=======
     /* Light Theme Variables (Inspired by modern, clean aesthetics with vibrant accents) */
     --background: 0 0% 100%; /* Pure White */
     --foreground: 240 10% 3.9%; /* Almost Black */
@@ -119,64 +62,28 @@ body {
     --foreground: 0 0% 98%; /* Light Gray */
 
     --card: 240 10% 3.9%;
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
     --card-foreground: 0 0% 98%;
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-<<<<<<< HEAD
-    --primary: 262 80% 62%; /* Brighter Purple/Pink for dark mode */
-=======
     --primary: 262.1 83.3% 67.8%; /* Lighter Purple for dark mode */
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
     --primary-foreground: 0 0% 98%;
 
     --secondary: 240 3.7% 15.9%; /* Dark Gray */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 3.7% 15.9%;
-<<<<<<< HEAD
-    --muted-foreground: 240 5% 64.9%; /* Mid Gray */
-
-    --accent: 38 92% 55%; /* Vibrant Orange/Yellow */
-    --accent-foreground: 240 10% 3.9%;
-
-    --destructive: 0 72.2% 50.6%;
-=======
     --muted-foreground: 240 5% 64.9%; /* Lighter Gray for muted text */
 
     --accent: 346.8 77.2% 59.8%; /* Lighter Pink/Coral for dark mode */
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%; /* Darker Red */
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-<<<<<<< HEAD
-    --ring: 262 80% 62%;
-
-    /* --radius remains the same */
-
-    /* Chart colors - vibrant for dark mode */
-    --chart-1: 262 80% 65%;
-    --chart-2: 38 92% 60%;
-    --chart-3: 180 70% 55%;
-    --chart-4: 330 85% 65%;
-    --chart-5: 210 90% 60%;
-
-    /* Sidebar Dark */
-    --sidebar-background: 240 4% 10%; /* Slightly Lighter Dark */
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 262 80% 62%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 38 92% 25%; /* Darker Accent for hover bg */
-    --sidebar-accent-foreground: 38 92% 85%; /* Lighter text on accent */
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262 80% 62%;
-=======
     --ring: 262.1 83.3% 67.8%;
 
     --chart-1: 262 70% 60%;
@@ -194,7 +101,6 @@ body {
     --sidebar-primary: 262.1 83.3% 67.8%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-ring: 262.1 83.3% 67.8%;
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
   }
 }
 
@@ -221,49 +127,6 @@ body {
     @apply bg-gradient-to-b from-background to-muted/10;
 }
 
-<<<<<<< HEAD
-
-/* Global Loading Spinner Styles */
-.global-loader-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: hsl(var(--background) / 0.8); /* Semi-transparent background */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999; /* Ensure it's on top */
-  backdrop-filter: blur(4px);
-}
-
-.global-loader-spinner {
-  border: 4px solid hsl(var(--muted));
-  border-top: 4px solid hsl(var(--primary));
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Initial Page Loader (Welcome Screen) */
-.initial-page-loader {
-  position: fixed;
-  inset: 0;
-  background-color: hsl(var(--background)); /* Match welcome page background */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000; /* Highest z-index */
-}
-
-.initial-page-loader .global-loader-spinner {
-  /* Use accent color for initial loader if desired */
-   border-top: 4px solid hsl(var(--accent));
-=======
 /* Loading animation styles */
 .page-loader {
   display: flex;
@@ -324,6 +187,5 @@ body {
   100% {
     transform: rotate(1turn);
   }
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
 }
 */

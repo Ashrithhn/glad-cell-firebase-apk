@@ -1,39 +1,58 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ========== Minimal Git Ignore ==========
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
+# Dependencies (very heavy)
+/node_modules/
 
-# testing
-/coverage
-
-# next.js
+# Next.js and build output
 /.next/
 /out/
+/build/
+/dist/
 
-# production
-/build
+# Firebase local files
+/firebase/
+.firebase/
 
-# misc
+# Temporary and cache
+.cache/
+/tmp/
+/coverage/
+
+# Vercel deployment folder
+.vercel/
+
+# Logs
+*.log
+
+# System files
 .DS_Store
-*.pem
+Thumbs.db
+# ========== Minimal Git Ignore ==========
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Dependencies (very heavy)
+/node_modules/
 
-# local env files
-.env*.local
+# Next.js and build output
+/.next/
+/out/
+/build/
+/dist/
 
-# vercel
-.vercel
+# Firebase local files
+/firebase/
+.firebase/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Temporary and cache
+.cache/
+/tmp/
+/coverage/
 
-# Project-specific ignores
-/genkit-state.json
+# Vercel deployment folder
+.vercel/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
