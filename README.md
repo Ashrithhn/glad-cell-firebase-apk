@@ -1,5 +1,7 @@
 
 # GLAD CELL - GEC Mosalehosahalli CSE Dept.
+# GLAD CELL - GEC Mosalehosahalli CSE Dept.
+
 
 This is a Next.js application for the GLAD CELL initiative by the Department of Computer Science and Engineering, Government Engineering College Mosalehosahalli.
 
