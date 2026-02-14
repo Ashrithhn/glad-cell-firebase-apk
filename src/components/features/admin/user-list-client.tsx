@@ -2,30 +2,12 @@
 'use client';
 
 import * as React from 'react';
-<<<<<<< HEAD
-import type { UserProfileSupabase as UserProfileData } from '@/services/users'; // Changed type import
-import { Button } from '@/components/ui/button';
-import { Eye, Edit, Trash2, Loader2, Mail, Building, Hash } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-// import { deleteUserAccountAction, updateUserRoleAction } from '@/services/users'; // Placeholder for future actions
-=======
+import type { UserProfileSupabase as UserProfileData } from '@/services/users';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Eye, MoreVertical, UserCog, ShieldAlert } from 'lucide-react';
-import type { UserProfileData } from '@/services/admin'; // Type for user profile
+import { Edit, Trash2, MoreVertical, Loader2, Download, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   DropdownMenu,
@@ -35,228 +17,234 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from '@/hooks/use-toast';
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import type { UserOptions } from 'jspdf-autotable';
+import { deleteUser } from '@/services/users';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
-interface UserListClientProps {
-  users: UserProfileData[];
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: UserOptions) => jsPDF;
 }
 
-export function UserListClient({ users }: UserListClientProps) {
-<<<<<<< HEAD
-  const [isProcessing, setIsProcessing] = React.useState<string | null>(null); // Store user ID (string for Supabase)
+interface UserListClientProps {
+  initialUsers: UserProfileData[];
+}
+
+export function UserListClient({ initialUsers }: UserListClientProps) {
+  const [users, setUsers] = React.useState<UserProfileData[]>([]);
+  const [isActionPending, setIsActionPending] = React.useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState<{ isOpen: boolean; user?: UserProfileData }>({ isOpen: false });
+  const { toast } = useToast();
   const router = useRouter();
+  const { userProfile, loading: authLoading } = useAuth();
 
-  const handleViewDetails = (userId: string) => {
-    // Navigate to a detailed user view page (to be created)
-    // router.push(`/admin/users/${userId}`);
-    toast({ title: "View Details", description: `Feature to view details for user ${userId} coming soon.`});
-  };
+  React.useEffect(() => {
+    if (!authLoading && userProfile && initialUsers) {
+      if (userProfile.role === 'Admin') {
+        // Admins should not see Super Admins
+        setUsers(initialUsers.filter(u => u.role !== 'Super Admin'));
+      } else {
+        // Super Admins can see everyone
+        setUsers(initialUsers);
+      }
+    } else {
+        setUsers(initialUsers);
+    }
+  }, [initialUsers, userProfile, authLoading]);
 
-  const handleEditUser = (userId: string) => {
-    // Navigate to an edit user page (to be created)
-    // router.push(`/admin/users/edit/${userId}`);
-     toast({ title: "Edit User", description: `Feature to edit user ${userId} coming soon.`});
-  };
+  const participantUsers = users.filter(user => user.role === 'Participant');
 
-  const handleDeleteUser = async (userId: string, userName?: string | null) => {
-    setIsProcessing(userId);
-    // const confirmDelete = window.confirm(`Are you sure you want to delete user ${userName || userId}? This action cannot be undone.`);
-    // if (!confirmDelete) {
-    //     setIsProcessing(null);
-    //     return;
-    // }
-    // try {
-    //   const result = await deleteUserAccountAction(userId); // Placeholder for actual delete action
-    //   if (result.success) {
-    //     toast({ title: 'User Deleted', description: `User ${userName || userId} has been deleted.` });
-    //     router.refresh();
-    //   } else {
-    //     throw new Error(result.message || 'Failed to delete user.');
-    //   }
-    // } catch (error) {
-    //   toast({ title: 'Error Deleting User', description: error instanceof Error ? error.message : 'An unexpected error occurred.', variant: 'destructive' });
-    // } finally {
-    //   setIsProcessing(null);
-    // }
-     toast({ title: "Delete User", description: `Feature to delete user ${userId} coming soon.`, variant: 'destructive'});
-     setIsProcessing(null);
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    
+    doc.setFontSize(18);
+    doc.text("Registered Participant List", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    const date = new Date().toLocaleString();
+    doc.text(`Generated on: ${date}`, 14, 30);
+    
+    doc.autoTable({
+        startY: 35,
+        head: [['#', 'Name', 'Email', 'Reg. Number', 'Branch', 'Semester', 'Joined On']],
+        body: participantUsers.map((user, index) => [
+            index + 1,
+            user.name || 'N/A',
+            user.email || 'N/A',
+            user.registration_number || 'N/A',
+            user.branch || 'N/A',
+            user.semester || 'N/A',
+            user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A',
+        ]),
+    });
+
+    const fileName = `participant_users_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
   };
   
+  const handleDownloadXlsx = () => {
+    const dataToExport = participantUsers.map((user, index) => ({
+      '#': index + 1,
+      'Name': user.name || 'N/A',
+      'Email': user.email || 'N/A',
+      'Registration Number': user.registration_number || 'N/A',
+      'Branch': user.branch || 'N/A',
+      'Semester': user.semester || 'N/A',
+      'Role': user.role || 'Participant',
+      'Joined On': user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Participants');
+    const fileName = `participant_users_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteConfirmation.user?.id) return;
+    const userId = deleteConfirmation.user.id;
+    const userName = deleteConfirmation.user.name;
+
+    setIsActionPending(userId);
+    setDeleteConfirmation({ isOpen: false });
+
+    const result = await deleteUser(userId);
+    if (result.success) {
+      toast({ title: "User Deleted", description: `User ${userName || userId} has been permanently deleted.` });
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      router.refresh();
+    } else {
+      toast({ title: "Deletion Failed", description: result.message, variant: "destructive" });
+    }
+    setIsActionPending(null);
+  };
+
   const getInitials = (name?: string | null, email?: string | null) => {
     if (name) return name.split(' ').map(n => n[0]).join('').toUpperCase();
     if (email) return email.charAt(0).toUpperCase();
     return '?';
   };
-
+  
+  const getRoleBadgeVariant = (role?: string | null) => {
+     switch (role) {
+      case 'Super Admin': return 'destructive';
+      case 'Admin': return 'default';
+      default: return 'outline';
+    }
+  }
 
   return (
     <>
-      {users.length > 0 ? (
-        <div className="overflow-x-auto">
+      <div className="flex flex-wrap justify-end mb-4 gap-2">
+         <Button onClick={handleDownloadXlsx} variant="outline" size="sm" disabled={participantUsers.length === 0}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Export as XLSX
+        </Button>
+        <Button onClick={handleDownloadPdf} size="sm" disabled={participantUsers.length === 0}>
+            <Download className="mr-2 h-4 w-4" /> Download as PDF
+        </Button>
+      </div>
+      <div className="overflow-x-auto">
+        {authLoading ? (
+             <div className="p-4 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+        ) : users.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Avatar</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead className="hidden md:table-cell">Branch</TableHead>
-                <TableHead className="hidden lg:table-cell">Reg. No.</TableHead>
-                <TableHead className="hidden lg:table-cell">Auth Provider</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Joined On</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}><TableCell>
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.photo_url || undefined} alt={user.name || 'User avatar'} />
-                      <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
-                    </Avatar>
-                  </TableCell><TableCell className="font-medium">{user.name || 'N/A'}
-                  </TableCell><TableCell>
-                    <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-muted-foreground"/> {user.email || 'N/A'}
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={user.photo_url || undefined} alt={user.name || 'User avatar'} data-ai-hint="person avatar" />
+                        <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium truncate max-w-[150px]">{user.name || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">{user.registration_number}</p>
+                      </div>
                     </div>
-                  </TableCell><TableCell className="hidden md:table-cell">
-                     <div className="flex items-center gap-1">
-                        <Building className="h-3 w-3 text-muted-foreground"/> {user.branch || 'N/A'}
-                    </div>
-                  </TableCell><TableCell className="hidden lg:table-cell">
-                     <div className="flex items-center gap-1">
-                        <Hash className="h-3 w-3 text-muted-foreground"/> {user.registration_number || 'N/A'}
-                    </div>
-                  </TableCell><TableCell className="hidden lg:table-cell">
-                    <Badge variant={user.auth_provider === 'google' ? 'default' : 'secondary'}>
-                        {user.auth_provider || 'email'}
-                    </Badge>
-                  </TableCell><TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="icon" onClick={() => handleViewDetails(user.id!)} title="View Details" disabled={isProcessing === user.id}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => handleEditUser(user.id!)} title="Edit User" disabled={isProcessing === user.id}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDeleteUser(user.id!, user.name)} title="Delete User" disabled={isProcessing === user.id}>
-                        {isProcessing === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </TableCell></TableRow>
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">{user.email || 'N/A'}</TableCell>
+                  <TableCell><Badge variant={getRoleBadgeVariant(user.role)}>{user.role || 'Participant'}</Badge></TableCell>
+                  <TableCell>
+                    {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={!!isActionPending}>
+                          {isActionPending === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/users/${user.id}/edit`}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit User
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteConfirmation({ isOpen: true, user })}
+                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          disabled={isActionPending === user.id || user.id === userProfile?.id}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-center py-8">No registered users found.</p>
-      )}
+        ) : (
+          <p className="text-muted-foreground text-center py-8">No users found.</p>
+        )}
+      </div>
+
+       <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => setDeleteConfirmation({ isOpen, user: isOpen ? deleteConfirmation.user : undefined })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user <span className="font-bold">{deleteConfirmation.user?.name}</span> ({deleteConfirmation.user?.email}) and all of their associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive hover:bg-destructive/90">
+              Yes, delete user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
-=======
-  const [isActionPending, setIsActionPending] = React.useState<string | null>(null);
-
-  const handleViewDetails = (userId: string) => {
-    // Placeholder: Implement navigation to user detail page or modal
-    toast({ title: "View Details", description: `Viewing details for user ID: ${userId} (Not Implemented)` });
-  };
-
-  const handleEditUser = (userId: string) => {
-    // Placeholder: Implement navigation to user edit page or modal
-    toast({ title: "Edit User", description: `Editing user ID: ${userId} (Not Implemented)` });
-  };
-
-  const handleDeleteUser = async (userId: string, userName?: string) => {
-    // Placeholder: Implement delete user functionality with confirmation
-    setIsActionPending(userId);
-    toast({ title: "Delete User", description: `Attempting to delete user: ${userName || userId} (Not Implemented)`, variant: "destructive" });
-    // Simulate async action
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsActionPending(null);
-  };
-
-  const getInitials = (name?: string | null, email?: string | null) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase();
-    }
-    if (email) {
-      return email.charAt(0).toUpperCase();
-    }
-    return '?';
-  };
-
-  return (
-    <div className="overflow-x-auto">
-      {users.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Semester</TableHead>
-              <TableHead>Reg. No.</TableHead>
-              <TableHead>Joined On</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.uid}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.photoURL || undefined} alt={user.name || 'User avatar'} data-ai-hint="person avatar" />
-                      <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium truncate max-w-[150px]">{user.name || 'N/A'}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[150px]">{user.uid}</p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="truncate max-w-[200px]">{user.email || 'N/A'}</TableCell>
-                <TableCell>{user.branch || 'N/A'}</TableCell>
-                <TableCell>{user.semester || 'N/A'}</TableCell>
-                <TableCell>{user.registrationNumber || 'N/A'}</TableCell>
-                <TableCell>
-                  {user.createdAt ? format(new Date(user.createdAt as string), 'MMM d, yyyy') : 'N/A'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={!!isActionPending}>
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleViewDetails(user.uid!)}>
-                        <Eye className="mr-2 h-4 w-4" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditUser(user.uid!)}>
-                        <UserCog className="mr-2 h-4 w-4" /> Edit User
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                       {/* <DropdownMenuItem disabled>
-                         <ShieldAlert className="mr-2 h-4 w-4" /> Manage Roles (soon)
-                       </DropdownMenuItem> */}
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteUser(user.uid!, user.name)}
-                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                        disabled={isActionPending === user.uid}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete User
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      ) : (
-        <p className="text-muted-foreground text-center py-8">No users found.</p>
-      )}
-    </div>
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
   );
 }

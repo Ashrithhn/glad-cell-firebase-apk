@@ -9,24 +9,15 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-<<<<<<< HEAD
-// Google Sign-In button removed
-// import { Separator } from '@/components/ui/separator'; // Import Separator
+import { AlertCircle, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-=======
-import { Separator } from '@/components/ui/separator'; 
-import { toast } from '@/hooks/use-toast'; 
->>>>>>> b65b534 (remove login with google option)
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 export default function RegisterPage() {
   const router = useRouter();
-<<<<<<< HEAD
   const { user, userId, isAdmin, loading, authError } = useAuth();
-=======
-  const { user, userId, isAdmin, loading, authError } = useAuth(); 
->>>>>>> b65b534 (remove login with google option)
   const isLoggedIn = !loading && (!!userId || isAdmin);
   const { toast } = useToast();
 
@@ -40,11 +31,7 @@ export default function RegisterPage() {
       }
   }, [loading, userId, isAdmin, router]);
 
-<<<<<<< HEAD
   // Google Sign-In was removed, so related handlers are also removed.
-
-=======
->>>>>>> b65b534 (remove login with google option)
 
   if (loading || (isLoggedIn && !authError)) {
     return (
@@ -83,16 +70,25 @@ export default function RegisterPage() {
   return (
     <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4 py-12">
       <Card className="w-full max-w-2xl shadow-lg border-primary/20 backdrop-blur-sm bg-card/80">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Student Registration</CardTitle>
-          <CardDescription>
-            Create your GLAD CELL account. Already have an account?{' '}
+        <CardHeader className="text-center space-y-4">
+          <Avatar className="mx-auto h-20 w-20 border-2 border-primary/30">
+            <AvatarFallback className="bg-primary/10">
+              <UserPlus className="h-10 w-10 text-primary" />
+            </AvatarFallback>
+          </Avatar>
+          <CardTitle className={cn(
+              "text-2xl font-bold text-primary text-shadow-pop-animation text-glow"
+          )}>
+            Student Registration
+          </CardTitle>
+          <CardDescription className="!mt-2">
+            Create your GLAD CELL account in a few simple steps. Already have one?{' '}
             <Link href="/login" className="text-primary hover:underline">
               Login here
             </Link>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           {authError && ( // Display Supabase client init error or auth errors
              <Alert variant="destructive" className="mb-4">
                  <AlertCircle className="h-4 w-4" />
@@ -104,12 +100,7 @@ export default function RegisterPage() {
           )}
           <RegistrationForm />
 
-<<<<<<< HEAD
           {/* Removed Google Sign-In button and separator */}
-=======
-          {/* Removed OR Separator and GoogleSignInButton */}
-          
->>>>>>> b65b534 (remove login with google option)
         </CardContent>
       </Card>
     </div>

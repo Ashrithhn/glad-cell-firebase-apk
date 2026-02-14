@@ -1,82 +1,27 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-<<<<<<< HEAD
-import { ScrollText, AlertCircle } from 'lucide-react';
-import { getContent } from '@/services/content'; // Import service to fetch content
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-// Fetch terms and conditions content on the server
-async function loadTermsContent(): Promise<{ content?: string, error?: string }> {
-    const result = await getContent('terms-and-conditions'); // Fetch 'terms-and-conditions' content block
-    if (result.success && typeof result.data === 'string') {
-        return { content: result.data };
-    } else if (!result.success) {
-        return { error: result.message || 'Failed to load terms and conditions.' };
-    }
-    return { content: 'Default Terms and Conditions. Please update via admin panel.' }; // Default content
-}
-
-
-export default async function TermsAndConditionsPage() {
-  const { content, error } = await loadTermsContent();
-
-  return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-primary">Terms and Conditions</h1>
-=======
-import { FileText, ShieldCheck } from 'lucide-react';
+import { FileText, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function TermsAndConditionsPage() {
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
+       <Button asChild variant="outline" className="mb-4">
+        <Link href="/">
+          <ArrowLeft className="mr-2 h-4 w-4"/> Back to Home
+        </Link>
+      </Button>
+
       <div className="text-center">
         <h1 className="text-3xl font-bold text-primary flex items-center justify-center gap-2">
           <FileText className="h-8 w-8" /> Terms and Conditions
         </h1>
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
         <p className="text-muted-foreground mt-2">
           Please read these terms and conditions carefully before using Our Service.
         </p>
       </div>
 
-<<<<<<< HEAD
-       {error && (
-         <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Content</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-         </Alert>
-      )}
-
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <ScrollText className="h-5 w-5" /> Terms of Service
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
-        </CardContent>
-      </Card>
-
-       {/* Note for admin to update content */}
-       {content === 'Default Terms and Conditions. Please update via admin panel.' && !error && (
-          <Alert variant="default" className="mt-6 bg-primary/10 border-primary/20 text-primary">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Content Note</AlertTitle>
-            <AlertDescription>
-              This is default content. Please update the Terms and Conditions from the admin panel.
-            </AlertDescription>
-          </Alert>
-       )}
-    </div>
-  );
-}
-
-=======
       <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl">Interpretation and Definitions</CardTitle>
@@ -172,4 +117,3 @@ export default function TermsAndConditionsPage() {
     </div>
   );
 }
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)

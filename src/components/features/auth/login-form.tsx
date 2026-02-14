@@ -13,12 +13,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { loginUser } from '@/services/auth'; // Supabase loginUser
-// useRouter is not needed here anymore, LoginPage will handle redirection.
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth hook
 
 const formSchema = z.object({
@@ -30,7 +31,8 @@ type FormData = z.infer<typeof formSchema>;
 
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  // const router = useRouter(); // Removed, LoginPage handles redirection
+  const [showPassword, setShowPassword] = React.useState(false);
+  const router = useRouter();
   const { login, authError } = useAuth(); // Use the login function and authError from Supabase context
 
   const form = useForm<FormData>({
@@ -45,28 +47,24 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      if (authError) { 
+      if (authError) { // Check for Supabase client initialization errors
           throw new Error(`Cannot log in due to Supabase configuration error: ${authError.message}`);
       }
 
-      const result = await loginUser(values); 
+      const result = await loginUser(values); // Call the Supabase backend service
 
       if (result.success && result.userId && result.session) {
-        await login(result.session); // Update auth context. This will set loading to false eventually.
+        await login(result.session); // Use the login function from useAuth hook with Supabase session
 
         toast({
           title: 'Login Successful!',
           description: 'Welcome back!',
           variant: 'default',
         });
-        // LoginPage's useEffect will handle the redirection to '/' once auth state is updated.
-        // No router.push('/') or router.refresh() here.
+        
+        router.replace('/'); 
       } else {
-        toast({
-          title: 'Login Failed',
-          description: result.message || 'An unexpected error occurred. Please try again.',
-          variant: 'destructive',
-        });
+        throw new Error(result.message || 'Invalid email or password.');
       }
     } catch (error) {
       console.error('Supabase Login Error:', error);
@@ -95,6 +93,7 @@ export function LoginForm() {
                 <FormControl>
                   <Input type="email" placeholder="Enter your email" {...field} suppressHydrationWarning/>
                 </FormControl>
+                <FormDescription>(Please use a valid email address.)</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -105,15 +104,34 @@ export function LoginForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="Enter your password" {...field} suppressHydrationWarning/>
-                </FormControl>
+                <div className="relative">
+                  <FormControl>
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      {...field}
+                      suppressHydrationWarning
+                      className="pr-10"
+                    />
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                    <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
         </fieldset>
-        <Button type="submit" className="w-full" disabled={isDisabled} suppressHydrationWarning>
+        <Button type="submit" className="w-full animated-border-button" disabled={isDisabled} suppressHydrationWarning>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...

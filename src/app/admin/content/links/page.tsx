@@ -4,19 +4,22 @@ import { EditLinksForm } from '@/components/features/admin/edit-links-form';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Link2 } from 'lucide-react';
-import { getContent } from '@/services/content'; // Import service to fetch content
+import { getContent } from '@/services/content';
 import type { SiteLinks } from '@/services/content';
 
-// Fetch existing content on the server
-async function loadLinks(): Promise<{ links?: SiteLinks, error?: string }> {
-    const result = await getContent('links'); // Fetch 'links' content block
+// Fetch existing content on the server and ensure all keys are present
+async function loadLinks(): Promise<{ links: SiteLinks, error?: string }> {
+    const result = await getContent('links');
+    const defaultLinks: SiteLinks = { whatsappCommunity: '', telegram: '', instagram: '', linkedin: '', github: '' };
+
     if (result.success && typeof result.data === 'object' && result.data !== null) {
-        return { links: result.data as SiteLinks };
+        // Merge fetched links with defaults to ensure form has all fields
+        return { links: { ...defaultLinks, ...(result.data as SiteLinks) } };
     } else if (!result.success) {
-        return { error: result.message || 'Failed to load links.' };
+        return { links: defaultLinks, error: result.message || 'Failed to load links.' };
     }
-    // Return default empty structure if no content exists yet
-    return { links: { whatsappCommunity: '' } };
+    // Return default structure if no content exists yet
+    return { links: defaultLinks };
 }
 
 
@@ -34,15 +37,15 @@ export default async function AdminEditLinksPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
-             <Link2 className="h-5 w-5" /> Manage Site Links
+             <Link2 className="h-5 w-5" /> Manage Social Media Links
           </CardTitle>
           <CardDescription>
-            Update external links used in the site sidebar or other areas.
+            Update the social media links for the "Find Us On" section. Leave a field blank to hide its icon.
           </CardDescription>
         </CardHeader>
         <CardContent>
            {error && <p className="text-destructive mb-4">Error loading current links: {error}</p>}
-          <EditLinksForm currentLinks={links!} /> {/* Pass non-null default */}
+          <EditLinksForm currentLinks={links!} />
         </CardContent>
       </Card>
     </div>

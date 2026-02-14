@@ -2,32 +2,34 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-<<<<<<< HEAD
-import { CalendarCheck, Target, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee, Download, FileText } from 'lucide-react'; 
-import NextImage from 'next/image'; 
-=======
-import { CalendarCheck, Target, Lightbulb, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee, ImageOff } from 'lucide-react';
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-import { ParticipationModal } from '@/components/features/programs/participation-modal';
+import { CalendarCheck, Target, LogIn, UserCheck, GraduationCap, AlertCircle, Loader2, MapPin, Clock, Users, IndianRupee, ImageOff, CheckCircle, UserPlus, Eye, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { getEvents } from '@/services/events';
-import type { EventData } from '@/services/events';
+import { getPublicActiveEvents } from '@/services/events';
+import type { EventData, ParticipationData } from '@/services/events';
+import { getTeamsForUser } from '@/services/teams';
+import type { TeamWithMembers } from '@/services/teams';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-<<<<<<< HEAD
-import { format, parseISO, isPast } from 'date-fns'; 
-<<<<<<< HEAD
-=======
-=======
 import { format, parseISO, isPast } from 'date-fns';
->>>>>>> f6fe95d (Runtime Error)
 import Image from 'next/image';
+import { processFreeRegistration } from '@/services/payment';
+import { CreateTeamModal } from '@/components/features/teams/CreateTeamModal';
+import { JoinTeamModal } from '@/components/features/teams/JoinTeamModal';
+import { ViewTeamModal } from '@/components/features/teams/ViewTeamModal';
+import Link from 'next/link';
 
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+const ParticipationModal = dynamic(
+  () => import('@/components/features/programs/participation-modal').then(mod => mod.ParticipationModal),
+  { 
+    ssr: false,
+    loading: () => <p className="text-sm">Loading...</p>
+  }
+);
 
 export default function ProgramsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -35,163 +37,205 @@ export default function ProgramsPage() {
   const [events, setEvents] = React.useState<EventData[]>([]);
   const [loadingEvents, setLoadingEvents] = React.useState(true);
   const [eventsError, setEventsError] = React.useState<string | null>(null);
+  const [isRegisteringFree, setIsRegisteringFree] = React.useState<string | null>(null);
 
-  const { userId, isAdmin, loading: authLoading } = useAuth(); 
+  // Team-related state
+  const [userTeams, setUserTeams] = React.useState<Map<string, TeamWithMembers>>(new Map());
+  const [isCreateTeamModalOpen, setCreateTeamModalOpen] = React.useState(false);
+  const [isJoinTeamModalOpen, setJoinTeamModalOpen] = React.useState(false);
+  const [isViewTeamModalOpen, setViewTeamModalOpen] = React.useState(false);
+  const [selectedEventForTeam, setSelectedEventForTeam] = React.useState<EventData | null>(null);
+
+
+  const { user, userId, isAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
-  React.useEffect(() => {
-    async function loadEvents() {
-      setLoadingEvents(true);
-      setEventsError(null);
-      const result = await getEvents();
-      if (result.success && result.events) {
-        const sortedEvents = result.events.sort((a, b) => {
-          const aIsPast = a.registration_deadline ? isPast(parseISO(a.registration_deadline)) : isPast(parseISO(a.start_date));
-          const bIsPast = b.registration_deadline ? isPast(parseISO(b.registration_deadline)) : isPast(parseISO(b.start_date));
-          
-          if (aIsPast && !bIsPast) return 1;
-          if (!aIsPast && bIsPast) return -1;
-          
-          // Sort by start_date descending, then by registration_deadline descending if start_dates are same
-          const startDateComparison = parseISO(b.start_date).getTime() - parseISO(a.start_date).getTime();
-          if (startDateComparison !== 0) return startDateComparison;
-
-          const regDeadlineA = a.registration_deadline ? parseISO(a.registration_deadline).getTime() : 0;
-          const regDeadlineB = b.registration_deadline ? parseISO(b.registration_deadline).getTime() : 0;
-          return regDeadlineB - regDeadlineA;
-        });
-        setEvents(sortedEvents);
-      } else {
-        setEventsError(result.message || 'Failed to load programs/events.');
+  const refreshUserTeams = React.useCallback(async () => {
+    if (userId) {
+      const teamsResult = await getTeamsForUser(userId);
+      if (teamsResult.success && teamsResult.teams) {
+        const teamsMap = new Map(teamsResult.teams.map(team => [team.event_id, team]));
+        setUserTeams(teamsMap);
       }
-      setLoadingEvents(false);
     }
-    loadEvents();
-  }, []);
+  }, [userId]);
 
-  const isLoggedIn = !authLoading && !!userId;
+  const loadData = React.useCallback(async () => {
+    setLoadingEvents(true);
+    setEventsError(null);
+    
+    const eventsResult = await getPublicActiveEvents();
+    if (eventsResult.success && eventsResult.events) {
+      setEvents(eventsResult.events);
+    } else {
+      setEventsError(eventsResult.message || 'Failed to load programs/events.');
+    }
 
-<<<<<<< HEAD
-  const handleParticipateClick = (event: EventData) => {
-    const registrationDeadline = event.registration_deadline ? parseISO(event.registration_deadline) : parseISO(event.start_date);
-    if (isPast(registrationDeadline)) {
-      toast({
-        title: "Registration Closed",
-        description: "The registration deadline for this event has passed.",
-        variant: "destructive",
-      });
+    await refreshUserTeams();
+
+    setLoadingEvents(false);
+  }, [refreshUserTeams]);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const isLoggedIn = !authLoading && (!!userId || isAdmin);
+
+  const handleParticipateClick = async (event: EventData) => {
+    if (authLoading) {
+      toast({ title: "Loading...", description: "Please wait, authentication status is loading." });
+      return;
+    }
+    if (!isLoggedIn) {
+      toast({ title: "Login Required", description: "Please login to participate.", variant: "destructive" });
+      router.push('/login?redirect=/programs');
+      return;
+    }
+    if (isAdmin) {
+      toast({ title: "Admin View", description: "Admins cannot participate in events." });
+      return;
+    }
+    if (event.registration_deadline && isPast(parseISO(event.registration_deadline))) {
+      toast({ title: "Registration Closed", description: `Registration for "${event.name}" has ended.`, variant: "destructive" });
       return;
     }
 
-    if (isLoggedIn && !isAdmin) {
-      const formattedStartDate = event.start_date ? format(parseISO(event.start_date as string), 'PPP') : 'N/A';
-      setSelectedEvent({ ...event, start_date: formattedStartDate });
-      setIsModalOpen(true);
-    } else if (isAdmin) {
-      toast({ title: "Admin View", description: "Admins cannot participate.", variant: "default" });
-    } else { // Not logged in
-      toast({ title: "Login Required", description: "Please login to participate in events.", variant: "default" });
-      router.push('/login?redirect=/programs');
-    }
-=======
-  const isLoggedIn = !authLoading && (!!userId || isAdmin);
+    if (event.event_type === 'individual') {
+        const participationsResult = await getPublicActiveEvents(); 
+        const isAlreadyRegistered = participationsResult.events?.some(p => p.id === event.id);
 
-  const handleParticipateClick = (event: EventData) => {
-     if (isLoggedIn && !isAdmin) {
-
-        if (event.registrationDeadline && isPast(parseISO(event.registrationDeadline as string))) {
-            toast({
-                title: "Registration Closed",
-                description: `Registration for "${event.name}" has ended.`,
-                variant: "destructive",
-            });
+        if (isAlreadyRegistered) {
+            toast({ title: "Already Registered", description: "You have already registered for this event." });
             return;
         }
 
-        const formattedStartDate = event.startDate ? format(parseISO(event.startDate as string), 'PPP') : 'N/A';
-        setSelectedEvent({
-            ...event,
-            startDate: formattedStartDate,
-        });
-        setIsModalOpen(true);
-     } else if (isAdmin) {
-         toast({
-             title: "Admin View",
-             description: "Admins cannot participate in events directly.",
-             variant: "default",
-         });
-     }
-     else {
-         router.push('/login');
-     }
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+        if (event.fee === 0) {
+            setIsRegisteringFree(event.id!);
+            try {
+                const result = await processFreeRegistration({ eventId: event.id!, userId: userId! });
+                if (result.success) {
+                    toast({ title: "Registration Successful!", description: result.message, variant: 'default' });
+                    router.push('/profile');
+                } else {
+                    throw new Error(result.message || 'Failed to register.');
+                }
+            } catch (error: any) {
+                toast({ title: "Registration Failed", description: error.message, variant: 'destructive' });
+            } finally {
+                setIsRegisteringFree(null);
+            }
+        } else {
+            const formattedStartDate = event.start_date ? format(parseISO(event.start_date), 'PPP') : 'N/A';
+            setSelectedEvent({ ...event, start_date: formattedStartDate });
+            setIsModalOpen(true);
+        }
+    }
   };
 
-  const formatFee = (feeInPaisa: number) => {
+  const handleTeamAction = (event: EventData, action: 'create' | 'join' | 'view') => {
+      if (!isLoggedIn) {
+          toast({ title: "Login Required", description: "Please login to manage teams.", variant: "destructive" });
+          router.push('/login?redirect=/programs');
+          return;
+      }
+      setSelectedEventForTeam(event);
+      if (action === 'create') setCreateTeamModalOpen(true);
+      if (action === 'join') setJoinTeamModalOpen(true);
+      if (action === 'view') setViewTeamModalOpen(true);
+  };
+  
+  const onTeamCreatedOrJoined = (newTeam: TeamWithMembers) => {
+    setUserTeams(prev => new Map(prev).set(newTeam.event_id, newTeam));
+    setCreateTeamModalOpen(false);
+    setJoinTeamModalOpen(false);
+    toast({ title: "Success!", description: `You have joined the team "${newTeam.name}".`, variant: "default"});
+  };
+
+  const onJoinRequestSent = () => {
+    setJoinTeamModalOpen(false);
+  };
+
+  const onTeamModified = () => {
+    refreshUserTeams();
+    // Potentially close the view modal if it's open, or let it handle its own state.
+    setViewTeamModalOpen(false);
+  }
+
+  const formatFee = (feeInPaisa?: number) => {
+    if (feeInPaisa === undefined || feeInPaisa === null) return "N/A";
     if (feeInPaisa === 0) return "Free";
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(feeInPaisa / 100);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
+  
+  const renderParticipationButton = (event: EventData) => {
+    const isDeadlinePast = event.registration_deadline && isPast(parseISO(event.registration_deadline));
+    const isCurrentlyRegistering = isRegisteringFree === event.id;
 
-  if (authLoading || loadingEvents) { // Show skeleton if either auth or events are loading
+    if (authLoading) return <Skeleton className="h-10 w-40" />;
+
+    if (event.event_type === 'group') {
+        const team = userTeams.get(event.id!);
+        if (team) {
+            return (
+                <Button onClick={() => handleTeamAction(event, 'view')} className="flex-shrink-0 w-full sm:w-auto">
+                    <Eye className="mr-2 h-4 w-4" /> View My Team
+                </Button>
+            );
+        }
+        return (
+            <div className="flex flex-col sm:flex-row gap-2">
+                 <Button onClick={() => handleTeamAction(event, 'create')} disabled={isDeadlinePast} className="flex-shrink-0">
+                    <UserPlus className="mr-2 h-4 w-4" /> Create Team
+                 </Button>
+                 <Button onClick={() => handleTeamAction(event, 'join')} disabled={isDeadlinePast} variant="outline" className="flex-shrink-0">
+                    Join Team
+                </Button>
+            </div>
+        );
+    }
+    
+    // Logic for individual events
+    const isAlreadyRegistered = false; // This needs to be fetched, placeholder for now.
     return (
-      <div className="space-y-12 max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center space-y-2">
-          <Skeleton className="h-8 w-1/2 mx-auto" />
-          <Skeleton className="h-4 w-3/4 mx-auto" />
-        </div>
-        <div className="space-y-6">
-          {[1, 2].map(i => (
-            <Card key={i} className="overflow-hidden shadow-lg">
-              <Skeleton className="w-full h-56 sm:h-64 md:h-72" />
-              <CardHeader className="border-b bg-muted/30">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full mt-1" />
-                <Skeleton className="h-4 w-5/6 mt-1" />
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                  <Skeleton className="h-5 w-2/3" /> <Skeleton className="h-5 w-1/2" />
-                  <Skeleton className="h-5 w-1/2" /> <Skeleton className="h-5 w-2/3" />
-                </div>
-                <Skeleton className="h-10 w-40 mt-4" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+        <Button
+            onClick={() => handleParticipateClick(event)}
+            className="flex-shrink-0 w-full sm:w-auto"
+            disabled={(isDeadlinePast && !isAdmin) || authLoading || isCurrentlyRegistering || isAlreadyRegistered}
+        >
+            {isCurrentlyRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+             : isAlreadyRegistered ? <CheckCircle className="mr-2 h-4 w-4" />
+             : isLoggedIn && !isAdmin ? <UserCheck className="mr-2 h-4 w-4" /> 
+             : <LogIn className="mr-2 h-4 w-4" />}
+            
+            {isCurrentlyRegistering ? "Registering..."
+             : isAlreadyRegistered ? "Already Registered"
+             : isAdmin ? "View as Admin" 
+             : isDeadlinePast ? "Registration Closed" 
+             : isLoggedIn ? (event.fee === 0 ? "Register for Free" : "Participate Now")
+             : "Login to Participate"}
+        </Button>
     );
-  }
-=======
->>>>>>> 591e8d1 (I see this error with the app, reported by NextJS, please fix it. The error is reported as HTML but presented visually to the user).)
-
-=======
-  // Ensure all JavaScript statements above this line are correctly terminated.
-  // Explicit semicolon before return, though usually not strictly necessary for function declarations.
-  ;
->>>>>>> f6fe95d (Runtime Error)
+  };
+  
   return (
     <div className="space-y-12 max-w-5xl mx-auto px-4">
       <div className="text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary tracking-tight">Our Programs & Events</h1>
+        <h1 className="text-3xl md:text-4xl font-bold animated-gradient-text tracking-tight">Our Programs & Events</h1>
         <p className="text-muted-foreground mt-2 text-lg">
           Initiatives by GLAD CELL to foster innovation and entrepreneurship.
         </p>
       </div>
 
-<<<<<<< HEAD
-=======
-       {loadingEvents && (
+       {(loadingEvents || authLoading) && (
          <div className='space-y-8'>
              <Skeleton className="h-72 w-full rounded-lg" />
              <Skeleton className="h-64 w-full rounded-lg" />
          </div>
        )}
 
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-       {eventsError && (
+       {eventsError && !loadingEvents && (
          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Items</AlertTitle>
@@ -199,124 +243,22 @@ export default function ProgramsPage() {
          </Alert>
        )}
 
-      {!loadingEvents && !eventsError && events.length > 0 && (
+      {!loadingEvents && !authLoading && !eventsError && events.length > 0 && (
         events.map((event) => {
-<<<<<<< HEAD
-          const registrationDeadline = event.registration_deadline ? parseISO(event.registration_deadline) : parseISO(event.start_date);
-          const isRegistrationOver = isPast(registrationDeadline);
+            const isDeadlinePast = event.registration_deadline && isPast(parseISO(event.registration_deadline));
+            const teamForEvent = userTeams.get(event.id!);
 
-          return (
-            <Card key={event.id} id={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-mt-20">
-              {event.image_url && (
-                <div className="relative w-full h-56 sm:h-64 md:h-72">
-                  <NextImage
-                    src={event.image_url}
-                    alt={event.name || 'Event Image'}
-                    layout="fill"
-                    objectFit="cover"
-                    className="transition-transform duration-300 hover:scale-105"
-                    data-ai-hint="event program"
-                  />
-                </div>
-              )}
-              <CardHeader className={`border-b bg-muted/30 ${event.image_url ? 'pt-4' : ''}`}>
-                <CardTitle className="text-2xl text-primary flex items-center gap-2">
-                   {event.event_type === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
-                   {event.name}
-                </CardTitle>
-                <CardDescription className="pt-1 line-clamp-3"> 
-                  {event.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                          <CalendarCheck className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span>
-                              {event.start_date ? format(parseISO(event.start_date as string), 'MMM d, yyyy') : 'N/A'}
-                              {event.end_date && event.start_date !== event.end_date ? ` - ${format(parseISO(event.end_date as string), 'MMM d, yyyy')}`: ''}
-                          </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span>{event.venue || 'N/A'}</span>
-                      </div>
-                       <div className="flex items-center gap-2 text-muted-foreground">
-                          <IndianRupee className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span>{formatFee(event.fee)}</span>
-                      </div>
-                       {event.registration_deadline && (
-                           <div className={`flex items-center gap-2 text-muted-foreground ${isRegistrationOver ? 'text-destructive' : ''}`}>
-                              <Clock className={`h-4 w-4 flex-shrink-0 ${isRegistrationOver ? 'text-destructive' : 'text-primary'}`} />
-                              <span>Register by: {format(parseISO(event.registration_deadline as string), 'MMM d, yyyy')} {isRegistrationOver && "(Closed)"}</span>
-                          </div>
-                       )}
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Users className="h-4 w-4 text-primary flex-shrink-0" />
-                           <span>{event.event_type === 'group' ? `Team (${event.min_team_size || 'N/A'}-${event.max_team_size || 'N/A'} members)` : 'Individual'}</span>
-                        </div>
-                  </div>
-
-                {event.rules && (
-                  <div className="space-y-2 pt-4 border-t">
-                    <h3 className="text-base font-semibold flex items-center gap-2"><Target className="h-5 w-5 text-primary"/> Rules/Guidelines (Text)</h3>
-                     <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm pl-2">
-                       {event.rules.split('\\n').map((rule, index) => rule.trim() && <li key={index}>{rule.trim()}</li>)}
-                     </ul>
-                  </div>
-                )}
-
-                {event.rules_pdf_url && (
-                    <div className="pt-3 border-t">
-                        <Button variant="outline" asChild>
-                            <a href={event.rules_pdf_url} target="_blank" rel="noopener noreferrer">
-                                <Download className="mr-2 h-4 w-4" /> Download Rules PDF
-                            </a>
-                        </Button>
-                    </div>
-                )}
-
-                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6">
-                     {isRegistrationOver ? (
-                        <Button disabled className="flex-shrink-0">
-                            Registration Closed
-                        </Button>
-                     ) : isLoggedIn && !isAdmin ? (
-                          <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
-                              <UserCheck className="mr-2 h-4 w-4" /> Participate Now
-                          </Button>
-                      ) : ( 
-                         <Button onClick={() => handleParticipateClick(event)} className="flex-shrink-0">
-                              <LogIn className="mr-2 h-4 w-4" /> 
-                              {isAdmin ? "Admin View (Cannot Participate)" : "Login to Participate"}
-                         </Button>
-                     )}
-                     <p className="text-sm text-muted-foreground italic flex-1">
-                      {isRegistrationOver ? "Registration for this event has ended." : 
-                       isLoggedIn && !isAdmin ? `Click to register. Fee: ${formatFee(event.fee)}.` : 
-                       isAdmin ? "Admins cannot participate in events." : "Please login to participate."}
-                    </p>
-                 </div>
-              </CardContent>
-            </Card>
-          );
-        })
-      )}
-
-       {!loadingEvents && !eventsError && events.length === 0 && (
-=======
-            const isDeadlinePast = event.registrationDeadline && isPast(parseISO(event.registrationDeadline as string));
             return (
           <Card key={event.id} id={event.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col md:flex-row">
-            {/* Image Section */}
             <div className="w-full md:w-1/3 aspect-video md:aspect-auto bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-              {event.imageUrl ? (
+              {event.image_url ? (
                 <Image
-                    src={event.imageUrl}
+                    src={event.image_url}
                     alt={`Image for ${event.name}`}
                     width={400}
                     height={225}
                     className="object-cover w-full h-full"
+                    unoptimized
                     data-ai-hint="conference team"
                 />
               ) : (
@@ -327,11 +269,10 @@ export default function ProgramsPage() {
               )}
             </div>
 
-            {/* Content Section */}
             <div className="flex flex-col flex-grow">
                 <CardHeader className="border-b md:border-b-0 md:border-l bg-background/50">
                 <CardTitle className="text-2xl text-primary flex items-center gap-2">
-                    {event.eventType === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
+                    {event.event_type === 'group' ? <Users className="h-6 w-6" /> : <GraduationCap className="h-6 w-6" />}
                     {event.name}
                 </CardTitle>
                 <CardDescription className="pt-1 line-clamp-3">
@@ -344,8 +285,8 @@ export default function ProgramsPage() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <CalendarCheck className="h-4 w-4 text-primary flex-shrink-0" />
                             <span>
-                                {event.startDate ? format(parseISO(event.startDate as string), 'MMM d, yyyy') : 'N/A'}
-                                {event.endDate && event.startDate !== event.endDate ? ` - ${format(parseISO(event.endDate as string), 'MMM d, yyyy')}`: ''}
+                                {event.start_date ? format(parseISO(event.start_date), 'MMM d, yyyy') : 'N/A'}
+                                {event.end_date && event.start_date !== event.end_date ? ` - ${format(parseISO(event.end_date), 'MMM d, yyyy')}`: ''}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -356,42 +297,37 @@ export default function ProgramsPage() {
                             <IndianRupee className="h-4 w-4 text-primary flex-shrink-0" />
                             <span>{formatFee(event.fee)}</span>
                         </div>
-                        {event.registrationDeadline && (
+                        {event.registration_deadline && (
                             <div className={`flex items-center gap-2 text-muted-foreground ${isDeadlinePast ? 'text-destructive' : ''}`}>
                                 <Clock className={`h-4 w-4 flex-shrink-0 ${isDeadlinePast ? 'text-destructive' : 'text-primary'}`} />
-                                <span>Register by: {format(parseISO(event.registrationDeadline as string), 'MMM d, yyyy')} {isDeadlinePast ? "(Closed)" : ""}</span>
+                                <span>Register by: {format(parseISO(event.registration_deadline), 'MMM d, yyyy')} {isDeadlinePast ? "(Closed)" : ""}</span>
                             </div>
                         )}
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span>{event.eventType === 'group' ? `Team (${event.minTeamSize}-${event.maxTeamSize} members)` : 'Individual Participation'}</span>
+                            <span>{event.event_type === 'group' ? `Team (${event.min_team_size || 'N/A'}-${event.max_team_size || 'N/A'} members)` : 'Individual Participation'}</span>
                         </div>
                     </div>
 
-                {event.rules && (
-                    <div className="space-y-2 pt-4 border-t">
-                    <h3 className="text-base font-semibold flex items-center gap-2"><Target className="h-5 w-5 text-primary"/> Rules/Guidelines</h3>
-                    <ul className="list-disc list-inside text-muted-foreground space-y-1 text-sm pl-2 max-h-32 overflow-y-auto">
-                        {event.rules.split('\n').map((rule, index) => rule.trim() && <li key={index}>{rule.trim()}</li>)}
-                    </ul>
+                    <div className="flex flex-wrap items-center gap-2 pt-4 border-t">
+                        {(event.rules_pdf_url) ? (
+                            <Button asChild variant="secondary" size="sm">
+                                <Link href={(event as any).rules_pdf_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="mr-2 h-4 w-4" /> Download Rules (PDF)
+                                </Link>
+                            </Button>
+                        ) : event.rules && (
+                             <Alert className="text-sm p-2">
+                                <AlertTitle className="font-semibold text-xs">Summary of Rules</AlertTitle>
+                                <AlertDescription className="text-xs">{event.rules.split('\n').slice(0, 2).join(' ')}...</AlertDescription>
+                             </Alert>
+                        )}
                     </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6 mt-auto"> {/* mt-auto pushes button to bottom */}
-                    {authLoading ? (
-                            <Skeleton className="h-10 w-40" />
-                    ) : (
-                        <Button
-                            onClick={() => handleParticipateClick(event)}
-                            className="flex-shrink-0 w-full sm:w-auto"
-                            disabled={isDeadlinePast && !isAdmin} // Disable if deadline past for non-admins
-                        >
-                            {isLoggedIn && !isAdmin ? <UserCheck className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
-                            {isAdmin ? "View as Admin" : (isDeadlinePast ? "Registration Closed" : (isLoggedIn ? "Participate Now" : "Login to Participate"))}
-                        </Button>
-                    )}
+                
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center border-t pt-6 mt-auto">
+                    {renderParticipationButton(event)}
                     <p className="text-sm text-muted-foreground italic flex-1">
-                        {isLoggedIn && !isAdmin ? (isDeadlinePast ? "Registration for this event has ended." : "Click to register. Payment may be required.") : isAdmin ? "Admins manage events, participation is for users." : "Please login to participate."}
+                        {isDeadlinePast ? "Registration for this event has ended." : teamForEvent ? `You are on team "${teamForEvent.name}". View the team to get your join code.` : event.event_type === 'group' ? "Create a team or join one with a code." : "Click to participate individually."}
                     </p>
                 </div>
                 </CardContent>
@@ -400,14 +336,13 @@ export default function ProgramsPage() {
         )})
       )}
 
-      {!loadingEvents && !eventsError && events.length === 0 && (
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+      {!loadingEvents && !authLoading && !eventsError && events.length === 0 && (
          <div className="text-center pt-8">
-            <Image src="https://picsum.photos/seed/no-events-found/400/250" alt="No events" width={400} height={250} className="mx-auto rounded-lg mb-4 opacity-70" data-ai-hint="empty calendar illustration"/>
+            <Image src="https://placehold.co/400x250.png" alt="No events" width={400} height={250} className="mx-auto rounded-lg mb-4 opacity-70" data-ai-hint="empty calendar illustration"/>
             <h2 className="text-2xl font-semibold text-primary">No Programs or Events Announced Yet</h2>
             <p className="text-muted-foreground mt-2">Check back soon for upcoming activities!</p>
          </div>
-       )}
+      )}
 
        {selectedEvent && (
          <ParticipationModal
@@ -416,20 +351,37 @@ export default function ProgramsPage() {
             eventDetails={{
                 id: selectedEvent.id || 'unknown-event',
                 name: selectedEvent.name,
-<<<<<<< HEAD
-<<<<<<< HEAD
-                date: selectedEvent.start_date as string, 
-=======
-                date: selectedEvent.startDate as string, 
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-=======
-                date: selectedEvent.startDate as string,
->>>>>>> f6fe95d (Runtime Error)
+                date: selectedEvent.start_date as string,
                 fee: selectedEvent.fee
             }}
          />
        )}
+
+        {selectedEventForTeam && (
+            <>
+                <CreateTeamModal 
+                    isOpen={isCreateTeamModalOpen} 
+                    onClose={() => setCreateTeamModalOpen(false)} 
+                    event={selectedEventForTeam} 
+                    onTeamCreated={onTeamCreatedOrJoined}
+                />
+                <JoinTeamModal
+                    isOpen={isJoinTeamModalOpen}
+                    onClose={() => setJoinTeamModalOpen(false)}
+                    event={selectedEventForTeam}
+                    onJoinRequestSent={onJoinRequestSent}
+                />
+                {isViewTeamModalOpen && (
+                  <ViewTeamModal
+                      isOpen={isViewTeamModalOpen}
+                      onClose={() => setViewTeamModalOpen(false)}
+                      event={selectedEventForTeam}
+                      team={userTeams.get(selectedEventForTeam.id!)}
+                      onTeamModified={onTeamModified}
+                  />
+                )}
+            </>
+        )}
     </div>
   );
 }
-    

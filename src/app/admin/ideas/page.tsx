@@ -2,15 +2,15 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, ArrowLeft, AlertCircle, PlusCircle } from 'lucide-react';
-import { getIdeas } from '@/services/ideas';
+import { PlusCircle, ArrowLeft, AlertCircle, Lightbulb } from 'lucide-react';
+import { getAllIdeas } from '@/services/ideas'; 
 import type { IdeaData } from '@/services/ideas';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AdminIdeaListClient } from '@/components/features/admin/admin-idea-list-client';
+import { IdeaListAdmin } from '@/components/features/admin/idea-list-admin';
 
-async function loadAllIdeas(): Promise<{ ideas?: IdeaData[], error?: string }> {
-    const result = await getIdeas(); // Fetch all ideas for admin
-    if (result.success) {
+async function loadIdeas(): Promise<{ ideas?: IdeaData[], error?: string }> {
+    const result = await getAllIdeas();
+    if (result.success && result.ideas) {
         return { ideas: result.ideas };
     } else {
         return { error: result.message || 'Failed to load ideas.' };
@@ -18,7 +18,7 @@ async function loadAllIdeas(): Promise<{ ideas?: IdeaData[], error?: string }> {
 }
 
 export default async function AdminManageIdeasPage() {
-  const { ideas, error } = await loadAllIdeas();
+  const { ideas, error } = await loadIdeas();
 
   return (
     <div className="container mx-auto py-12 px-4">
@@ -27,8 +27,8 @@ export default async function AdminManageIdeasPage() {
             <ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard
          </Link>
        </Button>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-primary">Manage Student Ideas</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-primary">Manage Submitted Ideas</h1>
         <Button asChild variant="default">
           <Link href="/admin/ideas/new">
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Idea
@@ -47,13 +47,13 @@ export default async function AdminManageIdeasPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Lightbulb className="h-5 w-5"/> Submitted Ideas</CardTitle>
-          <CardDescription>Review, approve, or manage ideas submitted by students or added by admins.</CardDescription>
+          <CardDescription>List of all submitted ideas. Review and change their status to 'Approved' to show them in the public gallery.</CardDescription>
         </CardHeader>
         <CardContent>
           {!error && ideas ? (
-            <AdminIdeaListClient ideas={ideas} />
+            <IdeaListAdmin initialIdeas={ideas} />
           ) : !error ? (
-            <p className="text-muted-foreground text-center py-8">No ideas found.</p>
+            <p className="text-muted-foreground text-center">No ideas have been submitted yet.</p>
           ) : null }
         </CardContent>
       </Card>

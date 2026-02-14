@@ -1,31 +1,24 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Lightbulb, Users, Rocket } from 'lucide-react';
 
 export function PageLoader() {
-  const [isLoading, setIsLoading] = useState(true);
+  const { loading } = useAuth();
 
-  // Simulate loading delay or use actual app loading state
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000); // Adjust delay as needed
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isLoading) {
+  if (!loading) {
     return null;
   }
 
   return (
     <div className="page-loader" aria-label="Loading page content" role="status">
-      <div className="bouncing-loader">
-        <div></div>
-        <div></div>
-        <div></div>
+      <div className="icon-loader">
+        <Lightbulb />
+        <Users />
+        <Rocket />
       </div>
     </div>
   );
 }
-

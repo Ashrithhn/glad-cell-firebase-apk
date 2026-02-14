@@ -7,34 +7,41 @@ import { AdminLoginForm } from '@/components/features/admin/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { cn } from '@/lib/utils';
+import { ShieldCheck } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { user, userId, isAdmin, loading } = useAuth(); // Use auth context
-  const isLoggedIn = !!userId || isAdmin; // Check if user or admin is logged in
+  const { toast } = useToast();
 
   useEffect(() => {
-    console.log('[Admin Login Page Effect] Running. Loading:', loading, 'UserID:', userId, 'IsAdmin:', isAdmin);
-    // Redirect only after loading is complete
-    if (!loading) {
-      if (isAdmin) {
-        console.log('[Admin Login Page] Admin already logged in, redirecting to dashboard');
-        router.replace('/admin/dashboard');
-      } else if (userId) { // Check specifically for a logged-in *user*
-        console.log('[Admin Login Page] Regular user logged in, redirecting to home');
-        router.replace('/');
-      } else {
-         console.log('[Admin Login Page] No user or admin logged in. Should show form.');
-      }
-    } else {
-       console.log('[Admin Login Page] Auth loading, waiting...');
+    if (loading) {
+      return; // Wait for the auth state to be determined
     }
-  }, [loading, userId, isAdmin, router]);
 
-  // Show loading skeleton while checking auth status OR if redirection is pending
-  // This ensures the form doesn't flash before redirection happens
-  if (loading || (!loading && isLoggedIn)) {
-    console.log('[Admin Login Page Render] Showing loading skeleton or redirect pending. Loading:', loading, 'IsLoggedIn:', isLoggedIn);
+    if (isAdmin) {
+      // If the user is an admin, they should be on the dashboard
+      console.log('[Admin Login Page] Admin logged in, redirecting to dashboard');
+      router.replace('/admin/dashboard');
+    } else if (userId) {
+      // If a non-admin user is logged in, they should not see this page
+      toast({
+        title: "Access Denied",
+        description: "The admin login page is for administrators only.",
+        variant: "destructive",
+      });
+      router.replace('/');
+    }
+    // If not loading and not any kind of logged-in user, show the form
+  }, [loading, isAdmin, userId, router, toast]);
+
+  // Show loading skeleton while checking auth status or if a redirect is imminent.
+  // This prevents the login form from flashing if the user is already logged in (as either admin or normal user).
+  const shouldRedirect = !loading && (isAdmin || userId);
+  if (loading || shouldRedirect) {
     return (
         <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
           <Card className="w-full max-w-md shadow-lg">
@@ -53,15 +60,21 @@ export default function AdminLoginPage() {
       );
   }
 
-  // Render admin login form if not loading and not logged in (user or admin)
-  console.log('[Admin Login Page Render] Rendering AdminLoginForm.');
+  // If not loading and not any kind of logged-in user, show the login form.
   return (
     <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary">Admin Login</CardTitle>
+          <Avatar className="mx-auto h-20 w-20 border-2 border-primary/30">
+              <AvatarFallback className="bg-primary/10">
+                <ShieldCheck className="h-10 w-10 text-primary" />
+              </AvatarFallback>
+          </Avatar>
+          <CardTitle className={cn("text-2xl font-bold text-primary text-shadow-pop-animation text-glow")}>
+              College Admin Login
+          </CardTitle>
           <CardDescription>
-            Access the administrative dashboard.
+            Enter your credentials to access the administrative dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,3 +1,4 @@
+
 'use client'; // Required for hooks
 
 import { useEffect } from 'react';
@@ -6,29 +7,18 @@ import { LoginForm } from '@/components/features/auth/login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth'; 
+import { useAuth } from '@/hooks/use-auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-<<<<<<< HEAD
-import { AlertCircle, ShieldAlert } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { AlertCircle, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, userId, isAdmin, loading, authError } = useAuth();
   const isLoggedIn = !loading && (!!userId || isAdmin);
   const { toast } = useToast();
-=======
-import { AlertCircle, ShieldAlert } from 'lucide-react'; 
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast'; 
-
-export default function LoginPage() {
-  const router = useRouter();
-  const { user, userId, isAdmin, loading, authError } = useAuth(); 
-  const isLoggedIn = !loading && (!!userId || isAdmin);
-  const { toast } = useToast(); 
->>>>>>> b65b534 (remove login with google option)
 
   useEffect(() => {
     if (!loading) {
@@ -40,10 +30,7 @@ export default function LoginPage() {
     }
   }, [loading, userId, isAdmin, router]);
 
-<<<<<<< HEAD
   // Google Sign-In was removed, so related handlers are also removed.
-=======
->>>>>>> b65b534 (remove login with google option)
 
   if (loading || (isLoggedIn && !authError)) {
     return (
@@ -58,6 +45,7 @@ export default function LoginPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
+            {/* Removed Skeleton for Google button */}
             <Skeleton className="h-8 w-1/3 mx-auto mt-2" />
           </CardContent>
         </Card>
@@ -68,9 +56,18 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center items-center min-h-screen auth-page-gradient px-4">
       <Card className="w-full max-w-md shadow-lg border-primary/20 backdrop-blur-sm bg-card/80">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-3xl font-bold text-primary tracking-tight">Welcome Back!</CardTitle>
-          <CardDescription className="text-muted-foreground">
+        <CardHeader className="text-center space-y-4">
+          <Avatar className="mx-auto h-20 w-20 border-2 border-primary/30">
+            <AvatarFallback className="bg-primary/10">
+              <User className="h-10 w-10 text-primary" />
+            </AvatarFallback>
+          </Avatar>
+          <CardTitle className={cn(
+              "text-3xl font-bold tracking-tight text-primary text-shadow-pop-animation text-glow"
+          )}>
+              Welcome Back!
+          </CardTitle>
+          <CardDescription className="!mt-2">
             Access your GLAD CELL account. Don't have one?{' '}
             <Link href="/register" className="font-medium text-primary hover:underline">
               Register here
@@ -94,33 +91,15 @@ export default function LoginPage() {
               Forgot Password?
             </Link>
           </div>
-<<<<<<< HEAD
 
-<<<<<<< HEAD
           {/* Removed Google Sign-In button and separator */}
 
-           <div className="text-center mt-6">
-=======
-          {/* Removed OR Separator and GoogleSignInButton */}
-
-           <div className="text-center mt-6"> 
->>>>>>> b65b534 (remove login with google option)
-=======
-          
-          {/* 
+           {/* 
             Admin Login Link - Removed from public view. 
             Admins should navigate to /admin/login directly.
-          <div className="text-center mt-6"> 
->>>>>>> ac1cb35 (and admin login not shown to everyone when i launched this site how can i do it)
-             <Link href="/admin/login" className="text-sm text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1">
-               <ShieldAlert className="h-4 w-4" />
-               Admin Login
-             </Link>
-           </div>
           */}
         </CardContent>
       </Card>
     </div>
   );
 }
-

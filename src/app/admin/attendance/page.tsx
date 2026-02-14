@@ -1,23 +1,21 @@
+
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-<<<<<<< HEAD
-import { QrCode, CheckCircle, XCircle, Loader2, CameraOff, Video, FileDown } from 'lucide-react'; // Added FileDown icon
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QrCode, CheckCircle, XCircle, Loader2, CameraOff, Video, User, Mail, Hash, GraduationCap, Calendar as CalendarIcon, ScanLine, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { saveAttendanceRecord } from '@/services/attendance'; // Importing saveAttendanceRecord
-// We would need a QR scanner library. For this example, we'll simulate scanning.
-// Popular libraries: react-qr-reader, html5-qrcode
-// For now, we'll use a simple text input to simulate scanning QR data.
-=======
-import { QrCode, CheckCircle, XCircle, Loader2, CameraOff, Video, Download, Users } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { markAttendance, getEventParticipants } from '@/services/attendance'; // Import new service functions
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+import { markAttendance } from '@/services/attendance';
+import { getAdminEvents } from '@/services/events';
+import type { EventData } from '@/services/events';
+import { format, parseISO } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface ScannedData {
   orderId: string;
@@ -26,202 +24,160 @@ interface ScannedData {
   timestamp: number;
 }
 
-export default function AdminAttendancePage() {
+interface ParticipantDetails {
+    user_name: string;
+    user_email: string;
+    user_branch: string;
+    user_semester: number;
+    user_registration_number: string;
+    event_name: string;
+    attended_at?: string | null;
+}
+
+function AttendanceScannerPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [scannedData, setScannedData] = useState<string>('');
-  const [parsedData, setParsedData] = useState<ScannedData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
   const [scanResult, setScanResult] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [scannedParticipant, setScannedParticipant] = useState<ParticipantDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isScannerActive, setIsScannerActive] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isMounted = useRef(true);
+  const scannerRegionId = "qr-code-full-region";
 
-  // Keep track of scanned order IDs
-  const [scannedOrderIds, setScannedOrderIds] = useState<Set<string>>(new Set());
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]); // To store attendance records
-
-
-  const startCameraScan = async () => {
-    setIsScanning(true);
-    setScanResult(null);
-    setParsedData(null);
-
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            setHasCameraPermission(true);
-            if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            // TODO: Integrate a QR scanning library here to process the video stream
-            // For example, using html5-qrcode:
-            // const html5QrCode = new Html5Qrcode("qr-video-reader");
-            // html5QrCode.start(
-            //   { facingMode: "environment" },
-            //   { fps: 10, qrbox: 250 },
-            //   (decodedText) => { handleQrData(decodedText); html5QrCode.stop(); setIsScanning(false); },
-            //   (errorMessage) => { console.warn(`QR error: ${errorMessage}`); }
-            // ).catch(err => console.error("Unable to start scanning.", err));
-            }
-            toast({ title: "Camera Scan Started", description: "Point camera at QR code. (Scanning library not fully integrated)"});
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            toast({ variant: 'destructive', title: 'Camera Access Denied/Error', description: 'Please enable camera permissions or check camera connection.'});
-            setIsScanning(false);
-        }
-    } else {
-        setHasCameraPermission(false);
-        toast({ variant: 'destructive', title: 'Camera Not Supported', description: 'Your browser does not support camera access.'});
-        setIsScanning(false);
+  useEffect(() => {
+    isMounted.current = true;
+    const eventIdFromQuery = searchParams.get('eventId');
+    if (eventIdFromQuery) {
+      setSelectedEventId(eventIdFromQuery);
     }
-  };
 
-  const stopCameraScan = () => {
-    setIsScanning(false);
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    // If using a library like html5-qrcode, call its stop method here.
-    toast({ title: "Camera Scan Stopped"});
-  };
-
-  const handleQrData = (data: string | null) => {
-    if (data) {
-      setScannedData(data);
-      try {
-        const jsonData = JSON.parse(data) as ScannedData;
-        if (jsonData.orderId && jsonData.eventId && jsonData.userId && jsonData.timestamp) {
-          setParsedData(jsonData);
-          setScanResult(null); 
+    getAdminEvents().then(result => {
+      if (isMounted.current) {
+        if (result.success && result.events) {
+          setEvents(result.events.filter(e => e.status === 'Active')); // Only show active events
         } else {
-          throw new Error("Invalid QR code structure. Missing required fields.");
+          toast({ title: "Could not load events", description: result.message, variant: "destructive" });
         }
-      } catch (error) {
-        setParsedData(null);
-        const msg = error instanceof Error ? error.message : 'Invalid QR code format.';
-        setScanResult({ type: 'error', message: `Invalid QR code: ${msg}` });
-        toast({title: "Invalid QR Code", description: msg, variant: "destructive"});
+        setLoadingEvents(false);
       }
-    } else {
-       setScanResult({ type: 'error', message: 'Failed to read QR code.' });
-       toast({title: "Scan Error", description: "Could not read the QR code.", variant: "destructive"});
-    }
-  };
+    });
 
-  const handleManualSubmit = () => {
-    if (!scannedData.trim()) {
-        toast({ title: "Input Empty", description: "Please enter QR data manually.", variant: "destructive"});
-        return;
+    return () => {
+      isMounted.current = false;
+      if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) {
+        scannerRef.current.stop().catch(err => console.error("Cleanup failed to stop scanner:", err));
+      }
+    };
+  }, [searchParams, toast]);
+
+  const stopScanner = useCallback((showToast = true) => {
+    if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) {
+      return scannerRef.current.stop().then(() => {
+        if (!isMounted.current) return;
+        setIsScannerActive(false);
+        if(showToast) toast({ title: "Scanner Stopped" });
+      }).catch(err => {
+        console.error("Failed to stop scanner:", err);
+        if (isMounted.current) setIsScannerActive(false);
+      });
+    } else {
+      if (isMounted.current) setIsScannerActive(false);
+      return Promise.resolve();
     }
-    handleQrData(scannedData);
-  };
-  
-  const verifyAndMarkAttendance = async () => {
-    if (!parsedData) {
-      toast({ title: "No Data", description: "No QR data to verify.", variant: "destructive" });
+  }, [toast]);
+
+  const handleScanSuccess = useCallback(async (decodedText: string) => {
+    if (isLoading || !selectedEventId) return;
+
+    // Immediately stop scanner to prevent re-scans of the same code
+    await stopScanner(false);
+    setIsLoading(true);
+    setScanResult(null);
+    setScannedParticipant(null);
+
+    let parsedData: ScannedData;
+    try {
+      parsedData = JSON.parse(decodedText) as ScannedData;
+      if (!parsedData.orderId || !parsedData.eventId || !parsedData.userId) {
+        throw new Error("Invalid QR code structure.");
+      }
+      if (parsedData.eventId !== selectedEventId) {
+        const scannedEventName = events.find(e => e.id === parsedData.eventId)?.name || 'another event';
+        throw new Error(`This ticket is for "${scannedEventName}", not the selected event.`);
+      }
+    } catch (error) {
+      if (!isMounted.current) return;
+      setScanResult({ type: 'error', message: `Invalid QR Code: ${error instanceof Error ? error.message : 'Unknown format.'}`});
+      toast({ title: "Invalid QR Code", variant: "destructive" });
+      setIsLoading(false);
       return;
     }
 
-    const orderId = parsedData.orderId;
-    if (scannedOrderIds.has(orderId)) {
-        toast({ title: "Already Scanned", description: "This ticket has already been used.", variant: "destructive" });
-        setScanResult({ type: 'error', message: `Order ID: ${orderId} has already been scanned.` });
-        setScannedData(''); // Clear input after processing for next scan
-        setParsedData(null);
-        return;
-    }
-
-    setIsLoading(true);
-    setScanResult(null);
-    
-<<<<<<< HEAD
-    console.log("Verifying attendance for:", parsedData);
-    // await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-
-    // Call saveAttendanceRecord instead of simulated logic
-    const result = await saveAttendanceRecord(parsedData.orderId, parsedData.eventId, parsedData.userId, scannedData);
-
-
-    if (result.success) {
-        setScannedOrderIds(prev => new Set(prev.add(orderId)));
-        setScanResult({ type: 'success', message: `Attendance marked for Order ID: ${orderId}. Welcome!` });
-        toast({ title: "Attendance Marked", description: `User ${parsedData.userId} for event ${parsedData.eventId} marked present.` });
-        // Add the attendance record to the local state
-        setAttendanceRecords(prev => [...prev, parsedData]);
-
-    } else {
-      setScanResult({ type: 'error', message: `Verification failed for Order ID: ${orderId}. Ticket might be invalid or already used.` });
-      toast({ title: "Verification Failed", description: result.message || "Could not mark attendance. Please check the ticket or try again.", variant: "destructive"});
-=======
     const result = await markAttendance(parsedData.eventId, parsedData.userId, parsedData.orderId);
 
-    if (result.success) {
-      setScanResult({ type: 'success', message: `Attendance marked for Order ID: ${parsedData.orderId}. Welcome!` });
-      toast({ title: "Attendance Marked", description: `User ${parsedData.userId} for event ${parsedData.eventId} marked present.`});
-    } else if (result.message?.includes("already marked")) {
-      setScanResult({ type: 'warning', message: result.message });
-      toast({ title: "Already Attended", description: result.message, variant: "default" }); // Use default variant for warning-like info
+    if (!isMounted.current) return;
+
+    if (result.success || (result.participant && result.message?.includes('Already marked'))) {
+        setScanResult({ type: result.success ? 'success' : 'warning', message: result.message || 'Scan complete.' });
+        setScannedParticipant(result.participant || null);
+        toast({ title: result.success ? "Attendance Marked" : "Already Attended", description: result.message });
     } else {
-      setScanResult({ type: 'error', message: result.message || `Verification failed for Order ID: ${parsedData.orderId}.` });
-      toast({ title: "Verification Failed", description: result.message || "Could not mark attendance.", variant: "destructive"});
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
+        setScanResult({ type: 'error', message: result.message || 'Verification failed.' });
+        setScannedParticipant(null);
+        toast({ title: "Verification Failed", description: result.message, variant: "destructive" });
     }
-    
     setIsLoading(false);
-    setScannedData(''); 
-    setParsedData(null);
+  }, [isLoading, toast, stopScanner, selectedEventId, events]);
+
+  const handleScanError = useCallback((errorMessage: string) => { /* Ignore frequent errors */ }, []);
+
+  const startScanner = useCallback(() => {
+    if (!scannerRef.current) {
+      scannerRef.current = new Html5Qrcode(scannerRegionId, { verbose: false });
+    }
+    if (scannerRef.current.getState() === Html5QrcodeScannerState.SCANNING) return;
+
+    setScanResult(null);
+    setScannedParticipant(null);
+
+    const config = { fps: 10 };
+
+    scannerRef.current.start({ facingMode: "environment" }, config, handleScanSuccess, handleScanError)
+      .then(() => {
+        if (isMounted.current) setIsScannerActive(true);
+        toast({ title: "Scanner Started", description: "Point camera at a QR code." });
+      })
+      .catch(err => {
+        toast({ variant: 'destructive', title: 'Unable to Start Scanner', description: 'Please check camera permissions.' });
+        if (isMounted.current) setIsScannerActive(false);
+      });
+  }, [handleScanSuccess, handleScanError, toast]);
+
+  const handleEventSelect = (eventId: string) => {
+    stopScanner(false);
+    setScanResult(null);
+    setScannedParticipant(null);
+    setSelectedEventId(eventId);
+    router.push(`/admin/attendance?eventId=${eventId}`);
   };
-  
-  const handleDownloadParticipants = async (eventId: string, eventName: string) => {
-    // Placeholder: In a real app, you'd fetch detailed participant data for the event
-    // and then convert it to CSV/Excel for download.
-    setIsLoading(true);
-    toast({ title: "Generating Report", description: `Fetching participants for ${eventName}... (Not Implemented)`});
-    // const participants = await getEventParticipants(eventId); // This service function needs to be created
-    // if (participants.success && participants.data) {
-    //    // Convert participants.data to CSV string
-    //    // Create a blob and trigger download
-    // } else {
-    //    toast({ title: "Error", description: participants.message || "Could not fetch data.", variant: "destructive"});
-    // }
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate
-    setIsLoading(false);
-    alert(`Download functionality for event "${eventName}" (ID: ${eventId}) is not yet implemented.\nThis would typically generate a CSV/Excel file of attendees.`);
+
+  const renderStatusIcon = () => {
+    if (!scanResult) return null;
+    switch(scanResult.type) {
+        case 'success': return <CheckCircle className="h-6 w-6 text-green-500" />;
+        case 'warning': return <AlertTriangle className="h-6 w-6 text-yellow-500" />;
+        case 'error': return <XCircle className="h-6 w-6 text-destructive" />;
+    }
   };
 
-  const downloadAttendanceData = () => {
-        if (attendanceRecords.length === 0) {
-            toast({ title: "No Data", description: "No attendance records to download.", variant: "destructive" });
-            return;
-        }
-
-        const csvRows = [];
-        const headers = Object.keys(attendanceRecords[0]);
-        csvRows.push(headers.join(','));
-
-        for (const record of attendanceRecords) {
-            const values = headers.map(header => {
-                const value = record[header];
-                return typeof value === 'string' ? `"${value}"` : value; // Escape strings with quotes
-            });
-            csvRows.push(values.join(','));
-        }
-
-        const csvData = csvRows.join('\n');
-        const blob = new Blob([csvData], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'attendance_data.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
-
+  const selectedEventName = events.find(e => e.id === selectedEventId)?.name;
 
   return (
     <div className="container mx-auto py-12 px-4 max-w-2xl">
@@ -231,123 +187,116 @@ export default function AdminAttendancePage() {
             <QrCode className="h-6 w-6" /> Event Attendance Scanner
           </CardTitle>
           <CardDescription>
-            Scan participant QR codes to mark attendance. You can also manually input QR data.
+            Select an event, then scan participant QR codes to mark attendance.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          
-          <div className="border rounded-md p-4 bg-muted aspect-video flex items-center justify-center">
-            {isScanning && hasCameraPermission ? (
-                 <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
-            ) : hasCameraPermission === false && isScanning ? (
-                <div className="text-center text-destructive">
-                    <CameraOff className="h-12 w-12 mx-auto mb-2" />
-                    <p>Camera access denied or not available.</p>
-                </div>
-            ) : (
-                <div className="text-center text-muted-foreground">
-                    <Video className="h-12 w-12 mx-auto mb-2" />
-                    <p>Camera preview will appear here when scan starts.</p>
-                </div>
-            )}
-          </div>
-           <div className="flex gap-2">
-            <Button onClick={startCameraScan} disabled={isScanning || isLoading} className="flex-1">
-                {isScanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <QrCode className="mr-2 h-4 w-4"/>}
-                {isScanning ? 'Scanning...' : 'Start Camera Scan'}
-            </Button>
-            {isScanning && <Button onClick={stopCameraScan} variant="outline" disabled={isLoading}>Stop Scan</Button>}
-           </div>
-           {hasCameraPermission === null && <p className="text-xs text-muted-foreground text-center">Click "Start Camera Scan" to request camera permission.</p>}
-
-
           <div className="space-y-2">
-            <Label htmlFor="qr-data-manual">Manual QR Data Input</Label>
-            <Input
-              id="qr-data-manual"
-              placeholder='Paste or type QR data here'
-              value={scannedData}
-              onChange={(e) => setScannedData(e.target.value)}
-              disabled={isLoading || isScanning}
-            />
-            <Button onClick={handleManualSubmit} disabled={isLoading || isScanning || !scannedData.trim()} className="w-full sm:w-auto">
-                Submit Manual Data
-            </Button>
+            <label htmlFor="event-select" className="font-medium">Select Event</label>
+            <Select
+              value={selectedEventId || ""}
+              onValueChange={handleEventSelect}
+              disabled={loadingEvents || isScannerActive}
+            >
+              <SelectTrigger id="event-select" className="w-full">
+                <SelectValue placeholder="Select an active event to begin..." />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingEvents ? <SelectItem value="loading" disabled><Loader2 className="animate-spin" /> Loading events...</SelectItem> :
+                  events.length > 0 ? events.map(event => (
+                    <SelectItem key={event.id!} value={event.id!}>{event.name}</SelectItem>
+                  )) : <SelectItem value="no-events" disabled>No active events found.</SelectItem>}
+              </SelectContent>
+            </Select>
           </div>
 
-          {parsedData && !scanResult && (
+          {selectedEventId && (
+            <div className="space-y-4">
+              <div className="border rounded-md bg-muted w-full max-w-md mx-auto aspect-[3/4] sm:aspect-video relative overflow-hidden">
+                <div id={scannerRegionId} className="absolute inset-0" />
+
+                {!isScannerActive && !isLoading && !scannedParticipant && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-muted-foreground p-4">
+                        <Video className="h-12 w-12 mx-auto mb-2" />
+                        <p>Camera preview will appear here.</p>
+                        <p className="text-xs">Scanning for: <strong>{selectedEventName}</strong></p>
+                    </div>
+                )}
+
+                {isScannerActive && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-[85%] h-[65%] border-4 border-primary/50 rounded-lg animate-pulse" />
+                    </div>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                {!isScannerActive ? (
+                  <Button onClick={startScanner} disabled={isLoading} className="flex-1">
+                    <ScanLine className="mr-2 h-4 w-4"/> {scannedParticipant ? 'Scan Next Ticket' : 'Start Scanning'}
+                  </Button>
+                ) : (
+                  <Button onClick={() => stopScanner()} variant="outline" className="flex-1">
+                    <CameraOff className="mr-2 h-4 w-4"/> Stop Scanner
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isLoading && (
             <Alert>
-              <AlertTitle className="flex items-center gap-2">
-                <QrCode className="h-5 w-5" /> QR Data Ready for Verification
-              </AlertTitle>
-              <AlertDescription className="mt-2 space-y-1 text-xs break-all">
-                <p><strong>Order ID:</strong> {parsedData.orderId}</p>
-                <p><strong>Event ID:</strong> {parsedData.eventId}</p>
-                <p><strong>User ID:</strong> {parsedData.userId}</p>
-<<<<<<< HEAD
-                <Button onClick={verifyAndMarkAttendance} disabled={isLoading || scannedOrderIds.has(parsedData.orderId)} className="mt-4 w-full">
-=======
-                <p><strong>Timestamp:</strong> {new Date(parsedData.timestamp).toLocaleString()}</p>
-                <Button onClick={verifyAndMarkAttendance} disabled={isLoading} className="mt-4 w-full">
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Verify and Mark Attendance
-                </Button>
-              </AlertDescription>
+              <Loader2 className="h-5 w-5 animate-spin"/>
+              <AlertTitle>Verifying QR Code...</AlertTitle>
+              <AlertDescription>Please wait while we check the ticket details.</AlertDescription>
             </Alert>
           )}
 
-          {scanResult && (
-            <Alert variant={scanResult.type === 'success' ? 'default' : (scanResult.type === 'warning' ? 'default' : 'destructive')} className={`mt-4 ${scanResult.type === 'warning' ? 'bg-yellow-50 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700' : ''}`}>
-              {scanResult.type === 'success' ? <CheckCircle className="h-5 w-5 text-green-600" /> : (scanResult.type === 'warning' ? <AlertTriangle className="h-5 w-5 text-yellow-600" /> : <XCircle className="h-5 w-5 text-red-600" />)}
-              <AlertTitle className={scanResult.type === 'warning' ? 'text-yellow-700 dark:text-yellow-300' : ''}>
-                {scanResult.type === 'success' ? 'Success!' : (scanResult.type === 'warning' ? 'Notice' : 'Error!')}
-              </AlertTitle>
-              <AlertDescription className={scanResult.type === 'warning' ? 'text-yellow-700 dark:text-yellow-400' : ''}>
-                {scanResult.message}
-              </AlertDescription>
-            </Alert>
+          {!isLoading && scanResult && (
+            <div className="space-y-4">
+              <Alert variant={scanResult.type === 'error' ? 'destructive' : 'default'} className={scanResult.type === 'success' ? 'border-green-500' : scanResult.type === 'warning' ? 'border-yellow-500' : ''}>
+                {renderStatusIcon()}
+                <AlertTitle>{scanResult.type.charAt(0).toUpperCase() + scanResult.type.slice(1)}</AlertTitle>
+                <AlertDescription>{scanResult.message}</AlertDescription>
+              </Alert>
+
+              {scannedParticipant && (
+                <Card className="bg-muted/50">
+                  <CardHeader><CardTitle className="text-lg">Participant Details</CardTitle></CardHeader>
+                  <CardContent className="space-y-3 text-sm overflow-x-auto">
+                    <div className="flex items-center gap-3"><User className="h-4 w-4 text-muted-foreground shrink-0"/><strong>Name:</strong> <span className="truncate">{scannedParticipant.user_name}</span></div>
+                    <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground shrink-0"/><strong>Email:</strong> <span className="truncate">{scannedParticipant.user_email}</span></div>
+                    <div className="flex items-center gap-3"><Hash className="h-4 w-4 text-muted-foreground shrink-0"/><strong>Reg No:</strong> <span className="truncate">{scannedParticipant.user_registration_number}</span></div>
+                    <Separator />
+                    <div className="flex items-center gap-3"><GraduationCap className="h-4 w-4 text-muted-foreground shrink-0"/><strong>Branch:</strong> <span className="truncate">{scannedParticipant.user_branch} (Sem {scannedParticipant.user_semester})</span></div>
+                    <div className="flex items-center gap-3"><CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0"/><strong>Event:</strong> <span className="truncate">{scannedParticipant.event_name}</span></div>
+                    <Separator />
+                    <div className="flex items-center gap-3">
+                      <strong className="shrink-0">Status:</strong>
+                      {scannedParticipant.attended_at ? (
+                        <Badge variant="default" className="bg-green-600">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Attended at {format(parseISO(scannedParticipant.attended_at), 'p')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3"/> Not Yet Attended</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
-<<<<<<< HEAD
-        <Button onClick={downloadAttendanceData} variant="secondary" disabled={attendanceRecords.length === 0}>
-            <FileDown className="mr-2 h-4 w-4"/> Download Attendance Data
-        </Button>
-=======
->>>>>>> 0e505f8 (once scanned qr code not taken again and after all registered total participants data must available to download and more memebers can access admin login if wants make changes,in admin control panel change side bar according to the need of admin it not same as users ithink soo and manager users and other feture comimg soon tabs enable add according to your experience not same as admin dashboard simpli different,and make admin can edit some more users settings and others required things make changes,view and manged users and some more things arein feature coming soon made it available now and get things from users dashboard if there data exists,in user dashboard add terms and conditions and privacy policy with related info like relted to our app,in site setting make enable of all coming soon options and add even more,colours are actually not good add colours combinations like instagram and make loading animation if users network is slow,iam in final stage of launching my app add copyrights and reserved and any required symbols yerar and add many more that all websites doing things and clear all bugs and make evrything good for user working,)
         </CardContent>
       </Card>
-
-      {/* Placeholder for Participant Data Download */}
-      <Card className="shadow-lg mt-8">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
-            <Download className="h-5 w-5" /> Participant Data
-          </CardTitle>
-          <CardDescription>
-            Download attendance reports for events. (Functionality Coming Soon)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-            <Label htmlFor="event-id-download">Event ID for Report</Label>
-            <Input id="event-id-download" placeholder="Enter Event ID (e.g., from events list)" />
-            <Button 
-                onClick={() => {
-                    const eventId = (document.getElementById('event-id-download') as HTMLInputElement)?.value;
-                    if (eventId) {
-                        handleDownloadParticipants(eventId, `Event ${eventId}`);
-                    } else {
-                        toast({title: "Missing Event ID", description: "Please enter an Event ID to download the report.", variant: "destructive"});
-                    }
-                }} 
-                disabled={isLoading} 
-                className="w-full sm:w-auto"
-            >
-                <Users className="mr-2 h-4 w-4" /> Download Report (Placeholder)
-            </Button>
-        </CardContent>
-      </Card>
-
     </div>
   );
 }
 
+export default function SuspendedAttendancePage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+            <AttendanceScannerPage/>
+        </Suspense>
+    )
+}

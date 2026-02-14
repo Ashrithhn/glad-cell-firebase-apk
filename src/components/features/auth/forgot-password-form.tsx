@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
@@ -86,6 +87,7 @@ export function ForgotPasswordForm() {
                     <Input type="email" placeholder="Enter your registered email" {...field} className="pl-10" suppressHydrationWarning/>
                   </div>
                 </FormControl>
+                <FormDescription>(Enter the email you used to register.)</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

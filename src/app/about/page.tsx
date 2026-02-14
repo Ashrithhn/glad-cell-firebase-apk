@@ -1,10 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Building2, Target, Lightbulb, Users, AlertCircle } from 'lucide-react';
+import { Building2, Target, Lightbulb, Users, AlertCircle, ArrowLeft } from 'lucide-react';
 import { getContent } from '@/services/content'; // Import service to fetch content
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import ReactMarkdown from 'react-markdown'; // Assuming you might use markdown
 import remarkGfm from 'remark-gfm'; // For GitHub Flavored Markdown support
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 // Fetch about content on the server
 async function loadAboutContent(): Promise<{ content?: string, error?: string }> {
@@ -22,8 +24,14 @@ export default async function AboutPage() {
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
+      <Button asChild variant="outline" className="mb-4">
+        <Link href="/">
+          <ArrowLeft className="mr-2 h-4 w-4"/> Back to Home
+        </Link>
+      </Button>
+
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-primary">About GLAD CELL</h1>
+        <h1 className="text-3xl font-bold animated-gradient-text">About GLAD CELL</h1>
         <p className="text-muted-foreground mt-2">
           Fostering Innovation at GEC Mosalehosahalli
         </p>

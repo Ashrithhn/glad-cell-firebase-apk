@@ -1,5 +1,5 @@
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient, SupabaseClient } from '@supabase/ssr';
 
 // Correctly use NEXT_PUBLIC_ prefixed environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,7 +28,7 @@ if (!supabaseAnonKey) {
 
 if (supabaseUrl && supabaseAnonKey) {
   try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
     console.log("✅ Supabase client initialized successfully.");
   } catch (error) {
     supabaseInitializationError = error instanceof Error ? error : new Error(String(error));

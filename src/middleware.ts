@@ -1,68 +1,53 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { getSiteSettings } from '@/services/settings'; // Assuming this can be called from middleware
-
-// List of paths to exclude from maintenance mode redirection
-const EXCLUDED_PATHS = [
-  '/admin', // Exclude all admin routes
-  '/api',   // Exclude all API routes
-  '/_next/static',
-  '/_next/image',
-  '/favicon.ico',
-  '/maintenance', // Don't redirect the maintenance page itself
-  '/login', // Allow access to login page for admins
-  '/register', // Allow access to registration page if needed, or remove if not
-];
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  // The `let` is important here, allowing the response to be mutated.
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  // Check if the current path is one of the excluded paths or starts with an excluded prefix
-  const isExcluded = EXCLUDED_PATHS.some(excludedPath => 
-    pathname === excludedPath || (pathname.startsWith(excludedPath) && excludedPath !== '/')
-  );
-
-  if (isExcluded) {
-    return NextResponse.next(); // Allow request to proceed
-  }
-  
-  // Attempt to fetch site settings.
-  // NOTE: Direct DB calls from middleware can be slow or have limitations.
-  // In production, consider using an edge-compatible data store or API endpoint for this.
-  try {
-    const settingsResult = await getSiteSettings();
-
-    if (settingsResult.success && settingsResult.settings?.maintenance?.enabled) {
-      // Maintenance mode is ON. Rewrite to the maintenance page.
-      // Rewrite keeps the URL the same but shows content from /maintenance
-      console.log(`[Middleware] Maintenance mode ON. Rewriting ${pathname} to /maintenance`);
-      const maintenanceUrl = new URL('/maintenance', request.url);
-      return NextResponse.rewrite(maintenanceUrl);
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // A mutated version of the request's cookies is used for subsequent server-side fetches.
+          request.cookies.set({ name, value, ...options })
+          // The response object's cookies are being set to be sent back to the browser.
+          response.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: '', ...options })
+          response.cookies.set({ name, value: '', ...options })
+        },
+      },
     }
-  } catch (error) {
-    // Log error but allow request to proceed if settings can't be fetched.
-    // This prevents the entire site from breaking if the settings fetch fails.
-    console.error('[Middleware] Error fetching site settings, bypassing maintenance check:', error);
-  }
+  )
 
-  // If maintenance mode is OFF or settings fetch failed, proceed with the request.
-  return NextResponse.next();
+  // Refresh session if expired - `getSession` will do this automatically
+  await supabase.auth.getSession()
+
+  // This is the crucial part that sends the updated cookies back to the browser.
+  return response
 }
 
-// Configure the matcher to apply middleware to all paths except those specified
-// This middleware will run for all paths not starting with /_next/ or /api/ or /favicon.ico etc.
-// We handle exclusions more granularly inside the middleware function.
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - admin (admin routes, handled inside)
-     * - maintenance (maintenance page, handled inside)
+     * - .svg, .png, .jpg, .jpeg, .gif, .webp (image files)
+     * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-};
+}

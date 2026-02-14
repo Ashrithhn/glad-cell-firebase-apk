@@ -1,11 +1,8 @@
 
 'use server';
 
-import { supabase, supabaseError } from '@/lib/supabaseClient';
+import { createSupabaseServerClient } from '@/lib/server-utils';
 import { revalidatePath } from 'next/cache';
-
-// Assuming your Supabase table for site content is named 'site_content'
-// and has columns: 'id' (text, primary key, e.g., 'about', 'contact'), 'content_data' (jsonb), 'updated_at' (timestamptz)
 
 export interface ContactInfo {
   address: string;
@@ -14,7 +11,11 @@ export interface ContactInfo {
 }
 
 export interface SiteLinks {
-  whatsappCommunity: string;
+  whatsappCommunity?: string;
+  telegram?: string;
+  instagram?: string;
+  linkedin?: string;
+  github?: string;
 }
 
 type ContentData = string | ContactInfo | SiteLinks;
@@ -23,13 +24,8 @@ type ContentData = string | ContactInfo | SiteLinks;
  * Fetches a specific content block from the 'site_content' table.
  */
 export async function getContent(contentId: string): Promise<{ success: boolean; data?: ContentData; message?: string }> {
+    const supabase = createSupabaseServerClient();
     console.log(`[Supabase Service - Content] getContent invoked for ID: ${contentId}`);
-
-    if (supabaseError || !supabase) {
-        const errorMessage = `Content service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
-        console.error(`[Supabase Service Error - Content] getContent: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
 
     if (!contentId) {
         return { success: false, message: 'Content ID is required.' };
@@ -37,10 +33,10 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
 
     try {
         const { data: contentEntry, error } = await supabase
-            .from('site_content') // Ensure this table exists in Supabase
-            .select('content_data') // Select the JSONB column
+            .from('site_content')
+            .select('content_data')
             .eq('id', contentId)
-            .single(); // Expects a single row or null
+            .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116: "Searched item was not found"
             console.error(`[Supabase Service Error - Content] Error fetching content for ID ${contentId}:`, error.message);
@@ -56,10 +52,9 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
                  return { success: true, data: { address: 'GECM hassan', email: 'gladcell2019@gmail.com', phone: '7625026715, 8073682882, 9483901788' } as ContactInfo };
             }
             if (contentId === 'links') {
-                return { success: true, data: { whatsappCommunity: '' } as SiteLinks };
+                return { success: true, data: {} as SiteLinks }; // Return empty object
             }
-            // For 'about', 'privacy-policy', 'terms-and-conditions', return a default string if not found
-            if (['about', 'privacy-policy', 'terms-and-conditions'].includes(contentId)) {
+            if (['about', 'privacy-policy', 'terms-and-conditions', 'help'].includes(contentId)) {
                  return { success: true, data: `Default content for ${contentId}. Please update via admin panel.` };
             }
             return { success: true, data: undefined };
@@ -75,13 +70,8 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
  * Requires admin privileges (TODO: implement check via RLS policies in Supabase).
  */
 export async function updateContent(contentId: string, data: ContentData): Promise<{ success: boolean; message?: string }> {
+    const supabase = createSupabaseServerClient();
     console.log(`[Supabase Service - Content] updateContent invoked for ID: ${contentId}`);
-
-     if (supabaseError || !supabase) {
-        const errorMessage = `Content service unavailable: Supabase client error - ${supabaseError?.message || 'Client not initialized'}.`;
-        console.error(`[Supabase Service Error - Content] updateContent: ${errorMessage}`);
-        return { success: false, message: errorMessage };
-    }
 
     if (!contentId) {
         return { success: false, message: 'Content ID is required.' };
@@ -115,6 +105,7 @@ export async function updateContent(contentId: string, data: ContentData): Promi
             'links': ['/', '/admin/content/links'], // Revalidate home for sidebar
             'privacy-policy': ['/privacy-policy', '/admin/content/privacy'],
             'terms-and-conditions': ['/terms-and-conditions', '/admin/content/terms'],
+            'help': ['/help', '/admin/content/help'],
         };
 
         if (pathsToRevalidate[contentId]) {
@@ -122,6 +113,11 @@ export async function updateContent(contentId: string, data: ContentData): Promi
         } else {
             revalidatePath('/'); // Default revalidation
         }
+        
+        // Always revalidate the social links on the footer
+        revalidatePath('/');
+        revalidatePath('/layout');
+
 
         return { success: true };
 

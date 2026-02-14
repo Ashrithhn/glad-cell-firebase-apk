@@ -82,7 +82,7 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
         tags: values.tags,
         status: values.status,
       };
-      
+
       const result = await updateIdea(currentIdea.id, ideaPayload);
 
       if (result.success) {
@@ -105,7 +105,7 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
       setIsSubmitting(false);
     }
   }
-  
+
   const isDisabled = isSubmitting || authLoading || !isAdmin;
 
   return (
@@ -135,7 +135,7 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
               </FormItem>
             )}
           />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -144,7 +144,7 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
                 <FormItem>
                   <FormLabel>Submitter Name (Optional)</FormLabel>
                   <FormControl><Input placeholder="Name of the person who submitted the idea" {...field} /></FormControl>
-                  <FormDescription>If submitted by a specific student or admin themselves.</FormMessage>
+                  <FormDescription>If submitted by a specific student or admin themselves.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -167,12 +167,12 @@ export function EditIdeaForm({ currentIdea }: EditIdeaFormProps) {
             name="tags"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1"><Tag className="h-4 w-4"/> Tags (Optional)</FormLabel>
+                <FormLabel className="flex items-center gap-1"><Tag className="h-4 w-4" /> Tags (Optional)</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="e.g., AI, Sustainability, EdTech (comma-separated)" 
-                    {...field} 
-                    value={Array.isArray(field.value) ? field.value.join(', ') : field.value || ''} 
+                  <Input
+                    placeholder="e.g., AI, Sustainability, EdTech (comma-separated)"
+                    {...field}
+                    value={Array.isArray(field.value) ? field.value.join(', ') : field.value || ''}
                     onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>

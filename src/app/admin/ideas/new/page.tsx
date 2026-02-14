@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { AddIdeaForm } from '@/components/features/admin/add-idea-form';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lightbulb } from 'lucide-react';
 
 export default function AdminAddIdeaPage() {
   return (
@@ -16,9 +16,11 @@ export default function AdminAddIdeaPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary">Add New Idea</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
+            <Lightbulb className="h-6 w-6" /> Add New Idea
+          </CardTitle>
           <CardDescription>
-            Enter the details for the new idea.
+            Manually add an idea to the showcase. You can set its initial status.
           </CardDescription>
         </CardHeader>
         <CardContent>
