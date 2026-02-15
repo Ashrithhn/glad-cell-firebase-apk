@@ -68,7 +68,7 @@ export async function getAllFeedback(): Promise<{ success: boolean; feedback?: F
  * Fetches approved feedback for the public homepage scroller.
  */
 export async function getPublicFeedback(): Promise<{ success: boolean; feedback?: FeedbackData[]; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     try {
         const { data, error } = await supabase
             .from('feedback')

@@ -16,7 +16,7 @@ export async function updateOwnProfilePicture(
 ): Promise<{ success: boolean; photoURL?: string; message?: string }> {
     console.log('[Profile Service] updateOwnProfilePicture invoked for user:', userId);
     
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || user.id !== userId) {
@@ -102,7 +102,7 @@ export async function updateOwnProfilePicture(
 export async function removeOwnProfilePicture(userId: string): Promise<{ success: boolean; message?: string }> {
     console.log('[Profile Service] removeOwnProfilePicture invoked for user:', userId);
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || user.id !== userId) {
@@ -156,7 +156,7 @@ export async function updateOwnUserProfile(
   userId: string,
   updates: { name: string; phone: string; semester: number }
 ): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user || user.id !== userId) {

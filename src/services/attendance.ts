@@ -18,7 +18,7 @@ export async function markAttendance(
   userId: string,
   orderId: string
 ): Promise<{ success: boolean; message?: string; participant?: ParticipationData }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   console.log(`[Supabase Service - Attendance] Marking attendance for Event: ${eventId}, User: ${userId}, Order: ${orderId}`);
 
   if (!eventId || !userId || !orderId) {

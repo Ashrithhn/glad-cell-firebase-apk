@@ -7,8 +7,8 @@ import type { UserProfileSupabase } from '@/services/auth';
  * Creates a Supabase client for Server Components, Server Actions, and Route Handlers.
  * This is essential for securely accessing the user's session from server-side code.
  */
-export function createSupabaseServerClient() {
-    const cookieStore = cookies()
+export async function createSupabaseServerClient() {
+    const cookieStore = await cookies()
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -45,8 +45,8 @@ export function createSupabaseServerClient() {
  * @returns An object containing the user session, the user's profile, and any potential error.
  */
 export async function getCurrentUser() {
-    const supabase = createSupabaseServerClient();
-    
+    const supabase = await createSupabaseServerClient();
+
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
         console.warn('[Server-Utils] No active session found.', sessionError?.message);
@@ -58,11 +58,11 @@ export async function getCurrentUser() {
         .select('*')
         .eq('id', session.user.id)
         .single();
-    
+
     if (profileError) {
         console.error('[Server-Utils] Error fetching user profile:', profileError.message);
         return { user: session.user, profile: null, error: profileError };
     }
-    
+
     return { user: session.user, profile: profile as UserProfileSupabase, error: null };
 }

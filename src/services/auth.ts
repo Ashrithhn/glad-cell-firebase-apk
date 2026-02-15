@@ -3,7 +3,12 @@
 
 import { createSupabaseServerClient } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabaseAdminClient';
-import type { UserCredentials, Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
+
+export interface UserCredentials {
+  email: string;
+  password: string;
+}
 
 export interface UserProfileSupabase {
   id: string;
@@ -51,7 +56,7 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     if (existingUserByEmail) {
       return { success: false, message: 'A user with this email address already exists.' };
     }
-    
+
     const { data: existingUserByReg, error: regCheckError } = await supabaseAdmin
       .from('users')
       .select('id')
@@ -67,10 +72,10 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
     }
 
     const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: name }
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: name }
     });
 
     if (signUpError) {
@@ -112,8 +117,8 @@ export async function registerUser(userData: any): Promise<{ success: boolean; u
  * Logs in a user using Supabase Authentication. This function correctly handles session cookies.
  */
 export async function loginUser(credentials: UserCredentials): Promise<{ success: boolean; userId?: string; session?: Session | null; message?: string }> {
-   const supabase = createSupabaseServerClient();
-   const { email, password } = credentials;
+  const supabase = await createSupabaseServerClient();
+  const { email, password } = credentials;
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -123,7 +128,7 @@ export async function loginUser(credentials: UserCredentials): Promise<{ success
 
     if (error) return { success: false, message: error.message || 'Invalid email or password.' };
     if (!data.user || !data.session) return { success: false, message: 'Login failed: No user or session returned.' };
-    
+
     return { success: true, userId: data.user.id, session: data.session };
 
   } catch (error: any) {
@@ -136,28 +141,28 @@ export async function loginUser(credentials: UserCredentials): Promise<{ success
  * Logs out the currently signed-in Supabase user and clears the session cookie.
  */
 export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) return { success: false, message: error.message || 'Logout failed.' };
-        return { success: true };
-    } catch (error: any) {
-        return { success: false, message: error.message || 'Logout failed.' };
-    }
+  const supabase = await createSupabaseServerClient();
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) return { success: false, message: error.message || 'Logout failed.' };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Logout failed.' };
+  }
 }
 
 /**
  * Sends a password reset email to the given email address using Supabase.
  */
 export async function sendPasswordReset(email: string): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
-    try {
-        const redirectTo = process.env.NEXT_PUBLIC_APP_BASE_URL ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/update-password` : undefined;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  const supabase = await createSupabaseServerClient();
+  try {
+    const redirectTo = process.env.NEXT_PUBLIC_APP_BASE_URL ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/update-password` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
-        if (error) return { success: false, message: error.message || 'Failed to send password reset email.' };
-        return { success: true, message: 'If an account exists for this email, a password reset link has been sent.' };
-    } catch (error: any) {
-        return { success: false, message: `Password reset failed: ${error.message || 'An unknown error occurred.'}` };
-    }
+    if (error) return { success: false, message: error.message || 'Failed to send password reset email.' };
+    return { success: true, message: 'If an account exists for this email, a password reset link has been sent.' };
+  } catch (error: any) {
+    return { success: false, message: `Password reset failed: ${error.message || 'An unknown error occurred.'}` };
+  }
 }

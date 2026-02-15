@@ -34,7 +34,7 @@ export async function submitIdea(
     return { success: false, message: 'Idea service is not available. Please contact support.' };
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -91,7 +91,7 @@ export async function submitIdea(
  * Scoped to the admin's college if the user is an 'Admin'.
  */
 export async function getAllIdeas(): Promise<{ success: boolean; ideas?: IdeaData[]; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { profile } = await getCurrentUser();
 
   try {
@@ -117,7 +117,7 @@ export async function getAllIdeas(): Promise<{ success: boolean; ideas?: IdeaDat
  * Fetches only 'Approved' ideas for the public gallery.
  */
 export async function getApprovedIdeas(): Promise<{ success: boolean; ideas?: IdeaData[]; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   try {
     const { data, error } = await supabase
@@ -140,7 +140,7 @@ export async function updateIdeaStatus(
   ideaId: string,
   status: IdeaData['status']
 ): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   try {
     const { data: idea, error: fetchError } = await supabase
@@ -187,7 +187,7 @@ export async function updateIdeaStatus(
  * Fetches a single idea by its ID.
  */
 export async function getIdeaById(ideaId: string): Promise<{ success: boolean; idea?: IdeaData; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     if (!ideaId) return { success: false, message: 'Idea ID is required.' };
 
     try {
@@ -206,7 +206,7 @@ export async function getIdeaById(ideaId: string): Promise<{ success: boolean; i
  * Fetches all ideas submitted by a specific user.
  */
 export async function getIdeasByUserId(userId: string): Promise<{ success: boolean; ideas?: IdeaData[]; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     if (!userId) return { success: false, message: 'User ID is required.' };
     
     try {
@@ -231,7 +231,7 @@ export async function updateIdea(
   ideaId: string,
   ideaData: Partial<Omit<IdeaData, 'id' | 'created_at' | 'submitter_id'>>
 ): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   try {
     const dataToUpdate = { ...ideaData, updated_at: new Date().toISOString() };
@@ -256,7 +256,7 @@ export async function updateIdea(
  * Deletes an idea from the 'ideas' table.
  */
 export async function deleteIdea(ideaId: string): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   try {
     const { error } = await supabase.from('ideas').delete().eq('id', ideaId);
@@ -278,7 +278,7 @@ export async function deleteIdea(ideaId: string): Promise<{ success: boolean; me
 export async function addIdea(
   ideaData: Omit<IdeaData, 'id' | 'created_at' | 'updated_at' | 'submitter_id' | 'college_id'>
 ): Promise<{ success: boolean; ideaId?: string; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { profile } = await getCurrentUser();
   if (!profile || (profile.role !== 'Admin' && profile.role !== 'Super Admin')) {
     return { success: false, message: 'Unauthorized action.' };

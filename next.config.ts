@@ -1,5 +1,5 @@
 
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -22,6 +22,18 @@ const nextConfig: NextConfig = {
         hostname: 'cwqcmichnpadroggzira.supabase.co',
         port: '',
         pathname: '/**', // Allows images from any path under this Supabase hostname
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

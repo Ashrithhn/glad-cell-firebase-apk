@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
  * Fetches the global site settings from the 'site_configuration' table.
  */
 export async function getSiteSettings(): Promise<{ success: boolean; settings?: SiteSettings; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   console.log('[Supabase Service - Settings] getSiteSettings invoked.');
 
   try {
@@ -66,7 +66,7 @@ export async function getSiteSettings(): Promise<{ success: boolean; settings?: 
  * Updates the global site settings in the 'site_configuration' table.
  */
 export async function updateSiteSettings(newSettings: Partial<SiteSettings>): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   console.log('[Supabase Service - Settings] updateSiteSettings invoked.');
 
   try {

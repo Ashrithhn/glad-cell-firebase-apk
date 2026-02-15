@@ -136,7 +136,7 @@ export async function getAdminPromotions(): Promise<{ success: boolean; promotio
   if (!profile || (profile.role !== 'Admin' && profile.role !== 'Super Admin')) {
     return { success: false, message: 'Unauthorized' };
   }
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   try {
     let query = supabase.from('promotions').select('*').order('display_order', { ascending: true });
     if (profile.role === 'Admin' && profile.college_id) {
@@ -154,7 +154,7 @@ export async function getAdminPromotions(): Promise<{ success: boolean; promotio
  * Fetches a single promotion by its ID.
  */
 export async function getPromotionById(id: string): Promise<{ success: boolean; promotion?: Promotion; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     try {
         const { data, error } = await supabase.from('promotions').select('*').eq('id', id).single();
         if (error) throw error;
@@ -169,7 +169,7 @@ export async function getPromotionById(id: string): Promise<{ success: boolean; 
  * Fetches active promotions for the public homepage.
  */
 export async function getActivePublicPromotions(): Promise<{ success: boolean; promotions?: Promotion[]; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     try {
         const { data, error } = await supabase
             .from('promotions')

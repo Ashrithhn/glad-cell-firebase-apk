@@ -24,7 +24,7 @@ type ContentData = string | ContactInfo | SiteLinks;
  * Fetches a specific content block from the 'site_content' table.
  */
 export async function getContent(contentId: string): Promise<{ success: boolean; data?: ContentData; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     console.log(`[Supabase Service - Content] getContent invoked for ID: ${contentId}`);
 
     if (!contentId) {
@@ -70,7 +70,7 @@ export async function getContent(contentId: string): Promise<{ success: boolean;
  * Requires admin privileges (TODO: implement check via RLS policies in Supabase).
  */
 export async function updateContent(contentId: string, data: ContentData): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     console.log(`[Supabase Service - Content] updateContent invoked for ID: ${contentId}`);
 
     if (!contentId) {

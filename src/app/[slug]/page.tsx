@@ -7,14 +7,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 type PageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 // Generate metadata for the custom page
 export async function generateMetadata({ params }: PageProps) {
-  const { page } = await getPublishedPageBySlug(params.slug);
+  const { slug } = await params;
+  const { page } = await getPublishedPageBySlug(slug);
   if (!page) {
     return {
       title: 'Page Not Found',
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default async function CustomPage({ params }: PageProps) {
-  const { slug } = params;
+  const { slug } = await params;
   const { page } = await getPublishedPageBySlug(slug);
 
   if (!page) {
@@ -35,16 +36,16 @@ export default async function CustomPage({ params }: PageProps) {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-4xl font-bold animated-gradient-text">{page.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="prose dark:prose-invert max-w-none">
-                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {page.content || ''}
-                </ReactMarkdown>
-            </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-4xl font-bold animated-gradient-text">{page.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="prose dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {page.content || ''}
+          </ReactMarkdown>
+        </CardContent>
+      </Card>
     </div>
   );
 }
