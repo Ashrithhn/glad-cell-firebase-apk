@@ -26,7 +26,7 @@ export async function getCustomPages(): Promise<{ success: boolean; pages?: Cust
   if (!profile || profile.role !== 'Super Admin') {
     return { success: false, message: 'Unauthorized' };
   }
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   try {
     let query = supabase.from('custom_pages').select('*').order('created_at', { ascending: false });
     // if (profile.role === 'Admin' && profile.college_id) {
@@ -44,7 +44,7 @@ export async function getCustomPages(): Promise<{ success: boolean; pages?: Cust
  * Fetches a single published custom page by its slug. For public consumption.
  */
 export async function getPublishedPageBySlug(slug: string): Promise<{ success: boolean; page?: CustomPage; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   try {
     const { data, error } = await supabase
       .from('custom_pages')

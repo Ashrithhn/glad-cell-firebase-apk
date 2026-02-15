@@ -21,7 +21,7 @@ interface EmailPayload {
  * @param payload - The data required to construct the confirmation email.
  */
 export async function sendTeamConfirmationEmail(payload: EmailPayload): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   console.log(`[Email Service] Preparing to send confirmation email to: ${payload.to}`);
 
   try {

@@ -56,7 +56,7 @@ export async function createNotification(payload: CreateNotificationPayload): Pr
  * Fetches notifications for a specific user.
  */
 export async function getNotificationsForUser(userId: string): Promise<{ success: boolean; notifications?: Notification[]; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   if (!userId) return { success: false, message: 'User ID is required.' };
 
   try {
@@ -80,7 +80,7 @@ export async function getNotificationsForUser(userId: string): Promise<{ success
  * Marks a list of notifications as read for the current user.
  */
 export async function markNotificationsAsRead(notificationIds: string[]): Promise<{ success: boolean; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   if (!notificationIds || notificationIds.length === 0) {
     return { success: true, message: 'No notifications to mark as read.' };
   }

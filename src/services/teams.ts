@@ -66,7 +66,7 @@ export async function createTeam(
   teamName: string,
   collegeId?: string | null
 ): Promise<{ success: boolean; team?: TeamWithMembers; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   if (!supabaseAdmin) {
     return { success: false, message: 'Team service is currently unavailable.' };
@@ -149,7 +149,7 @@ export async function requestToJoinTeam(
   userId: string
 ): Promise<{ success: boolean; message?: string }> {
   
-  const supabase = createSupabaseServerClient(); // User-scoped client to respect RLS for initial checks
+  const supabase = await createSupabaseServerClient(); // User-scoped client to respect RLS for initial checks
 
   if (!supabaseAdmin) {
     return { success: false, message: 'Team service is currently unavailable.' };
@@ -230,7 +230,7 @@ export async function respondToJoinRequest(
     decision: 'accept' | 'reject',
     leaderId: string
 ): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     if (!supabaseAdmin) {
         return { success: false, message: 'Team service is currently unavailable.' };
@@ -278,7 +278,7 @@ export async function respondToJoinRequest(
  * Fetches all teams a user is a member of.
  */
 export async function getTeamsForUser(userId: string): Promise<{ success: boolean; teams?: TeamWithMembers[]; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   try {
     const { data: memberOf, error: memberError } = await supabase
@@ -321,7 +321,7 @@ export async function getTeamsForUser(userId: string): Promise<{ success: boolea
  * Fetches a single team with its members.
  */
 export async function getTeamWithMembers(teamId: string): Promise<{ success: boolean; data?: TeamWithMembers; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     try {
         const { data, error } = await supabase
@@ -352,7 +352,7 @@ export async function getTeamWithMembers(teamId: string): Promise<{ success: boo
  * Fetches all teams and their members for a specific event.
  */
 export async function getTeamsAndMembersForEvent(eventId: string): Promise<{ success: boolean; teams?: TeamWithMembers[]; message?: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   try {
     const { data, error } = await supabase
@@ -461,7 +461,7 @@ export async function processFreeTeamRegistration(details: {
  * Allows a team member to leave a team.
  */
 export async function leaveTeam(teamId: string, userId: string): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     if (!supabaseAdmin) {
         return { success: false, message: 'Team service is currently unavailable.' };
     }
@@ -493,7 +493,7 @@ export async function leaveTeam(teamId: string, userId: string): Promise<{ succe
  * Allows a team leader or admin to remove a member from a team.
  */
 export async function removeTeamMember(teamId: string, memberIdToRemove: string, requesterId: string): Promise<{ success: boolean; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     if (!supabaseAdmin) {
         return { success: false, message: 'Team service is currently unavailable.' };
     }

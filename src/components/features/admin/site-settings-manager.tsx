@@ -14,7 +14,7 @@ import { Loader2, AlertTriangle, Globe, Palette, Save, Lightbulb } from 'lucide-
 import { getSiteSettings, updateSiteSettings } from '@/services/site-settings';
 import type { SiteSettings } from '@/services/site-settings';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTheme } from 'next-themes';
+
 import { useRouter } from 'next/navigation';
 
 interface SiteSettingsManagerProps {
@@ -27,26 +27,26 @@ export function SiteSettingsManager({ initialSettings }: SiteSettingsManagerProp
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-  const { setTheme: setNextTheme } = useTheme();
+
   const router = useRouter();
 
   useEffect(() => {
     if (!initialSettings) {
-        async function fetchSettings() {
-          setIsLoading(true);
-          const result = await getSiteSettings();
-          if (result.success && result.settings) {
-            setSettings(result.settings);
-          } else {
-            toast({
-              title: 'Error Loading Settings',
-              description: result.message || 'Could not fetch site settings. Using defaults.',
-              variant: 'destructive',
-            });
-          }
-          setIsLoading(false);
+      async function fetchSettings() {
+        setIsLoading(true);
+        const result = await getSiteSettings();
+        if (result.success && result.settings) {
+          setSettings(result.settings);
+        } else {
+          toast({
+            title: 'Error Loading Settings',
+            description: result.message || 'Could not fetch site settings. Using defaults.',
+            variant: 'destructive',
+          });
         }
-        fetchSettings();
+        setIsLoading(false);
+      }
+      fetchSettings();
     }
   }, [initialSettings, toast]);
 
@@ -67,9 +67,7 @@ export function SiteSettingsManager({ initialSettings }: SiteSettingsManagerProp
             title: `Settings Updated`,
             description: 'Site settings have been saved successfully.',
           });
-          if (settings.theme) {
-             setNextTheme(settings.theme);
-          }
+
           // Refresh the page to reflect changes, like hidden menu items
           router.refresh();
         } else {
@@ -132,60 +130,34 @@ export function SiteSettingsManager({ initialSettings }: SiteSettingsManagerProp
           </div>
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" /> Feature Flags
-            </CardTitle>
-            <CardDescription>
-                Toggle major features of the application on or off globally.
-            </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="flex items-center space-x-3 rounded-md border p-4">
-                <Switch
-                    id="allow-idea-submissions"
-                    checked={settings.allowIdeaSubmissions}
-                    onCheckedChange={(checked) => handleSettingChange('allowIdeaSubmissions', checked)}
-                    disabled={isSaveDisabled}
-                    aria-label="Toggle Idea Submissions"
-                />
-                <Label htmlFor="allow-idea-submissions" className="flex-grow cursor-pointer">
-                    {settings.allowIdeaSubmissions ? 'Idea Submissions are ENABLED' : 'Idea Submissions are DISABLED'}
-                </Label>
-            </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" /> Theme & Appearance
+            <Lightbulb className="h-5 w-5" /> Feature Flags
           </CardTitle>
           <CardDescription>
-            Manage the visual theme of the application.
+            Toggle major features of the application on or off globally.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Label htmlFor="site-theme">Default Site Theme</Label>
-          <Select
-            value={settings.theme || 'default'}
-            onValueChange={(value) => handleSettingChange('theme', value)}
-            disabled={isSaveDisabled}
-          >
-            <SelectTrigger id="site-theme" className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="dark">Dark</SelectItem>
-              <SelectItem value="default">System</SelectItem>
-            </SelectContent>
-          </Select>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-3 rounded-md border p-4">
+            <Switch
+              id="allow-idea-submissions"
+              checked={settings.allowIdeaSubmissions}
+              onCheckedChange={(checked) => handleSettingChange('allowIdeaSubmissions', checked)}
+              disabled={isSaveDisabled}
+              aria-label="Toggle Idea Submissions"
+            />
+            <Label htmlFor="allow-idea-submissions" className="flex-grow cursor-pointer">
+              {settings.allowIdeaSubmissions ? 'Idea Submissions are ENABLED' : 'Idea Submissions are DISABLED'}
+            </Label>
+          </div>
         </CardContent>
       </Card>
-      
+
+
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -208,10 +180,10 @@ export function SiteSettingsManager({ initialSettings }: SiteSettingsManagerProp
       </Card>
 
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm p-4 border-t -mx-4 -mb-4">
-          <Button onClick={handleSaveSettings} disabled={isSaveDisabled} className="w-full sm:w-auto">
-            {isSaveDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save All Settings
-          </Button>
+        <Button onClick={handleSaveSettings} disabled={isSaveDisabled} className="w-full sm:w-auto">
+          {isSaveDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          Save All Settings
+        </Button>
       </div>
     </div>
   );

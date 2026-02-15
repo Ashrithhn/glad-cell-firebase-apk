@@ -13,7 +13,7 @@ import { getCurrentUser, createSupabaseServerClient } from '@/lib/server-utils';
  * Super Admins can see all users.
  */
 export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileSupabase[]; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     console.log('[Supabase Server Action - Admin] getAllUsers invoked.');
 
     const { profile } = await getCurrentUser();
@@ -87,7 +87,7 @@ export interface SupabaseAuthUser {
 
 
 export async function getUserProfileById(userId: string): Promise<{ success: boolean; data?: UserProfileSupabase; message?: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     if (!userId) return { success: false, message: 'User ID is required.' };
 
     try {

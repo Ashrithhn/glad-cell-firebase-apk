@@ -21,7 +21,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     pendingIdeas: 0,
   };
   
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { profile } = await getCurrentUser();
   const isAdmin = profile?.role === 'Admin';
   const collegeId = profile?.college_id;
